@@ -6,11 +6,8 @@ Next.js 14+ starter template with app router, shadcn/ui, typesafe env, icons and
 
 1. If not already installed, install Node.js. Visit the [official Node.js website](https://nodejs.org/) and download the LTS version for macOS.
 
-2. Install Cursor
-   If not already installed, download and install VSCode from the [official website](https://www.cursor.com/).
-3. Open Terminal and setup a project using the template
-
-
+2. Download and install Cursor from the [official website](https://www.cursor.com/).
+3. Create a new project, open Terminal and setup a project using the template
 ```bash
 npx create-next-app -e https://github.com/vadim-lobodin/prototyping-boilerplate
 ```
