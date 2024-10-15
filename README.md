@@ -28,6 +28,12 @@ yarn create next-app -e https://github.com/vadim-lobodin/prototyping-boilerplate
 cp .env.example .env.local
 ```
 
+5. Run the project
+
+```bash
+npm run dev
+```
+
 ## Features
 
 This template uses [shadcn](https://github.com/shadcn)'s Next.js app structure from [shadcn/ui](https://ui.shadcn.com/).
