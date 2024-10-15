@@ -13,21 +13,17 @@ Run the installer and follow the prompts to install Node.js and npm.
    If not already installed, download and install VSCode from the [official website](https://www.cursor.com/).
 3. Open Terminal and setup a project using the template
 
-```bash
-pnpm create next-app -e https://github.com/redpangilinan/next-entree
-```
 
 ```bash
-npx create-next-app -e https://github.com/redpangilinan/next-entree
+npx create-next-app -e https://github.com/vadim-lobodin/prototyping-boilerplate
 ```
 
-```bash
-yarn create next-app -e https://github.com/redpangilinan/next-entree
-```
+OR
 
 ```bash
-bunx create-next-app -e https://github.com/redpangilinan/next-entree
+yarn create next-app -e https://github.com/vadim-lobodin/prototyping-boilerplate
 ```
+
 
 2. Copy `.env.example` to `.env.local`
 
