@@ -14,9 +14,7 @@ Next.js 14+ starter template with app router, shadcn/ui, typesafe env, icons and
 ```bash
 npx create-next-app -e https://github.com/vadim-lobodin/prototyping-boilerplate
 ```
-
-OR
-
+or
 ```bash
 yarn create next-app -e https://github.com/vadim-lobodin/prototyping-boilerplate
 ```
