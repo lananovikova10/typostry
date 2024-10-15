@@ -1,10 +1,17 @@
-# Next Entree
+# Prototyping boilerplate
 
 Next.js 14+ starter template with app router, shadcn/ui, typesafe env, icons and configs setup.
 
 ## Usage
 
-1. Setup a project using the template
+1. If not already installed, install Node.js
+
+Visit the [official Node.js website](https://nodejs.org/) and download the LTS version for macOS.
+Run the installer and follow the prompts to install Node.js and npm.
+
+2. Install Cursor
+   If not already installed, download and install VSCode from the [official website](https://www.cursor.com/).
+3. Open Terminal and setup a project using the template
 
 ```bash
 pnpm create next-app -e https://github.com/redpangilinan/next-entree
@@ -41,18 +48,4 @@ This template uses [shadcn](https://github.com/shadcn)'s Next.js app structure f
 - Typesafe env, icons, and config
 - Ready to use - jump right into development
 
-## Scripts
 
-If you are using a different package manager, be sure to update the package.json format scripts.
-
-1. Check project formatting
-
-```bash
-pnpm format:check
-```
-
-2. Format the project
-
-```bash
-pnpm format
-```
