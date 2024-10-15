@@ -4,10 +4,7 @@ Next.js 14+ starter template with app router, shadcn/ui, typesafe env, icons and
 
 ## Usage
 
-1. If not already installed, install Node.js
-
-Visit the [official Node.js website](https://nodejs.org/) and download the LTS version for macOS.
-Run the installer and follow the prompts to install Node.js and npm.
+1. If not already installed, install Node.js. Visit the [official Node.js website](https://nodejs.org/) and download the LTS version for macOS.
 
 2. Install Cursor
    If not already installed, download and install VSCode from the [official website](https://www.cursor.com/).
