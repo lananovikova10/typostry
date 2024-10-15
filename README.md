@@ -22,7 +22,7 @@ yarn create next-app -e https://github.com/vadim-lobodin/prototyping-boilerplate
 ```
 
 
-2. Copy `.env.example` to `.env.local`
+4. Copy `.env.example` to `.env.local`
 
 ```bash
 cp .env.example .env.local
