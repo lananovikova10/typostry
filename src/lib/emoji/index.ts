@@ -319,31 +319,15 @@ export const emojiMap: Record<string, string> = {
  * @returns The text with emoji shortcodes replaced with Unicode emoji characters
  */
 export function replaceEmojis(text: string): string {
-  // First handle the special case of consecutive emoji codes without spaces
-  // This pattern matches any sequence like :emoji1::emoji2::emoji3:
-  let processed = text;
-  const consecutivePattern = /:([a-zA-Z0-9_+-]+):/g;
-  let match;
+  if (!text) return '';
   
-  // We need to manually process consecutive emojis to handle them correctly
-  while ((match = consecutivePattern.exec(processed)) !== null) {
-    const fullMatch = match[0];
-    const code = match[1];
-    
-    // Only replace if it's in our emoji map
-    if (emojiMap[code]) {
-      // Replace just this emoji code
-      const before = processed.substring(0, match.index);
-      const after = processed.substring(match.index + fullMatch.length);
-      processed = before + emojiMap[code] + after;
-      
-      // Update the regex lastIndex since we modified the string
-      consecutivePattern.lastIndex = match.index + emojiMap[code].length;
-    } else {
-      // If not found, just move past this match
-      consecutivePattern.lastIndex = match.index + fullMatch.length;
-    }
-  }
-
-  return processed;
+  // This pattern matches any emoji code in the format :code:
+  const emojiPattern = /:([a-zA-Z0-9_+-]+):/g;
+  
+  // Replace all emoji codes with their Unicode equivalents
+  return text.replace(emojiPattern, (match, code) => {
+    // If the code exists in our emoji map, replace it with the Unicode emoji
+    // Otherwise return the original match (keep the emoji code as is)
+    return emojiMap[code] || match;
+  });
 }
