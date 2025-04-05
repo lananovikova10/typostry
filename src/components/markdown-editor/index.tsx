@@ -29,7 +29,7 @@ export function MarkdownEditor({
   const [isFileSaved, setIsFileSaved] = useState(true)
   const [isFileSystemAPISupported, setIsFileSystemAPISupported] = useState(false)
   const [autoSaveEnabled, setAutoSaveEnabled] = useState(false)
-  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false)
+  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(true)
   
   // Undo history management
   const [undoStack, setUndoStack] = useState<string[]>([initialValue])
