@@ -100,4 +100,114 @@ describe('Markdown Editor', () => {
     // Verify preview is shown
     cy.get('[data-testid="markdown-preview"] h1').should('contain', 'Keyboard Access Test')
   })
+
+  it('should display grammar errors with blue wavy underlines', () => {
+    // Mock the grammar check API response
+    cy.intercept('POST', '**/v2/check', {
+      statusCode: 200,
+      body: {
+        software: {
+          name: "LanguageTool",
+          version: "5.9",
+          apiVersion: 1
+        },
+        language: {
+          name: "English (US)",
+          code: "en-US"
+        },
+        matches: [
+          {
+            message: "This is a grammar error",
+            shortMessage: "Grammar error",
+            offset: 10,
+            length: 5,
+            replacements: [
+              { value: "correct" }
+            ],
+            context: {
+              text: "This is a error in grammar",
+              offset: 10,
+              length: 5
+            },
+            rule: {
+              id: "GRAMMAR_ERROR",
+              description: "Grammar rule description",
+              issueType: "grammar"
+            }
+          }
+        ]
+      }
+    }).as('grammarCheck')
+    
+    // Type text that would trigger a grammar error
+    cy.get('[data-testid="markdown-input"]')
+      .clear()
+      .type('This is a error in grammar')
+    
+    // Wait for the grammar check API call to complete
+    cy.wait('@grammarCheck')
+    
+    // Find the grammar error marker and verify it has the correct class
+    cy.get('.grammar-error-grammar').should('exist')
+    
+    // Verify the styling is applied correctly
+    cy.get('.grammar-error-grammar')
+      .should('have.css', 'text-decoration-style', 'wavy')
+      .should('have.css', 'text-decoration-color', 'rgb(49, 130, 206)')  // #3182ce in RGB
+  })
+
+  it('should display spelling errors with red wavy underlines', () => {
+    // Mock the grammar check API response for spelling errors
+    cy.intercept('POST', '**/v2/check', {
+      statusCode: 200,
+      body: {
+        software: {
+          name: "LanguageTool",
+          version: "5.9",
+          apiVersion: 1
+        },
+        language: {
+          name: "English (US)",
+          code: "en-US"
+        },
+        matches: [
+          {
+            message: "Possible spelling mistake found",
+            shortMessage: "Spelling mistake",
+            offset: 10,
+            length: 6,
+            replacements: [
+              { value: "spelling" }
+            ],
+            context: {
+              text: "This is a speling mistake",
+              offset: 10,
+              length: 6
+            },
+            rule: {
+              id: "SPELLING_ERROR",
+              description: "Spelling rule description",
+              issueType: "misspelling"
+            }
+          }
+        ]
+      }
+    }).as('spellingCheck')
+    
+    // Type text that would trigger a spelling error
+    cy.get('[data-testid="markdown-input"]')
+      .clear()
+      .type('This is a speling mistake')
+    
+    // Wait for the grammar check API call to complete
+    cy.wait('@spellingCheck')
+    
+    // Find the spelling error marker and verify it has the correct class
+    cy.get('.grammar-error-spelling').should('exist')
+    
+    // Verify the styling is applied correctly
+    cy.get('.grammar-error-spelling')
+      .should('have.css', 'text-decoration-style', 'wavy')
+      .should('have.css', 'text-decoration-color', 'rgb(245, 101, 101)')  // #f56565 in RGB
+  })
 })

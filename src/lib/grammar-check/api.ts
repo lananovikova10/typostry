@@ -37,7 +37,7 @@ export async function checkGrammar(
   const requestBody: LanguageToolRequest = {
     text,
     language,
-    disabledRules: disabledRules.join(","),
+    disabledRules: disabledRules.length > 0 ? disabledRules.join(",") : undefined,
   };
   
   try {

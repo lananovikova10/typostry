@@ -136,7 +136,10 @@ export function mapStrippedToOriginal(
   
   // Find the closest position
   let maxLessThan = -1;
-  for (const [stripped, original] of mapping.strippedToOriginal.entries()) {
+  const entries = Array.from(mapping.strippedToOriginal.entries());
+  
+  for (let i = 0; i < entries.length; i++) {
+    const [stripped, original] = entries[i];
     if (stripped <= position && stripped > maxLessThan) {
       maxLessThan = stripped;
     }

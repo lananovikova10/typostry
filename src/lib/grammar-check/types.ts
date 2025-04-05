@@ -81,8 +81,8 @@ export interface LanguageToolResponse {
 export interface LanguageToolRequest {
   text: string;
   language?: string;
-  enabledRules?: string[];
-  disabledRules?: string[];
+  enabledRules?: string | string[];
+  disabledRules?: string | string[];
   level?: string;
 }
 
