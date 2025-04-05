@@ -201,6 +201,7 @@ export const MarkdownInput = forwardRef<MarkdownInputHandle, MarkdownInputProps>
               onMouseEnter={() => setHoveredError(error)}
               onMouseLeave={() => setHoveredError(null)}
               data-testid={`grammar-error-${index}`}
+              aria-label={`${error.type} error: ${error.message}`}
             />
           </GrammarContextMenu>
         );
