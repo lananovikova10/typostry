@@ -1,13 +1,13 @@
-import { SiteConfig } from "@/types"
+import { SiteConfig } from "@/types/site"
 
 import { env } from "@/env.mjs"
 
 export const siteConfig: SiteConfig = {
-  name: "Next Entree",
+  name: "typostry",
   author: "redpangilinan",
   description:
-    "Next.js 14+ starter template with app router, shadcn/ui, typesafe env, icons and configs setup.",
-  keywords: ["Next.js", "React", "Tailwind CSS", "Radix UI", "shadcn/ui"],
+    "Next.js markdown editor component with real-time preview and theme support.",
+  keywords: ["Next.js", "React", "Tailwind CSS", "Radix UI", "shadcn/ui", "Markdown"],
   url: {
     base: env.NEXT_PUBLIC_APP_URL,
     author: "https://rdev.pro",
