@@ -165,9 +165,10 @@
   position: absolute;
   left: 0;
   right: 0;
-  bottom: 0;
+  bottom: 0.1rem; /* Adjusted to align better with text */
   height: 0;
-  border-bottom: 2px dotted;
+  border-bottom: 1.5px dotted; /* Slightly thinner for better appearance */
+  pointer-events: none; /* Ensure the underline doesn't interfere with text selection */
 }
 
 /* Severity-based colors */
@@ -190,15 +191,15 @@
 
 /* Ensure the grammar errors are visible in both light and dark modes */
 .dark .grammar-error-low::after {
-  border-color: rgba(144, 205, 244, 0.7);
+  border-color: rgba(144, 205, 244, 0.8); /* Slightly more opaque for better visibility in dark mode */
 }
 
 .dark .grammar-error-medium::after {
-  border-color: rgba(246, 173, 85, 0.7);
+  border-color: rgba(246, 173, 85, 0.8); /* Slightly more opaque for better visibility in dark mode */
 }
 
 .dark .grammar-error-high::after {
-  border-color: rgba(252, 129, 129, 0.7);
+  border-color: rgba(252, 129, 129, 0.8); /* Slightly more opaque for better visibility in dark mode */
 }
 
 .dark .grammar-error:hover {
