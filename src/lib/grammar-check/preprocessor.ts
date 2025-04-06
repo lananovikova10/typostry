@@ -15,30 +15,30 @@ export function stripMarkdownForGrammarCheck(markdown: string): {
   // Initialize mapping structures
   const originalToStripped = new Map<number, number>();
   const strippedToOriginal = new Map<number, number>();
-  
+
   let stripped = "";
   let inCodeBlock = false;
   let inLink = false;
   let inImage = false;
-  
+
   // Loop through each character in the markdown
   for (let i = 0, j = 0; i < markdown.length; i++) {
     const char = markdown[i];
     const nextChar = markdown[i + 1];
     const prevChar = i > 0 ? markdown[i - 1] : "";
-    
+
     // Check for code block markers
     if (char === '`' && nextChar === '`' && markdown[i + 2] === '`') {
       inCodeBlock = !inCodeBlock;
       i += 2; // Skip the other two backticks
       continue;
     }
-    
+
     // Skip content inside code blocks
     if (inCodeBlock) {
       continue;
     }
-    
+
     // Check for inline code
     if (char === '`') {
       // Skip until we find the closing backtick
@@ -49,7 +49,7 @@ export function stripMarkdownForGrammarCheck(markdown: string): {
       }
       continue;
     }
-    
+
     // Check for links [text](url)
     if (char === '[' && !inLink) {
       inLink = true;
@@ -62,7 +62,7 @@ export function stripMarkdownForGrammarCheck(markdown: string): {
       inLink = false;
       continue;
     }
-    
+
     // Check for images ![alt](url)
     if (char === '!' && nextChar === '[') {
       inImage = true;
@@ -76,19 +76,19 @@ export function stripMarkdownForGrammarCheck(markdown: string): {
       inImage = false;
       continue;
     }
-    
-    // Skip headers (# Header)
-    if (char === '#' && (prevChar === '' || prevChar === '\n')) {
-      while (i < markdown.length && markdown[i] === '#') {
-        i++;
-      }
-      // Skip the space after the last #
-      if (i < markdown.length && markdown[i] === ' ') {
-        i++;
-      }
-      continue;
-    }
-    
+
+    // Don't skip headers (# Header) - we want to preserve them for grammar checking
+    // if (char === '#' && (prevChar === '' || prevChar === '\n')) {
+    //   while (i < markdown.length && markdown[i] === '#') {
+    //     i++;
+    //   }
+    //   // Skip the space after the last #
+    //   if (i < markdown.length && markdown[i] === ' ') {
+    //     i++;
+    //   }
+    //   continue;
+    // }
+
     // Skip emphasis markers (* and _)
     if ((char === '*' || char === '_') && 
         (nextChar === '*' || nextChar === '_' || 
@@ -96,7 +96,7 @@ export function stripMarkdownForGrammarCheck(markdown: string): {
          /\w/.test(prevChar))) {
       continue;
     }
-    
+
     // Skip HTML tags
     if (char === '<' && (nextChar === '/' || /[a-zA-Z]/.test(nextChar))) {
       // Find the closing >
@@ -105,14 +105,14 @@ export function stripMarkdownForGrammarCheck(markdown: string): {
       }
       continue;
     }
-    
+
     // Add character to stripped text and maintain position mapping
     stripped += char;
     originalToStripped.set(i, j);
     strippedToOriginal.set(j, i);
     j++;
   }
-  
+
   return {
     stripped,
     mapping: {
@@ -133,23 +133,23 @@ export function mapStrippedToOriginal(
   if (mapping.strippedToOriginal.has(position)) {
     return mapping.strippedToOriginal.get(position)!;
   }
-  
+
   // Find the closest position
   let maxLessThan = -1;
   const entries = Array.from(mapping.strippedToOriginal.entries());
-  
+
   for (let i = 0; i < entries.length; i++) {
     const [stripped, original] = entries[i];
     if (stripped <= position && stripped > maxLessThan) {
       maxLessThan = stripped;
     }
   }
-  
+
   if (maxLessThan !== -1) {
     const diff = position - maxLessThan;
     return mapping.strippedToOriginal.get(maxLessThan)! + diff;
   }
-  
+
   return position; // Fallback
 }
 
@@ -158,7 +158,7 @@ export function mapStrippedToOriginal(
  */
 export function isInsideCodeBlock(position: number, markdown: string): boolean {
   let codeBlockState = false;
-  
+
   for (let i = 0; i < position && i < markdown.length; i++) {
     // Check for code block markers
     if (markdown[i] === '`' && 
@@ -167,7 +167,7 @@ export function isInsideCodeBlock(position: number, markdown: string): boolean {
       codeBlockState = !codeBlockState;
       i += 2; // Skip the other backticks
     }
-    
+
     // Check for inline code
     if (markdown[i] === '`' && !codeBlockState) {
       let inlineCodeState = true;
@@ -184,6 +184,6 @@ export function isInsideCodeBlock(position: number, markdown: string): boolean {
       }
     }
   }
-  
+
   return codeBlockState;
 }

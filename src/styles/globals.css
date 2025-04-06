@@ -154,34 +154,24 @@
 /* Grammar check styling */
 /* Base style for all grammar errors */
 .grammar-error {
+  text-decoration: underline;
+  text-decoration-style: dotted;
+  text-decoration-thickness: 2px;
   cursor: pointer;
   transition: background-color 0.2s ease;
-  position: relative;
-}
-
-/* Create dotted underline */
-.grammar-error::after {
-  content: "";
-  position: absolute;
-  left: 0;
-  right: 0;
-  bottom: 0.1rem; /* Adjusted to align better with text */
-  height: 0;
-  border-bottom: 1.5px dotted; /* Slightly thinner for better appearance */
-  pointer-events: none; /* Ensure the underline doesn't interfere with text selection */
 }
 
 /* Severity-based colors */
-.grammar-error-low::after {
-  border-color: rgba(144, 205, 244, 0.7);
+.grammar-error-low {
+  text-decoration-color: rgba(144, 205, 244, 0.8); /* Semi-transparent light blue for low severity */
 }
 
-.grammar-error-medium::after {
-  border-color: rgba(246, 173, 85, 0.7);
+.grammar-error-medium {
+  text-decoration-color: rgba(246, 173, 85, 0.8); /* Semi-transparent orange for medium severity */
 }
 
-.grammar-error-high::after {
-  border-color: rgba(245, 101, 101, 0.7);
+.grammar-error-high {
+  text-decoration-color: rgba(245, 101, 101, 0.8); /* Semi-transparent red for high severity */
 }
 
 /* Hover effect for better discoverability */
@@ -190,16 +180,16 @@
 }
 
 /* Ensure the grammar errors are visible in both light and dark modes */
-.dark .grammar-error-low::after {
-  border-color: rgba(144, 205, 244, 0.8); /* Slightly more opaque for better visibility in dark mode */
+.dark .grammar-error-low {
+  text-decoration-color: rgba(144, 205, 244, 0.9);
 }
 
-.dark .grammar-error-medium::after {
-  border-color: rgba(246, 173, 85, 0.8); /* Slightly more opaque for better visibility in dark mode */
+.dark .grammar-error-medium {
+  text-decoration-color: rgba(246, 173, 85, 0.9);
 }
 
-.dark .grammar-error-high::after {
-  border-color: rgba(252, 129, 129, 0.8); /* Slightly more opaque for better visibility in dark mode */
+.dark .grammar-error-high {
+  text-decoration-color: rgba(252, 129, 129, 0.9);
 }
 
 .dark .grammar-error:hover {

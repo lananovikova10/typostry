@@ -12,10 +12,17 @@ import { isInDictionary } from "./dictionary";
 
 // Default API endpoint
 const DEFAULT_API_URL = "https://api.languagetool.org/v2/check";
+const FALLBACK_API_URL = "https://languagetool.org/api/v2/check";
 const DEFAULT_LANGUAGE = "en-US";
 
+// Rate limiting configuration (to stay within LanguageTool API limits)
+// 20 requests per minute, 75KB per minute, 20KB per request
+const MAX_TEXT_LENGTH = 10000; // 10KB per request to be safe
+const MIN_REQUEST_INTERVAL = 5000; // Minimum 5 seconds between requests
+let lastRequestTime = 0;
+
 /**
- * Format and send request to LanguageTool API
+ * Format and send request to LanguageTool API with rate limiting
  */
 export async function checkGrammar(
   text: string,
@@ -33,32 +40,100 @@ export async function checkGrammar(
     return [];
   }
 
+  // Apply rate limiting
+  const now = Date.now();
+  const timeSinceLastRequest = now - lastRequestTime;
+  if (timeSinceLastRequest < MIN_REQUEST_INTERVAL) {
+    console.log(`Rate limiting: waiting ${MIN_REQUEST_INTERVAL - timeSinceLastRequest}ms before next request`);
+    await new Promise(resolve => setTimeout(resolve, MIN_REQUEST_INTERVAL - timeSinceLastRequest));
+  }
+  lastRequestTime = Date.now();
+
+  // Limit text length to stay within API limits
+  const limitedText = text.length > MAX_TEXT_LENGTH 
+    ? text.substring(0, MAX_TEXT_LENGTH) 
+    : text;
+
+  if (text.length > MAX_TEXT_LENGTH) {
+    console.warn(`Text truncated from ${text.length} to ${MAX_TEXT_LENGTH} characters to comply with API limits`);
+  }
+
   // Prepare the request body
   const requestBody: LanguageToolRequest = {
-    text,
+    text: limitedText,
     language,
     disabledRules: disabledRules.length > 0 ? disabledRules.join(",") : undefined,
+    // Add additional parameters that might be required
+    motherTongue: "en",
+    preferredVariants: language,
+    clientId: "typostry",
+    // Lower the level to reduce API usage
+    level: "default" // Changed from "picky" to reduce the number of errors returned
   };
 
   try {
-    // Send request to LanguageTool API
-    const response = await fetch(apiUrl, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/x-www-form-urlencoded",
-        "Accept": "application/json",
-      },
-      body: new URLSearchParams(requestBody as any).toString(),
-    });
+    console.log(`Sending grammar check request (${limitedText.length} chars)...`);
 
+    // Try the primary API endpoint
+    let response;
+    try {
+      response = await fetch(apiUrl, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/x-www-form-urlencoded",
+          "Accept": "application/json",
+        },
+        body: new URLSearchParams(requestBody as any).toString(),
+      });
+    } catch (primaryError) {
+      console.error("Primary API endpoint failed:", primaryError);
+      console.log("Trying fallback API endpoint...");
+
+      // Try the fallback API endpoint
+      response = await fetch(FALLBACK_API_URL, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/x-www-form-urlencoded",
+          "Accept": "application/json",
+        },
+        body: new URLSearchParams(requestBody as any).toString(),
+      });
+    }
+
+    // Log detailed information about the response
+    console.log(`API Response Status: ${response.status} ${response.statusText}`);
+    
     if (!response.ok) {
+      // Try to get more error details from the response
+      try {
+        const errorData = await response.text();
+        console.error(`LanguageTool API error (${response.status}): ${errorData}`);
+      } catch {
+        console.error(`LanguageTool API error: ${response.status} ${response.statusText}`);
+      }
+      
+      if (response.status === 429 || response.status === 400) {
+        console.warn("Rate limit likely exceeded. Waiting longer before next request.");
+        // Increase wait time for future requests
+        lastRequestTime = Date.now() + 30000; // Add 30 seconds penalty
+      }
+      
       throw new Error(`LanguageTool API error: ${response.status} ${response.statusText}`);
     }
 
     const data: LanguageToolResponse = await response.json();
+    
+    // Check if the response contains matches
+    if (!data.matches || data.matches.length === 0) {
+      console.log("No grammar errors found in the text");
+    } else {
+      console.log(`Found ${data.matches.length} grammar errors`);
+    }
 
     // Transform API response to our internal format
-    return processGrammarResults(data, mapping);
+    const results = processGrammarResults(data, mapping);
+    console.log(`Processed ${results.length} grammar results`);
+    return results;
   } catch (error) {
     console.error("Grammar check failed:", error);
     return [];
