@@ -58,48 +58,70 @@ export const MarkdownInput = forwardRef<MarkdownInputHandle, MarkdownInputProps>
       return stripMarkdownForGrammarCheck(value);
     }, [value, grammarCheckEnabled]);
 
-    // Create a debounced grammar check function
-    const debouncedCheckGrammar = useMemo(
-      () => 
-        debounce(async (text: string) => {
-          if (!grammarCheckEnabled || !text.trim()) {
-            setGrammarErrors([]);
-            setIsGrammarCheckLoading(false);
-            return;
-          }
-
-          try {
-            const errors = await checkGrammar(text, mapping, {
-              language: grammarCheckLanguage,
-            });
-
-            // Filter out errors in code blocks
-            const filteredErrors = errors.filter(
-              error => !isInsideCodeBlock(error.originalOffset, value)
-            );
-
-            setGrammarErrors(filteredErrors);
-            console.log("Grammar errors found:", filteredErrors.length);
-          } catch (error) {
-            console.error("Grammar check failed:", error);
-            setGrammarErrors([]);
-          } finally {
-            setIsGrammarCheckLoading(false);
-          }
-        }, grammarCheckDebounceTime),
-      [grammarCheckEnabled, mapping, grammarCheckLanguage, grammarCheckDebounceTime, value]
-    );
-
-    // Process text for grammar checking
-    useEffect(() => {
-      if (!grammarCheckEnabled || value === lastProcessedText.current) {
+    // Function to perform grammar check
+    const performGrammarCheck = async (text: string) => {
+      if (!grammarCheckEnabled || !text.trim()) {
+        setGrammarErrors([]);
+        setIsGrammarCheckLoading(false);
         return;
       }
 
-      setIsGrammarCheckLoading(true);
-      lastProcessedText.current = value;
-      debouncedCheckGrammar(stripped);
-    }, [value, stripped, debouncedCheckGrammar, grammarCheckEnabled]);
+      try {
+        const errors = await checkGrammar(text, mapping, {
+          language: grammarCheckLanguage,
+        });
+
+        // Filter out errors in code blocks
+        const filteredErrors = errors.filter(
+          error => !isInsideCodeBlock(error.originalOffset, value)
+        );
+
+        setGrammarErrors(filteredErrors);
+        console.log("Grammar errors found:", filteredErrors.length);
+      } catch (error) {
+        console.error("Grammar check failed:", error);
+        setGrammarErrors([]);
+      } finally {
+        setIsGrammarCheckLoading(false);
+      }
+    };
+
+    // Process text for grammar checking
+    // Use a ref to store the timeout ID
+    const grammarCheckTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+
+    useEffect(() => {
+      if (!grammarCheckEnabled) {
+        return;
+      }
+
+      // Clear any existing timeout
+      if (grammarCheckTimeoutRef.current) {
+        clearTimeout(grammarCheckTimeoutRef.current);
+      }
+
+      // Only set loading state if we're actually going to check
+      if (value !== lastProcessedText.current && value.trim()) {
+        setIsGrammarCheckLoading(true);
+      }
+
+      // Set a timeout to process the text after the user has stopped typing
+      grammarCheckTimeoutRef.current = setTimeout(() => {
+        if (value === lastProcessedText.current) {
+          return;
+        }
+
+        lastProcessedText.current = value;
+        performGrammarCheck(stripped);
+      }, grammarCheckDebounceTime);
+
+      // Cleanup function to clear the timeout when the component unmounts
+      return () => {
+        if (grammarCheckTimeoutRef.current) {
+          clearTimeout(grammarCheckTimeoutRef.current);
+        }
+      };
+    }, [value, stripped, grammarCheckEnabled, grammarCheckDebounceTime, grammarCheckLanguage, mapping]);
 
     // Handle applying a replacement suggestion
     const handleApplyReplacement = (error: GrammarError, replacement: string) => {
