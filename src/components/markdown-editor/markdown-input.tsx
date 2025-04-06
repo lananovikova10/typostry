@@ -112,6 +112,10 @@ export const MarkdownInput = forwardRef<MarkdownInputHandle, MarkdownInputProps>
     const handleApplyReplacement = (error: GrammarError, replacement: string) => {
       if (!textareaRef.current) return;
 
+      // Save current scroll position
+      const currentScrollTop = textareaRef.current.scrollTop;
+      const currentScrollLeft = textareaRef.current.scrollLeft;
+
       // Apply the replacement in the textarea
       const start = error.originalOffset;
       const end = error.originalOffset + error.originalLength;
@@ -124,17 +128,26 @@ export const MarkdownInput = forwardRef<MarkdownInputHandle, MarkdownInputProps>
       onChange(newValue);
 
       // Focus the textarea and set cursor position after the replacement
+      // while preserving scroll position
       setTimeout(() => {
         if (textareaRef.current) {
           textareaRef.current.focus();
           const newPosition = start + replacement.length;
           textareaRef.current.setSelectionRange(newPosition, newPosition);
+
+          // Restore scroll position
+          textareaRef.current.scrollTop = currentScrollTop;
+          textareaRef.current.scrollLeft = currentScrollLeft;
         }
       }, 0);
     };
 
     // Handle adding a word to the custom dictionary
     const handleAddToDictionary = (error: GrammarError) => {
+      // Save current scroll position if textarea exists
+      const currentScrollTop = textareaRef.current?.scrollTop || 0;
+      const currentScrollLeft = textareaRef.current?.scrollLeft || 0;
+
       const word = value.substring(
         error.originalOffset, 
         error.originalOffset + error.originalLength
@@ -149,6 +162,14 @@ export const MarkdownInput = forwardRef<MarkdownInputHandle, MarkdownInputProps>
             e.originalLength === error.originalLength)
         )
       );
+
+      // Restore scroll position after state update
+      setTimeout(() => {
+        if (textareaRef.current) {
+          textareaRef.current.scrollTop = currentScrollTop;
+          textareaRef.current.scrollLeft = currentScrollLeft;
+        }
+      }, 0);
     };
 
     // Render grammar errors

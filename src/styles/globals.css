@@ -159,30 +159,28 @@
   position: relative;
 }
 
-/* Create wavy underline using background image */
+/* Create dotted underline */
 .grammar-error::after {
   content: "";
   position: absolute;
   left: 0;
   right: 0;
   bottom: 0;
-  height: 3px;
-  background-repeat: repeat-x;
-  background-position: bottom;
-  background-size: 8px 3px;
+  height: 0;
+  border-bottom: 2px dotted;
 }
 
 /* Severity-based colors */
 .grammar-error-low::after {
-  background-image: linear-gradient(45deg, rgba(144, 205, 244, 0.7) 25%, transparent 25%, transparent 50%, rgba(144, 205, 244, 0.7) 50%, rgba(144, 205, 244, 0.7) 75%, transparent 75%, transparent);
+  border-color: rgba(144, 205, 244, 0.7);
 }
 
 .grammar-error-medium::after {
-  background-image: linear-gradient(45deg, rgba(246, 173, 85, 0.7) 25%, transparent 25%, transparent 50%, rgba(246, 173, 85, 0.7) 50%, rgba(246, 173, 85, 0.7) 75%, transparent 75%, transparent);
+  border-color: rgba(246, 173, 85, 0.7);
 }
 
 .grammar-error-high::after {
-  background-image: linear-gradient(45deg, rgba(245, 101, 101, 0.7) 25%, transparent 25%, transparent 50%, rgba(245, 101, 101, 0.7) 50%, rgba(245, 101, 101, 0.7) 75%, transparent 75%, transparent);
+  border-color: rgba(245, 101, 101, 0.7);
 }
 
 /* Hover effect for better discoverability */
@@ -192,15 +190,15 @@
 
 /* Ensure the grammar errors are visible in both light and dark modes */
 .dark .grammar-error-low::after {
-  background-image: linear-gradient(45deg, rgba(144, 205, 244, 0.7) 25%, transparent 25%, transparent 50%, rgba(144, 205, 244, 0.7) 50%, rgba(144, 205, 244, 0.7) 75%, transparent 75%, transparent);
+  border-color: rgba(144, 205, 244, 0.7);
 }
 
 .dark .grammar-error-medium::after {
-  background-image: linear-gradient(45deg, rgba(246, 173, 85, 0.7) 25%, transparent 25%, transparent 50%, rgba(246, 173, 85, 0.7) 50%, rgba(246, 173, 85, 0.7) 75%, transparent 75%, transparent);
+  border-color: rgba(246, 173, 85, 0.7);
 }
 
 .dark .grammar-error-high::after {
-  background-image: linear-gradient(45deg, rgba(252, 129, 129, 0.7) 25%, transparent 25%, transparent 50%, rgba(252, 129, 129, 0.7) 50%, rgba(252, 129, 129, 0.7) 75%, transparent 75%, transparent);
+  border-color: rgba(252, 129, 129, 0.7);
 }
 
 .dark .grammar-error:hover {
@@ -219,11 +217,8 @@
   left: 0;
   right: 0;
   bottom: 0;
-  height: 3px;
-  background-repeat: repeat-x;
-  background-position: bottom;
-  background-size: 8px 3px;
-  background-image: linear-gradient(45deg, rgba(245, 101, 101, 0.7) 25%, transparent 25%, transparent 50%, rgba(245, 101, 101, 0.7) 50%, rgba(245, 101, 101, 0.7) 75%, transparent 75%, transparent);
+  height: 0;
+  border-bottom: 2px dotted rgba(245, 101, 101, 0.7);
 }
 
 .grammar-error-grammar {
@@ -237,11 +232,8 @@
   left: 0;
   right: 0;
   bottom: 0;
-  height: 3px;
-  background-repeat: repeat-x;
-  background-position: bottom;
-  background-size: 8px 3px;
-  background-image: linear-gradient(45deg, rgba(49, 130, 206, 0.7) 25%, transparent 25%, transparent 50%, rgba(49, 130, 206, 0.7) 50%, rgba(49, 130, 206, 0.7) 75%, transparent 75%, transparent);
+  height: 0;
+  border-bottom: 2px dotted rgba(49, 130, 206, 0.7);
 }
 
 /* Tooltip confirmation message */
