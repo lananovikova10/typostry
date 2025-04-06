@@ -85,6 +85,9 @@ export interface LanguageToolRequest {
   enabledRules?: string | string[];
   disabledRules?: string | string[];
   level?: string;
+  motherTongue?: string;
+  preferredVariants?: string;
+  clientId?: string;
 }
 
 export interface CustomDictionaryItem {

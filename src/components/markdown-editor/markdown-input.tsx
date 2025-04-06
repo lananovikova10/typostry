@@ -34,16 +34,13 @@ export const MarkdownInput = forwardRef<MarkdownInputHandle, MarkdownInputProps>
     className,
     grammarCheckEnabled = true,
     grammarCheckLanguage = "en-US",
-    grammarCheckDebounceTime = 1000,
+    grammarCheckDebounceTime = 3000, // Increased to 3 seconds to reduce API call frequency
   }, ref) {
     const textareaRef = useRef<HTMLTextAreaElement>(null)
     const editorRef = useRef<HTMLDivElement>(null)
     const [grammarErrors, setGrammarErrors] = useState<GrammarError[]>([])
     const [hoveredError, setHoveredError] = useState<GrammarError | null>(null)
     const [isGrammarCheckLoading, setIsGrammarCheckLoading] = useState(false)
-
-    // Add state to track textarea scroll position
-    const [scrollPosition, setScrollPosition] = useState({ top: 0, left: 0 })
 
     // Store the last processed text to avoid unnecessary processing
     const lastProcessedText = useRef<string>("")
@@ -60,11 +57,6 @@ export const MarkdownInput = forwardRef<MarkdownInputHandle, MarkdownInputProps>
       }
       return stripMarkdownForGrammarCheck(value);
     }, [value, grammarCheckEnabled]);
-
-    // Force re-render of grammar errors when scroll position changes
-    useEffect(() => {
-      // This effect will trigger a re-render when scrollPosition changes
-    }, [scrollPosition]);
 
     // Create a debounced grammar check function
     const debouncedCheckGrammar = useMemo(
@@ -87,6 +79,7 @@ export const MarkdownInput = forwardRef<MarkdownInputHandle, MarkdownInputProps>
             );
 
             setGrammarErrors(filteredErrors);
+            console.log("Grammar errors found:", filteredErrors.length);
           } catch (error) {
             console.error("Grammar check failed:", error);
             setGrammarErrors([]);
@@ -178,6 +171,8 @@ export const MarkdownInput = forwardRef<MarkdownInputHandle, MarkdownInputProps>
         return null;
       }
 
+      console.log("Rendering grammar errors:", grammarErrors.length);
+
       return grammarErrors.map((error, index) => {
         // Calculate position based on the textarea
         const textarea = textareaRef.current;
@@ -191,32 +186,11 @@ export const MarkdownInput = forwardRef<MarkdownInputHandle, MarkdownInputProps>
         const lineNumber = lines.length - 1;
         const columnNumber = lines[lineNumber].length;
 
-        // Get the text content of the line
-        const lineStart = text.lastIndexOf('\n', error.originalOffset - 1) + 1;
-        const lineEnd = text.indexOf('\n', error.originalOffset);
-        const line = text.substring(
-          lineStart, 
-          lineEnd === -1 ? text.length : lineEnd
-        );
-
         // Calculate the position of the error within the rendered textarea
-        let errorText = text.substring(
+        const errorText = text.substring(
           error.originalOffset, 
           error.originalOffset + error.originalLength
         );
-
-        // Trim trailing whitespace to ensure underline doesn't extend beyond actual text
-        const trailingWhitespace = errorText.match(/\s+$/);
-        const trimmedLength = trailingWhitespace 
-          ? errorText.length - trailingWhitespace[0].length 
-          : errorText.length;
-
-        // Trim leading whitespace to ensure underline starts at the right position
-        const leadingWhitespace = errorText.match(/^\s+/);
-        const leadingOffset = leadingWhitespace ? leadingWhitespace[0].length : 0;
-
-        // Adjust column number to account for leading whitespace
-        const adjustedColumnNumber = columnNumber + leadingOffset;
 
         // Create the error marker element
         return (
@@ -226,48 +200,37 @@ export const MarkdownInput = forwardRef<MarkdownInputHandle, MarkdownInputProps>
             onApplyReplacement={(replacement) => handleApplyReplacement(error, replacement)}
             onAddToDictionary={() => handleAddToDictionary(error)}
           >
-            <span
+            <div
               className={cn(
-                "inline-block pointer-events-auto cursor-pointer grammar-error",
+                "absolute pointer-events-auto cursor-pointer grammar-error",
                 `grammar-error-${error.severity}`
               )}
               style={{
-                position: 'absolute',
-                left: `calc(${adjustedColumnNumber}ch + 1.5rem)`, // Use adjusted column number
-                top: `calc(${lineNumber} * 1.5rem + 1rem + 0.25rem)`, // Adjusted to align better with text baseline
-                width: `${trimmedLength}ch`, // Use trimmed length for more precise width
-                height: '1.2rem', // Reduced height for better precision
+                left: `calc(${columnNumber}ch + 1.5rem)`,
+                top: `calc(${lineNumber} * 1.5rem + 1rem)`,
+                width: `${errorText.length}ch`,
+                height: '1.5rem',
                 zIndex: 10,
                 backgroundColor: 'transparent',
-                pointerEvents: 'auto',
-                transform: `translate(${-scrollPosition.left}px, ${-scrollPosition.top}px)`,
               }}
               onMouseEnter={() => setHoveredError(error)}
               onMouseLeave={() => setHoveredError(null)}
               data-testid={`grammar-error-${index}`}
               aria-label={`${error.type} error (${error.severity} severity): ${error.message}`}
-            />
+            >
+              {errorText}
+            </div>
           </GrammarContextMenu>
         );
       });
     };
 
-    // Handle scroll events to update marker positions
-  const handleScroll = (e: React.UIEvent<HTMLTextAreaElement>) => {
-    const textarea = e.currentTarget;
-    setScrollPosition({
-      top: textarea.scrollTop,
-      left: textarea.scrollLeft
-    });
-  };
-
-  return (
+    return (
       <div className={cn("w-full relative", className)} ref={editorRef}>
         <textarea
           ref={textareaRef}
           value={value}
           onChange={(e) => onChange(e.target.value)}
-          onScroll={handleScroll}
           className="h-full w-full resize-none border border-solid border-[hsl(var(--markdown-input-border))] bg-[hsl(var(--markdown-input-bg))] px-6 py-4 font-mono text-sm text-[hsl(var(--markdown-input-text))] leading-relaxed tracking-wide focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-opacity-50 shadow-md rounded-md"
           placeholder="Write your markdown here..."
           aria-label="Markdown editor"
@@ -281,11 +244,19 @@ export const MarkdownInput = forwardRef<MarkdownInputHandle, MarkdownInputProps>
           style={{ 
             overflow: 'hidden',
             pointerEvents: 'none',
-            clipPath: 'inset(0 0 0 0)',
           }}
         >
           {renderGrammarErrors()}
         </div>
+
+        {/* Tooltip for hovered grammar error */}
+        {hoveredError && (
+          <GrammarTooltip
+            error={hoveredError}
+            onApplyReplacement={(replacement) => handleApplyReplacement(hoveredError, replacement)}
+            onAddToDictionary={() => handleAddToDictionary(hoveredError)}
+          />
+        )}
 
         {/* Loading indicator for grammar checking */}
         {isGrammarCheckLoading && (
