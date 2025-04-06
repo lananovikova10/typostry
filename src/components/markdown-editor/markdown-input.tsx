@@ -253,6 +253,56 @@ export const MarkdownInput = forwardRef<MarkdownInputHandle, MarkdownInputProps>
           ref={textareaRef}
           value={value}
           onChange={(e) => onChange(e.target.value)}
+          onPaste={(e) => {
+            // Check if the pasted content is a URL
+            const clipboardData = e.clipboardData
+            const pastedText = clipboardData.getData('text')
+
+            // Simple URL validation regex
+            const urlRegex = /^(https?:\/\/)?[\w.-]+\.[a-z]{2,}(\/\S*)?$/i
+
+            if (urlRegex.test(pastedText)) {
+              e.preventDefault()
+
+              // Get the current selection
+              const { selectionStart, selectionEnd } = e.currentTarget
+              const selectedText = value.substring(selectionStart, selectionEnd)
+
+              // If there's selected text, wrap it with the link format
+              if (selectedText) {
+                const beforeSelection = value.substring(0, selectionStart)
+                const afterSelection = value.substring(selectionEnd)
+                const newValue = beforeSelection + '[' + selectedText + '](' + pastedText + ')' + afterSelection
+
+                onChange(newValue)
+
+                // Set cursor position after the inserted link
+                setTimeout(() => {
+                  if (textareaRef.current) {
+                    const newCursorPosition = selectionStart + selectedText.length + pastedText.length + 4
+                    textareaRef.current.setSelectionRange(newCursorPosition, newCursorPosition)
+                    textareaRef.current.focus()
+                  }
+                }, 0)
+              } else {
+                // No selection, just insert the link
+                const beforeCursor = value.substring(0, selectionStart)
+                const afterCursor = value.substring(selectionStart)
+                const newValue = beforeCursor + '[Link](' + pastedText + ')' + afterCursor
+
+                onChange(newValue)
+
+                // Set cursor position after the inserted link
+                setTimeout(() => {
+                  if (textareaRef.current) {
+                    const newCursorPosition = selectionStart + pastedText.length + 8
+                    textareaRef.current.setSelectionRange(newCursorPosition, newCursorPosition)
+                    textareaRef.current.focus()
+                  }
+                }, 0)
+              }
+            }
+          }}
           className="h-full w-full resize-none border border-solid border-[hsl(var(--markdown-input-border))] bg-[hsl(var(--markdown-input-bg))] px-6 py-4 font-mono text-sm text-[hsl(var(--markdown-input-text))] leading-relaxed tracking-wide focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-opacity-50 shadow-md rounded-md"
           placeholder="Write your markdown here..."
           aria-label="Markdown editor"
