@@ -48,7 +48,7 @@ export function GrammarTooltip({
         <TooltipPrimitive.Trigger asChild>
           <span
             className={cn(
-              "grammar-error underline",
+              "grammar-error",
               `grammar-error-${error.severity}`
             )}
           />
