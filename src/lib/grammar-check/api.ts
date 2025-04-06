@@ -27,19 +27,19 @@ export async function checkGrammar(
   } = {}
 ): Promise<GrammarError[]> {
   const { language = DEFAULT_LANGUAGE, apiUrl = DEFAULT_API_URL, disabledRules = [] } = options;
-  
+
   // If text is empty, return empty array
   if (!text.trim()) {
     return [];
   }
-  
+
   // Prepare the request body
   const requestBody: LanguageToolRequest = {
     text,
     language,
     disabledRules: disabledRules.length > 0 ? disabledRules.join(",") : undefined,
   };
-  
+
   try {
     // Send request to LanguageTool API
     const response = await fetch(apiUrl, {
@@ -50,13 +50,13 @@ export async function checkGrammar(
       },
       body: new URLSearchParams(requestBody as any).toString(),
     });
-    
+
     if (!response.ok) {
       throw new Error(`LanguageTool API error: ${response.status} ${response.statusText}`);
     }
-    
+
     const data: LanguageToolResponse = await response.json();
-    
+
     // Transform API response to our internal format
     return processGrammarResults(data, mapping);
   } catch (error) {
@@ -73,7 +73,7 @@ function processGrammarResults(
   mapping: PositionMapping
 ): GrammarError[] {
   const errors: GrammarError[] = [];
-  
+
   for (const match of response.matches) {
     // Skip errors for words in custom dictionary
     if (isInDictionary(
@@ -85,18 +85,36 @@ function processGrammarResults(
     )) {
       continue;
     }
-    
+
     // Map error position from stripped text back to original markdown
     const originalOffset = mapStrippedToOriginal(match.offset, mapping);
     const endOffset = mapStrippedToOriginal(match.offset + match.length, mapping);
     const originalLength = endOffset - originalOffset;
-    
+
     // Determine error type
     const type = match.rule.issueType === "misspelling" || 
                  match.rule.category?.id === "TYPOS" ||
                  match.rule.id.includes("SPELL") ? 
                  "spelling" : "grammar";
-    
+
+    // Determine error severity based on rule properties
+    let severity: 'low' | 'medium' | 'high' = 'medium'; // Default to medium
+
+    // Rules for determining severity
+    if (type === "spelling") {
+      // Spelling errors are generally high severity
+      severity = 'high';
+    } else if (match.rule.id.includes("STYLE") || match.rule.category?.id === "STYLE") {
+      // Style issues are low severity
+      severity = 'low';
+    } else if (match.rule.id.includes("PUNCTUATION") || match.rule.category?.id === "PUNCTUATION") {
+      // Punctuation issues are medium severity
+      severity = 'medium';
+    } else if (match.rule.id.includes("GRAMMAR") || match.rule.category?.id === "GRAMMAR") {
+      // Grammar issues are high severity
+      severity = 'high';
+    }
+
     errors.push({
       message: match.message,
       shortMessage: match.shortMessage,
@@ -109,11 +127,12 @@ function processGrammarResults(
       },
       replacements: match.replacements,
       type,
+      severity,
       originalOffset,
       originalLength,
       context: match.context,
     });
   }
-  
+
   return errors;
 }

@@ -24,6 +24,7 @@ export interface GrammarError {
     value: string;
   }>;
   type: 'spelling' | 'grammar';
+  severity: 'low' | 'medium' | 'high';
   originalOffset: number;
   originalLength: number;
   context?: {

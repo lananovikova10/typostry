@@ -49,9 +49,7 @@ export function GrammarTooltip({
           <span
             className={cn(
               "grammar-error underline",
-              error.type === "spelling" 
-                ? "grammar-error-spelling" 
-                : "grammar-error-grammar"
+              `grammar-error-${error.severity}`
             )}
           />
         </TooltipPrimitive.Trigger>
@@ -69,7 +67,7 @@ export function GrammarTooltip({
                 <Info className="mt-0.5 h-4 w-4 shrink-0 text-blue-500 dark:text-blue-400" />
                 <span className="flex-1">{error.message}</span>
               </div>
-              
+
               {error.replacements.length > 0 && (
                 <div className="flex flex-wrap gap-2">
                   {error.replacements.slice(0, 5).map((replacement, index) => (
@@ -160,9 +158,9 @@ export function GrammarContextMenu({
             <DropdownMenu.Label className="px-2 py-1.5 text-sm font-semibold">
               {error.message}
             </DropdownMenu.Label>
-            
+
             <DropdownMenu.Separator className="my-1.5 h-px bg-muted" />
-            
+
             {error.replacements.slice(0, 5).map((replacement, index) => (
               <DropdownMenu.Item
                 key={index}
@@ -173,9 +171,9 @@ export function GrammarContextMenu({
                 {replacement.value}
               </DropdownMenu.Item>
             ))}
-            
+
             <DropdownMenu.Separator className="my-1.5 h-px bg-muted" />
-            
+
             <DropdownMenu.Item
               className="relative flex cursor-pointer select-none items-center rounded-sm px-2 py-1.5 text-sm outline-none transition-colors hover:bg-accent hover:text-accent-foreground focus:bg-accent focus:text-accent-foreground data-[disabled]:pointer-events-none data-[disabled]:opacity-50"
               onClick={handleAddToDictionary}
@@ -183,7 +181,7 @@ export function GrammarContextMenu({
               <Plus className="mr-2 h-4 w-4 text-blue-600 dark:text-blue-500" />
               Add to dictionary
             </DropdownMenu.Item>
-            
+
             <DropdownMenu.Item
               className="relative flex cursor-pointer select-none items-center rounded-sm px-2 py-1.5 text-sm outline-none transition-colors hover:bg-accent hover:text-accent-foreground focus:bg-accent focus:text-accent-foreground data-[disabled]:pointer-events-none data-[disabled]:opacity-50"
             >
