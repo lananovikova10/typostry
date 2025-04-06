@@ -200,10 +200,23 @@ export const MarkdownInput = forwardRef<MarkdownInputHandle, MarkdownInputProps>
         );
 
         // Calculate the position of the error within the rendered textarea
-        const errorText = text.substring(
+        let errorText = text.substring(
           error.originalOffset, 
           error.originalOffset + error.originalLength
         );
+
+        // Trim trailing whitespace to ensure underline doesn't extend beyond actual text
+        const trailingWhitespace = errorText.match(/\s+$/);
+        const trimmedLength = trailingWhitespace 
+          ? errorText.length - trailingWhitespace[0].length 
+          : errorText.length;
+
+        // Trim leading whitespace to ensure underline starts at the right position
+        const leadingWhitespace = errorText.match(/^\s+/);
+        const leadingOffset = leadingWhitespace ? leadingWhitespace[0].length : 0;
+
+        // Adjust column number to account for leading whitespace
+        const adjustedColumnNumber = columnNumber + leadingOffset;
 
         // Create the error marker element
         return (
@@ -220,10 +233,10 @@ export const MarkdownInput = forwardRef<MarkdownInputHandle, MarkdownInputProps>
               )}
               style={{
                 position: 'absolute',
-                left: `calc(${columnNumber}ch + 1.5rem)`,
-                top: `calc(${lineNumber} * 1.5rem + 1rem)`,
-                width: `${error.originalLength}ch`,
-                height: '1.5rem',
+                left: `calc(${adjustedColumnNumber}ch + 1.5rem)`, // Use adjusted column number
+                top: `calc(${lineNumber} * 1.5rem + 1rem + 0.25rem)`, // Adjusted to align better with text baseline
+                width: `${trimmedLength}ch`, // Use trimmed length for more precise width
+                height: '1.2rem', // Reduced height for better precision
                 zIndex: 10,
                 backgroundColor: 'transparent',
                 pointerEvents: 'auto',
