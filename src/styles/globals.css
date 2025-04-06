@@ -152,40 +152,62 @@
 }
 
 /* Grammar check styling */
-.grammar-error-spelling {
+/* Base style for all grammar errors */
+.grammar-error {
   text-decoration-style: wavy;
-  text-decoration-color: rgba(245, 101, 101, 0.7); /* Semi-transparent red for spelling errors */
   text-decoration-thickness: 1px;
   cursor: pointer;
   transition: background-color 0.2s ease;
 }
 
-.grammar-error-grammar {
-  text-decoration-style: wavy;
-  text-decoration-color: rgba(49, 130, 206, 0.7); /* Semi-transparent blue for grammar errors */
-  text-decoration-thickness: 1px;
-  cursor: pointer;
-  transition: background-color 0.2s ease;
+/* Severity-based colors */
+.grammar-error-low {
+  text-decoration-color: rgba(144, 205, 244, 0.7); /* Semi-transparent light blue for low severity */
+}
+
+.grammar-error-medium {
+  text-decoration-color: rgba(246, 173, 85, 0.7); /* Semi-transparent orange for medium severity */
+}
+
+.grammar-error-high {
+  text-decoration-color: rgba(245, 101, 101, 0.7); /* Semi-transparent red for high severity */
 }
 
 /* Hover effect for better discoverability */
-.grammar-error-spelling:hover,
-.grammar-error-grammar:hover {
+.grammar-error:hover {
   background-color: rgba(226, 232, 240, 0.3); /* Faint highlight effect */
 }
 
 /* Ensure the grammar errors are visible in both light and dark modes */
-.dark .grammar-error-spelling {
+.dark .grammar-error-low {
+  text-decoration-color: rgba(144, 205, 244, 0.7);
+}
+
+.dark .grammar-error-medium {
+  text-decoration-color: rgba(246, 173, 85, 0.7);
+}
+
+.dark .grammar-error-high {
   text-decoration-color: rgba(252, 129, 129, 0.7);
 }
 
-.dark .grammar-error-grammar {
-  text-decoration-color: rgba(99, 179, 237, 0.7);
+.dark .grammar-error:hover {
+  background-color: rgba(45, 55, 72, 0.3); /* Dark mode highlight */
 }
 
-.dark .grammar-error-spelling:hover,
-.dark .grammar-error-grammar:hover {
-  background-color: rgba(45, 55, 72, 0.3); /* Dark mode highlight */
+/* Legacy classes for backward compatibility */
+.grammar-error-spelling {
+  text-decoration-style: wavy;
+  text-decoration-color: rgba(245, 101, 101, 0.7);
+  text-decoration-thickness: 1px;
+  cursor: pointer;
+}
+
+.grammar-error-grammar {
+  text-decoration-style: wavy;
+  text-decoration-color: rgba(49, 130, 206, 0.7);
+  text-decoration-thickness: 1px;
+  cursor: pointer;
 }
 
 /* Tooltip confirmation message */

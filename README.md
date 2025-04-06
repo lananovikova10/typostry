@@ -26,7 +26,7 @@ cp .env.example .env.local
 5. Run the project
 
 ```bash
-npm run dev
+next dev
 ```
 
 ## Features

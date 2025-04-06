@@ -41,15 +41,15 @@ export const MarkdownInput = forwardRef<MarkdownInputHandle, MarkdownInputProps>
     const [grammarErrors, setGrammarErrors] = useState<GrammarError[]>([])
     const [hoveredError, setHoveredError] = useState<GrammarError | null>(null)
     const [isGrammarCheckLoading, setIsGrammarCheckLoading] = useState(false)
-    
+
     // Store the last processed text to avoid unnecessary processing
     const lastProcessedText = useRef<string>("")
-    
+
     useImperativeHandle(ref, () => ({
       getTextarea: () => textareaRef.current,
       focus: () => textareaRef.current?.focus()
     }))
-    
+
     // Memoize the stripped text and mapping for performance
     const { stripped, mapping } = useMemo(() => {
       if (!grammarCheckEnabled || value === lastProcessedText.current) {
@@ -57,7 +57,7 @@ export const MarkdownInput = forwardRef<MarkdownInputHandle, MarkdownInputProps>
       }
       return stripMarkdownForGrammarCheck(value);
     }, [value, grammarCheckEnabled]);
-    
+
     // Create a debounced grammar check function
     const debouncedCheckGrammar = useMemo(
       () => 
@@ -67,17 +67,17 @@ export const MarkdownInput = forwardRef<MarkdownInputHandle, MarkdownInputProps>
             setIsGrammarCheckLoading(false);
             return;
           }
-          
+
           try {
             const errors = await checkGrammar(text, mapping, {
               language: grammarCheckLanguage,
             });
-            
+
             // Filter out errors in code blocks
             const filteredErrors = errors.filter(
               error => !isInsideCodeBlock(error.originalOffset, value)
             );
-            
+
             setGrammarErrors(filteredErrors);
           } catch (error) {
             console.error("Grammar check failed:", error);
@@ -88,33 +88,33 @@ export const MarkdownInput = forwardRef<MarkdownInputHandle, MarkdownInputProps>
         }, grammarCheckDebounceTime),
       [grammarCheckEnabled, mapping, grammarCheckLanguage, grammarCheckDebounceTime, value]
     );
-    
+
     // Process text for grammar checking
     useEffect(() => {
       if (!grammarCheckEnabled || value === lastProcessedText.current) {
         return;
       }
-      
+
       setIsGrammarCheckLoading(true);
       lastProcessedText.current = value;
       debouncedCheckGrammar(stripped);
     }, [value, stripped, debouncedCheckGrammar, grammarCheckEnabled]);
-    
+
     // Handle applying a replacement suggestion
     const handleApplyReplacement = (error: GrammarError, replacement: string) => {
       if (!textareaRef.current) return;
-      
+
       // Apply the replacement in the textarea
       const start = error.originalOffset;
       const end = error.originalOffset + error.originalLength;
-      
+
       const newValue = 
         value.substring(0, start) + 
         replacement + 
         value.substring(end);
-      
+
       onChange(newValue);
-      
+
       // Focus the textarea and set cursor position after the replacement
       setTimeout(() => {
         if (textareaRef.current) {
@@ -124,16 +124,16 @@ export const MarkdownInput = forwardRef<MarkdownInputHandle, MarkdownInputProps>
         }
       }, 0);
     };
-    
+
     // Handle adding a word to the custom dictionary
     const handleAddToDictionary = (error: GrammarError) => {
       const word = value.substring(
         error.originalOffset, 
         error.originalOffset + error.originalLength
       );
-      
+
       addToDictionary(word, error.rule?.id);
-      
+
       // Remove the error from the current list
       setGrammarErrors(prev => 
         prev.filter(e => 
@@ -142,26 +142,26 @@ export const MarkdownInput = forwardRef<MarkdownInputHandle, MarkdownInputProps>
         )
       );
     };
-    
+
     // Render grammar errors
     const renderGrammarErrors = () => {
       if (!grammarCheckEnabled || !grammarErrors.length) {
         return null;
       }
-      
+
       return grammarErrors.map((error, index) => {
         // Calculate position based on the textarea
         const textarea = textareaRef.current;
         if (!textarea) return null;
-        
+
         const text = textarea.value;
-        
+
         // Get the line and column of the error
         const textBeforeError = text.substring(0, error.originalOffset);
         const lines = textBeforeError.split('\n');
         const lineNumber = lines.length - 1;
         const columnNumber = lines[lineNumber].length;
-        
+
         // Get the text content of the line
         const lineStart = text.lastIndexOf('\n', error.originalOffset - 1) + 1;
         const lineEnd = text.indexOf('\n', error.originalOffset);
@@ -169,13 +169,13 @@ export const MarkdownInput = forwardRef<MarkdownInputHandle, MarkdownInputProps>
           lineStart, 
           lineEnd === -1 ? text.length : lineEnd
         );
-        
+
         // Calculate the position of the error within the rendered textarea
         const errorText = text.substring(
           error.originalOffset, 
           error.originalOffset + error.originalLength
         );
-        
+
         // Create the error marker element
         return (
           <GrammarContextMenu
@@ -186,10 +186,8 @@ export const MarkdownInput = forwardRef<MarkdownInputHandle, MarkdownInputProps>
           >
             <div
               className={cn(
-                "absolute pointer-events-auto cursor-pointer",
-                error.type === "spelling" 
-                  ? "grammar-error-spelling" 
-                  : "grammar-error-grammar"
+                "absolute pointer-events-auto cursor-pointer grammar-error",
+                `grammar-error-${error.severity}`
               )}
               style={{
                 left: `calc(${columnNumber}ch + 1.5rem)`,
@@ -201,7 +199,7 @@ export const MarkdownInput = forwardRef<MarkdownInputHandle, MarkdownInputProps>
               onMouseEnter={() => setHoveredError(error)}
               onMouseLeave={() => setHoveredError(null)}
               data-testid={`grammar-error-${index}`}
-              aria-label={`${error.type} error: ${error.message}`}
+              aria-label={`${error.type} error (${error.severity} severity): ${error.message}`}
             />
           </GrammarContextMenu>
         );
@@ -220,12 +218,12 @@ export const MarkdownInput = forwardRef<MarkdownInputHandle, MarkdownInputProps>
           spellCheck="false"
           data-testid="markdown-input"
         />
-        
+
         {/* Overlay for grammar error highlighting */}
         <div className="absolute inset-0 pointer-events-none">
           {renderGrammarErrors()}
         </div>
-        
+
         {/* Loading indicator for grammar checking */}
         {isGrammarCheckLoading && (
           <div className="absolute bottom-2 right-2 text-xs text-muted-foreground flex items-center">
