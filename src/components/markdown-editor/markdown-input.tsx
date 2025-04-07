@@ -38,9 +38,13 @@ export const MarkdownInput = forwardRef<MarkdownInputHandle, MarkdownInputProps>
   }, ref) {
     const textareaRef = useRef<HTMLTextAreaElement>(null)
     const editorRef = useRef<HTMLDivElement>(null)
+    const overlayRef = useRef<HTMLDivElement>(null)
     const [grammarErrors, setGrammarErrors] = useState<GrammarError[]>([])
     const [hoveredError, setHoveredError] = useState<GrammarError | null>(null)
     const [isGrammarCheckLoading, setIsGrammarCheckLoading] = useState(false)
+    // Add a state to track scroll position for re-rendering
+    // Initialize with zeros, will be updated in the useEffect
+    const [scrollPosition, setScrollPosition] = useState({ top: 0, left: 0 })
 
     // Store the last processed text to avoid unnecessary processing
     const lastProcessedText = useRef<string>("")
@@ -49,6 +53,33 @@ export const MarkdownInput = forwardRef<MarkdownInputHandle, MarkdownInputProps>
       getTextarea: () => textareaRef.current,
       focus: () => textareaRef.current?.focus()
     }))
+
+    // We don't need to sync scroll position anymore as we'll position highlights absolutely
+    // relative to the viewport, accounting for scroll position in the renderGrammarErrors function
+
+    // Add a scroll event listener to update the scroll position state
+    useEffect(() => {
+      const textarea = textareaRef.current;
+      if (!textarea) return;
+
+      // Set initial scroll position
+      setScrollPosition({
+        top: textarea.scrollTop,
+        left: textarea.scrollLeft
+      });
+
+      const handleScroll = () => {
+        setScrollPosition({
+          top: textarea.scrollTop,
+          left: textarea.scrollLeft
+        });
+      };
+
+      textarea.addEventListener('scroll', handleScroll);
+      return () => {
+        textarea.removeEventListener('scroll', handleScroll);
+      };
+    }, []);
 
     // Memoize the stripped text and mapping for performance
     const { stripped, mapping } = useMemo(() => {
@@ -214,6 +245,9 @@ export const MarkdownInput = forwardRef<MarkdownInputHandle, MarkdownInputProps>
           error.originalOffset + error.originalLength
         );
 
+        // Use the scrollPosition state for positioning
+        const { top: scrollTop, left: scrollLeft } = scrollPosition;
+
         // Create the error marker element
         return (
           <GrammarContextMenu
@@ -228,20 +262,23 @@ export const MarkdownInput = forwardRef<MarkdownInputHandle, MarkdownInputProps>
                 `grammar-error-${error.severity}`
               )}
               style={{
-                left: `calc(${columnNumber}ch + 1.5rem)`,
-                top: `calc(${lineNumber} * 1.5rem + 1rem)`,
+                left: `calc(${columnNumber}ch + 1.5rem - ${scrollLeft}px)`,
+                top: `calc(${lineNumber} * 1.5rem + 1rem - ${scrollTop}px)`,
                 width: `${errorText.length}ch`,
                 height: '1.5rem',
                 zIndex: 10,
                 backgroundColor: 'transparent',
+                borderBottom: '2px dotted',
+                borderBottomColor: error.severity === 'error' ? 'rgba(255, 0, 0, 0.7)' : 
+                                  error.severity === 'warning' ? 'rgba(255, 165, 0, 0.7)' : 'rgba(0, 0, 255, 0.7)',
+                position: 'absolute',
+                pointerEvents: 'auto',
               }}
               onMouseEnter={() => setHoveredError(error)}
               onMouseLeave={() => setHoveredError(null)}
               data-testid={`grammar-error-${index}`}
               aria-label={`${error.type} error (${error.severity} severity): ${error.message}`}
-            >
-              {errorText}
-            </div>
+            />
           </GrammarContextMenu>
         );
       });
@@ -254,19 +291,78 @@ export const MarkdownInput = forwardRef<MarkdownInputHandle, MarkdownInputProps>
           value={value}
           onChange={(e) => onChange(e.target.value)}
           onPaste={(e) => {
-            // Check if the pasted content is a URL
             const clipboardData = e.clipboardData
+
+            // Check if clipboard contains image data
+            if (clipboardData.items && clipboardData.items.length > 0) {
+              for (const item of clipboardData.items) {
+                // Check if the item is an image
+                if (item.type.indexOf('image') !== -1) {
+                  e.preventDefault()
+
+                  // Get the image as a blob
+                  const blob = item.getAsFile()
+                  if (!blob) continue
+
+                  // Read the image as base64 data URL
+                  const reader = new FileReader()
+                  reader.onload = (event) => {
+                    if (!event.target || typeof event.target.result !== 'string') return
+
+                    const imageDataUrl = event.target.result
+
+                    // Check if e.currentTarget exists before destructuring
+                    if (!e.currentTarget) {
+                      return; // Exit early if currentTarget is null or undefined
+                    }
+
+                    // Get the current selection
+                    const { selectionStart, selectionEnd } = e.currentTarget
+                    const beforeCursor = value.substring(0, selectionStart)
+                    const afterCursor = value.substring(selectionEnd)
+
+                    // Use the base64 data URL directly in the Markdown image syntax
+                    // This embeds the image data directly in the Markdown
+                    const imageMarkdown = `![](${imageDataUrl})`
+                    const newValue = beforeCursor + imageMarkdown + afterCursor
+
+                    onChange(newValue)
+
+                    // Position cursor inside the empty brackets
+                    setTimeout(() => {
+                      if (textareaRef.current) {
+                        // Position cursor after the '![' and before the ']'
+                        const newCursorPosition = selectionStart + 2
+                        textareaRef.current.setSelectionRange(newCursorPosition, newCursorPosition)
+                        textareaRef.current.focus()
+                      }
+                    }, 0)
+                  }
+
+                  // Begin reading the image file
+                  reader.readAsDataURL(blob)
+                  return
+                }
+              }
+            }
+
+            // If not an image, continue with URL handling logic
             const pastedText = clipboardData.getData('text')
 
             // Simple URL validation regex
             const urlRegex = /^(https?:\/\/)?[\w.-]+\.[a-z]{2,}(\/\S*)?$/i
 
+            // Check if e.currentTarget exists before destructuring
+            if (!e.currentTarget) {
+              return; // Exit early if currentTarget is null or undefined
+            }
+
+            // Get the current selection
+            const { selectionStart, selectionEnd } = e.currentTarget
+            const selectedText = value.substring(selectionStart, selectionEnd)
+
             if (urlRegex.test(pastedText)) {
               e.preventDefault()
-
-              // Get the current selection
-              const { selectionStart, selectionEnd } = e.currentTarget
-              const selectedText = value.substring(selectionStart, selectionEnd)
 
               // If there's selected text, wrap it with the link format
               if (selectedText) {
@@ -301,6 +397,24 @@ export const MarkdownInput = forwardRef<MarkdownInputHandle, MarkdownInputProps>
                   }
                 }, 0)
               }
+            } else {
+              // Handle regular text paste
+              e.preventDefault()
+
+              const beforeCursor = value.substring(0, selectionStart)
+              const afterCursor = value.substring(selectionEnd)
+              const newValue = beforeCursor + pastedText + afterCursor
+
+              onChange(newValue)
+
+              // Set cursor position after the pasted text
+              setTimeout(() => {
+                if (textareaRef.current) {
+                  const newCursorPosition = selectionStart + pastedText.length
+                  textareaRef.current.setSelectionRange(newCursorPosition, newCursorPosition)
+                  textareaRef.current.focus()
+                }
+              }, 0)
             }
           }}
           className="h-full w-full resize-none border border-solid border-[hsl(var(--markdown-input-border))] bg-[hsl(var(--markdown-input-bg))] px-6 py-4 font-mono text-sm text-[hsl(var(--markdown-input-text))] leading-relaxed tracking-wide focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-opacity-50 shadow-md rounded-md"
@@ -312,10 +426,20 @@ export const MarkdownInput = forwardRef<MarkdownInputHandle, MarkdownInputProps>
 
         {/* Overlay for grammar error highlighting */}
         <div 
+          ref={overlayRef}
           className="absolute inset-0 pointer-events-none"
           style={{ 
-            overflow: 'hidden',
+            overflow: 'hidden', // Changed from 'auto' to 'hidden' to prevent scrolling
             pointerEvents: 'none',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            // Removed scrollTop and scrollLeft as we don't want the overlay to scroll
+            fontFamily: 'monospace',
+            fontSize: 'inherit',
+            lineHeight: '1.5rem',
+            padding: '1rem 1.5rem',
           }}
         >
           {renderGrammarErrors()}
