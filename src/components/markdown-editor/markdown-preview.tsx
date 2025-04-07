@@ -124,22 +124,25 @@ export function MarkdownPreview({ source, className }: MarkdownPreviewProps) {
       runButton.style.display = 'flex'
       runButton.style.alignItems = 'center'
       runButton.style.justifyContent = 'center'
-      runButton.style.backgroundColor = '#4CAF50'
-      runButton.style.color = 'white'
+      runButton.style.backgroundColor = '#f0f0f0'
+      runButton.style.color = '#555'
       runButton.style.border = 'none'
       runButton.style.borderRadius = '4px'
       runButton.style.width = '28px'
       runButton.style.height = '28px'
       runButton.style.cursor = 'pointer'
-      runButton.style.opacity = '0.8'
-      runButton.style.transition = 'opacity 0.2s'
+      runButton.style.opacity = '0.7'
+      runButton.style.transition = 'all 0.2s'
+      runButton.style.boxShadow = '0 1px 2px rgba(0,0,0,0.1)'
       
       // Hover effect
       runButton.addEventListener('mouseenter', () => {
-        runButton.style.opacity = '1'
+        runButton.style.opacity = '0.9'
+        runButton.style.boxShadow = '0 1px 3px rgba(0,0,0,0.15)'
       })
       runButton.addEventListener('mouseleave', () => {
-        runButton.style.opacity = '0.8'
+        runButton.style.opacity = '0.7'
+        runButton.style.boxShadow = '0 1px 2px rgba(0,0,0,0.1)'
       })
       
       // Set up click event to execute the code
