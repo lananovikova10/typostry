@@ -61,7 +61,7 @@ export async function checkGrammar(
   // Prepare the request body
   const requestBody: LanguageToolRequest = {
     text: limitedText,
-    language,
+    language: "auto",
     disabledRules: disabledRules.length > 0 ? disabledRules.join(",") : undefined,
     // Add additional parameters that might be required
     motherTongue: "en",
