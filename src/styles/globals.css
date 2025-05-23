@@ -4,6 +4,16 @@
 
 @layer base {
   :root {
+    --editor-gradient-start: 210 40% 98%;
+    --editor-gradient-end: 222.2 30% 40%;
+  }
+
+  .dark {
+    --editor-gradient-start: 217.2 32.6% 17.5%;
+    --editor-gradient-end: 222.2 84% 4.9%;
+  }
+
+  :root {
     --background: 0 0% 100%;
     --foreground: 222.2 84% 4.9%;
 
@@ -40,6 +50,10 @@
     --ring: 222.2 84% 4.9%;
 
     --radius: 0.5rem;
+
+    --grammar-error-underline-error: #e53e3e;
+    --grammar-error-underline-warning: #dd6b20;
+    --grammar-error-underline-info: #3182ce;
 
     /* Custom Colors for Markdown Editor */
     --markdown-toolbar-bg: 210 40% 98%;
@@ -109,6 +123,10 @@
 
     --ring: 212.7 26.8% 83.9%;
 
+    --grammar-error-underline-error: #ff8b8b;
+    --grammar-error-underline-warning: #f6ad55;
+    --grammar-error-underline-info: #90cdf4;
+
     /* Custom Colors for Markdown Editor - Dark Mode */
     --markdown-toolbar-bg: 222.2 47.4% 11.2%;
     --markdown-toolbar-border: 217.2 32.6% 17.5%;
@@ -143,6 +161,16 @@
 }
 
 @layer base {
+  :root {
+    --editor-gradient-start: 210 40% 98%;
+    --editor-gradient-end: 222.2 30% 40%;
+  }
+
+  .dark {
+    --editor-gradient-start: 217.2 32.6% 17.5%;
+    --editor-gradient-end: 222.2 84% 4.9%;
+  }
+
   * {
     @apply border-border;
   }
@@ -252,3 +280,35 @@
     opacity: 1;
   }
 }
+
+/*
+.spotlight-bg {
+  position: relative;
+  transition: background 0.4s;
+}
+.spotlight-bg:hover {
+  background: radial-gradient(circle at var(--mouse-x, 50%) var(--mouse-y, 50%), rgba(76,0,128,0.45) 0%, rgba(76,0,128,0.20) 40%, rgba(0,0,0,0) 70%);
+}
+*/
+
+/*
+.spotlight-bg {
+  --mouse-x: 50%;
+  --mouse-y: 50%;
+}
+*/
+
+/*
+.spotlight-overlay {
+  pointer-events: none;
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  background: rgba(0,0,0,0.4);
+  transition: mask-image 0.1s, -webkit-mask-image 0.1s;
+}
+
+.dark .spotlight-overlay {
+  background: rgba(48, 25, 52, 0.7); 
+}
+*/
