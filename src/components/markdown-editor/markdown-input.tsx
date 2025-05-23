@@ -39,11 +39,11 @@ export const MarkdownInput = forwardRef<MarkdownInputHandle, MarkdownInputProps>
     const textareaRef = useRef<HTMLTextAreaElement>(null)
     const editorRef = useRef<HTMLDivElement>(null)
     const overlayRef = useRef<HTMLDivElement>(null)
+    const mirrorDivRef = useRef<HTMLDivElement>(null)
     const [grammarErrors, setGrammarErrors] = useState<GrammarError[]>([])
     const [hoveredError, setHoveredError] = useState<GrammarError | null>(null)
     const [isGrammarCheckLoading, setIsGrammarCheckLoading] = useState(false)
     // Add a state to track scroll position for re-rendering
-    // Initialize with zeros, will be updated in the useEffect
     const [scrollPosition, setScrollPosition] = useState({ top: 0, left: 0 })
 
     // Store the last processed text to avoid unnecessary processing
@@ -54,31 +54,18 @@ export const MarkdownInput = forwardRef<MarkdownInputHandle, MarkdownInputProps>
       focus: () => textareaRef.current?.focus()
     }))
 
-    // We don't need to sync scroll position anymore as we'll position highlights absolutely
-    // relative to the viewport, accounting for scroll position in the renderGrammarErrors function
-
-    // Add a scroll event listener to update the scroll position state
+    // Sync overlay scroll with textarea
     useEffect(() => {
       const textarea = textareaRef.current;
       if (!textarea) return;
-
-      // Set initial scroll position
-      setScrollPosition({
-        top: textarea.scrollTop,
-        left: textarea.scrollLeft
-      });
-
       const handleScroll = () => {
         setScrollPosition({
           top: textarea.scrollTop,
           left: textarea.scrollLeft
         });
       };
-
       textarea.addEventListener('scroll', handleScroll);
-      return () => {
-        textarea.removeEventListener('scroll', handleScroll);
-      };
+      return () => textarea.removeEventListener('scroll', handleScroll);
     }, []);
 
     // Memoize the stripped text and mapping for performance
@@ -154,6 +141,38 @@ export const MarkdownInput = forwardRef<MarkdownInputHandle, MarkdownInputProps>
       };
     }, [value, stripped, grammarCheckEnabled, grammarCheckDebounceTime, grammarCheckLanguage, mapping]);
 
+    // Helper: get error position in pixels using mirror div
+    const getErrorPosition = (offset: number, length: number) => {
+      const textarea = textareaRef.current
+      const mirrorDiv = mirrorDivRef.current
+      if (!textarea || !mirrorDiv) return { left: 0, top: 0, width: 0 }
+
+      // Set mirror content up to error offset
+      const before = value.slice(0, offset)
+      const errorText = value.slice(offset, offset + length) || ' '
+      mirrorDiv.innerText = before
+      // Create a span for the error text
+      const errorSpan = document.createElement('span')
+      errorSpan.innerText = errorText
+      errorSpan.style.display = 'inline-block'
+      errorSpan.style.verticalAlign = 'baseline'
+      mirrorDiv.appendChild(errorSpan)
+
+      // Get bounding rects
+      const spanRect = errorSpan.getBoundingClientRect()
+      const mirrorRect = mirrorDiv.getBoundingClientRect()
+      mirrorDiv.removeChild(errorSpan)
+
+      // Tweak: offsetY to align underline with text baseline
+      const offsetY = 3 // px, tweak as needed for perfect alignment
+      return {
+        left: spanRect.left - mirrorRect.left,
+        top: spanRect.top - mirrorRect.top + offsetY,
+        width: spanRect.width,
+        height: spanRect.height
+      }
+    }
+
     // Handle applying a replacement suggestion
     const handleApplyReplacement = (error: GrammarError, replacement: string) => {
       if (!textareaRef.current) return;
@@ -227,28 +246,7 @@ export const MarkdownInput = forwardRef<MarkdownInputHandle, MarkdownInputProps>
       console.log("Rendering grammar errors:", grammarErrors.length);
 
       return grammarErrors.map((error, index) => {
-        // Calculate position based on the textarea
-        const textarea = textareaRef.current;
-        if (!textarea) return null;
-
-        const text = textarea.value;
-
-        // Get the line and column of the error
-        const textBeforeError = text.substring(0, error.originalOffset);
-        const lines = textBeforeError.split('\n');
-        const lineNumber = lines.length - 1;
-        const columnNumber = lines[lineNumber].length;
-
-        // Calculate the position of the error within the rendered textarea
-        const errorText = text.substring(
-          error.originalOffset, 
-          error.originalOffset + error.originalLength
-        );
-
-        // Use the scrollPosition state for positioning
-        const { top: scrollTop, left: scrollLeft } = scrollPosition;
-
-        // Create the error marker element
+        const { left, top, width, height } = getErrorPosition(error.originalOffset, error.originalLength)
         return (
           <GrammarContextMenu
             key={`grammar-error-${index}`}
@@ -262,15 +260,19 @@ export const MarkdownInput = forwardRef<MarkdownInputHandle, MarkdownInputProps>
                 `grammar-error-${error.severity}`
               )}
               style={{
-                left: `calc(${columnNumber}ch + 1.5rem - ${scrollLeft}px)`,
-                top: `calc(${lineNumber} * 1.5rem + 1rem - ${scrollTop}px)`,
-                width: `${errorText.length}ch`,
-                height: '1.5rem',
+                left,
+                top,
+                width: width || 2,
+                height: height || 20,
                 zIndex: 10,
                 backgroundColor: 'transparent',
                 borderBottom: '2px dotted',
-                borderBottomColor: error.severity === 'error' ? 'rgba(255, 0, 0, 0.7)' : 
-                                  error.severity === 'warning' ? 'rgba(255, 165, 0, 0.7)' : 'rgba(0, 0, 255, 0.7)',
+                borderBottomColor:
+                  error.severity === 'error'
+                    ? 'var(--grammar-error-underline-error)'
+                    : error.severity === 'warning'
+                    ? 'var(--grammar-error-underline-warning)'
+                    : 'var(--grammar-error-underline-info)',
                 position: 'absolute',
                 pointerEvents: 'auto',
               }}
@@ -290,156 +292,59 @@ export const MarkdownInput = forwardRef<MarkdownInputHandle, MarkdownInputProps>
           ref={textareaRef}
           value={value}
           onChange={(e) => onChange(e.target.value)}
-          onPaste={(e) => {
-            const clipboardData = e.clipboardData
-
-            // Check if clipboard contains image data
-            if (clipboardData.items && clipboardData.items.length > 0) {
-              for (const item of clipboardData.items) {
-                // Check if the item is an image
-                if (item.type.indexOf('image') !== -1) {
-                  e.preventDefault()
-
-                  // Get the image as a blob
-                  const blob = item.getAsFile()
-                  if (!blob) continue
-
-                  // Read the image as base64 data URL
-                  const reader = new FileReader()
-                  reader.onload = (event) => {
-                    if (!event.target || typeof event.target.result !== 'string') return
-
-                    const imageDataUrl = event.target.result
-
-                    // Check if e.currentTarget exists before destructuring
-                    if (!e.currentTarget) {
-                      return; // Exit early if currentTarget is null or undefined
-                    }
-
-                    // Get the current selection
-                    const { selectionStart, selectionEnd } = e.currentTarget
-                    const beforeCursor = value.substring(0, selectionStart)
-                    const afterCursor = value.substring(selectionEnd)
-
-                    // Use the base64 data URL directly in the Markdown image syntax
-                    // This embeds the image data directly in the Markdown
-                    const imageMarkdown = `![](${imageDataUrl})`
-                    const newValue = beforeCursor + imageMarkdown + afterCursor
-
-                    onChange(newValue)
-
-                    // Position cursor inside the empty brackets
-                    setTimeout(() => {
-                      if (textareaRef.current) {
-                        // Position cursor after the '![' and before the ']'
-                        const newCursorPosition = selectionStart + 2
-                        textareaRef.current.setSelectionRange(newCursorPosition, newCursorPosition)
-                        textareaRef.current.focus()
-                      }
-                    }, 0)
-                  }
-
-                  // Begin reading the image file
-                  reader.readAsDataURL(blob)
-                  return
-                }
-              }
-            }
-
-            // If not an image, continue with URL handling logic
-            const pastedText = clipboardData.getData('text')
-
-            // Simple URL validation regex
-            const urlRegex = /^(https?:\/\/)?[\w.-]+\.[a-z]{2,}(\/\S*)?$/i
-
-            // Check if e.currentTarget exists before destructuring
-            if (!e.currentTarget) {
-              return; // Exit early if currentTarget is null or undefined
-            }
-
-            // Get the current selection
-            const { selectionStart, selectionEnd } = e.currentTarget
-            const selectedText = value.substring(selectionStart, selectionEnd)
-
-            if (urlRegex.test(pastedText)) {
-              e.preventDefault()
-
-              // If there's selected text, wrap it with the link format
-              if (selectedText) {
-                const beforeSelection = value.substring(0, selectionStart)
-                const afterSelection = value.substring(selectionEnd)
-                const newValue = beforeSelection + '[' + selectedText + '](' + pastedText + ')' + afterSelection
-
-                onChange(newValue)
-
-                // Set cursor position after the inserted link
-                setTimeout(() => {
-                  if (textareaRef.current) {
-                    const newCursorPosition = selectionStart + selectedText.length + pastedText.length + 4
-                    textareaRef.current.setSelectionRange(newCursorPosition, newCursorPosition)
-                    textareaRef.current.focus()
-                  }
-                }, 0)
-              } else {
-                // No selection, just insert the link
-                const beforeCursor = value.substring(0, selectionStart)
-                const afterCursor = value.substring(selectionStart)
-                const newValue = beforeCursor + '[Link](' + pastedText + ')' + afterCursor
-
-                onChange(newValue)
-
-                // Set cursor position after the inserted link
-                setTimeout(() => {
-                  if (textareaRef.current) {
-                    const newCursorPosition = selectionStart + pastedText.length + 8
-                    textareaRef.current.setSelectionRange(newCursorPosition, newCursorPosition)
-                    textareaRef.current.focus()
-                  }
-                }, 0)
-              }
-            } else {
-              // Handle regular text paste
-              e.preventDefault()
-
-              const beforeCursor = value.substring(0, selectionStart)
-              const afterCursor = value.substring(selectionEnd)
-              const newValue = beforeCursor + pastedText + afterCursor
-
-              onChange(newValue)
-
-              // Set cursor position after the pasted text
-              setTimeout(() => {
-                if (textareaRef.current) {
-                  const newCursorPosition = selectionStart + pastedText.length
-                  textareaRef.current.setSelectionRange(newCursorPosition, newCursorPosition)
-                  textareaRef.current.focus()
-                }
-              }, 0)
-            }
-          }}
-          className="h-full w-full resize-none border border-solid border-[hsl(var(--markdown-input-border))] bg-[hsl(var(--markdown-input-bg))] px-6 py-4 font-mono text-sm text-[hsl(var(--markdown-input-text))] leading-relaxed tracking-wide focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-opacity-50 shadow-md rounded-md"
+          className="h-full w-full resize-none border border-solid border-[hsl(var(--markdown-input-border))] bg-gradient-to-br from-[hsl(var(--editor-gradient-start))] to-[hsl(var(--editor-gradient-end))] px-6 py-4 font-mono text-sm text-[hsl(var(--markdown-input-text))] leading-relaxed tracking-wide focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-opacity-50 shadow-md rounded-md"
           placeholder="Write your markdown here..."
           aria-label="Markdown editor"
           spellCheck="false"
           data-testid="markdown-input"
         />
 
+        {/* Hidden mirror div for highlight calculations */}
+        <div
+          ref={mirrorDivRef}
+          aria-hidden="true"
+          style={{
+            position: 'absolute',
+            visibility: 'hidden',
+            whiteSpace: 'pre-wrap',
+            wordBreak: 'break-word',
+            overflow: 'hidden',
+            pointerEvents: 'none',
+            zIndex: -1,
+            fontFamily: 'monospace',
+            fontSize: 'inherit',
+            lineHeight: '1.5rem',
+            padding: '1rem 1.5rem',
+            width: '100%',
+            height: '100%',
+            top: 0,
+            left: 0,
+            background: 'none',
+            border: 'none',
+            boxSizing: 'border-box',
+            letterSpacing: 'inherit',
+            boxShadow: 'none',
+            margin: 0,
+          }}
+        />
+
         {/* Overlay for grammar error highlighting */}
-        <div 
+        <div
           ref={overlayRef}
           className="absolute inset-0 pointer-events-none"
           style={{ 
-            overflow: 'hidden', // Changed from 'auto' to 'hidden' to prevent scrolling
+            overflow: 'hidden',
             pointerEvents: 'none',
             top: 0,
             left: 0,
             right: 0,
             bottom: 0,
-            // Removed scrollTop and scrollLeft as we don't want the overlay to scroll
             fontFamily: 'monospace',
             fontSize: 'inherit',
             lineHeight: '1.5rem',
             padding: '1rem 1.5rem',
+            // Sync overlay with textarea scroll
+            transform: `translate(${-scrollPosition.left}px, ${-scrollPosition.top}px)`
           }}
         >
           {renderGrammarErrors()}
@@ -484,3 +389,15 @@ export const MarkdownInput = forwardRef<MarkdownInputHandle, MarkdownInputProps>
     )
   }
 )
+
+// Add the following CSS to globals.css or a relevant CSS/SCSS file:
+// :root {
+//   --grammar-error-underline-error: #e53e3e;
+//   --grammar-error-underline-warning: #dd6b20;
+//   --grammar-error-underline-info: #3182ce;
+// }
+// .dark {
+//   --grammar-error-underline-error: #ff8b8b;
+//   --grammar-error-underline-warning: #f6ad55;
+//   --grammar-error-underline-info: #90cdf4;
+// }

@@ -102,7 +102,7 @@ export async function checkGrammar(
 
     // Log detailed information about the response
     console.log(`API Response Status: ${response.status} ${response.statusText}`);
-    
+
     if (!response.ok) {
       // Try to get more error details from the response
       try {
@@ -111,18 +111,18 @@ export async function checkGrammar(
       } catch {
         console.error(`LanguageTool API error: ${response.status} ${response.statusText}`);
       }
-      
+
       if (response.status === 429 || response.status === 400) {
         console.warn("Rate limit likely exceeded. Waiting longer before next request.");
         // Increase wait time for future requests
         lastRequestTime = Date.now() + 30000; // Add 30 seconds penalty
       }
-      
+
       throw new Error(`LanguageTool API error: ${response.status} ${response.statusText}`);
     }
 
     const data: LanguageToolResponse = await response.json();
-    
+
     // Check if the response contains matches
     if (!data.matches || data.matches.length === 0) {
       console.log("No grammar errors found in the text");
@@ -149,6 +149,9 @@ function processGrammarResults(
 ): GrammarError[] {
   const errors: GrammarError[] = [];
 
+  // Define the placeholder character used for images
+  const IMAGE_PLACEHOLDER = '⁂';
+
   for (const match of response.matches) {
     // Skip errors for words in custom dictionary
     if (isInDictionary(
@@ -158,6 +161,15 @@ function processGrammarResults(
       ),
       match.rule.id
     )) {
+      continue;
+    }
+
+    // Skip errors that involve our image placeholder character
+    const errorText = match.context.text.substring(
+      match.context.offset, 
+      match.context.offset + match.context.length
+    );
+    if (errorText.includes(IMAGE_PLACEHOLDER)) {
       continue;
     }
 

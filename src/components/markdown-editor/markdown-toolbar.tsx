@@ -10,6 +10,7 @@ import {
   Heading1,
   Heading2,
   Image as ImageIcon,
+  ImagePlus,
   Italic,
   Link,
   List,
@@ -27,6 +28,7 @@ import { Button } from "@/components/ui/button"
 import { Separator } from "@/components/ui/separator"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
 import { ModeToggle } from "@/components/mode-toggle"
+import { getRandomPhotoAsMarkdown } from "@/lib/unsplash"
 
 export interface MarkdownToolbarProps {
   isPreviewMode: boolean
@@ -155,6 +157,38 @@ export function MarkdownToolbar({
         action: () =>
           onInsertAction("![Image alt text](https://example.com/image.jpg)"),
         ariaLabel: "Insert image",
+      },
+      {
+        name: "Unsplash Image",
+        icon: <ImagePlus className="h-4 w-4" />,
+        action: async () => {
+          try {
+            // Get the textarea element
+            const textarea = document.querySelector('textarea[data-testid="markdown-input"]') as HTMLTextAreaElement;
+
+            // Fetch random photo from Unsplash
+            const markdownText = await getRandomPhotoAsMarkdown();
+
+            // Insert the Unsplash image markdown directly using the onInsertAction callback
+            // This ensures React state is updated properly
+            onInsertAction(markdownText);
+
+            // Set cursor position after the inserted text if textarea is available
+            if (textarea) {
+              setTimeout(() => {
+                const newCursorPosition = textarea.selectionStart;
+                textarea.setSelectionRange(newCursorPosition, newCursorPosition);
+                textarea.focus();
+              }, 0);
+            }
+          } catch (error) {
+            console.error("Failed to fetch Unsplash image:", error);
+
+            // Show error message in an alert
+            alert("Failed to fetch image from Unsplash. Please try again later.");
+          }
+        },
+        ariaLabel: "Insert random Unsplash image",
       },
     ],
     // Lists group

@@ -67,12 +67,29 @@ export function stripMarkdownForGrammarCheck(markdown: string): {
     if (char === '!' && nextChar === '[') {
       inImage = true;
       i++; // Skip the '['
+
+      // Add a placeholder character for the image to maintain text length
+      stripped += '⁂'; // Using a special character as placeholder
+      originalToStripped.set(i-1, j); // Map the '!' position
+      strippedToOriginal.set(j, i-1);
+      j++;
+
     } else if (char === ']' && inImage && nextChar === '(') {
       // Skip the URL portion
       i += 2; // Skip "]("
+
+      // Find the closing parenthesis
+      const startUrlPos = i;
       while (i < markdown.length && markdown[i] !== ')') {
         i++;
       }
+
+      // Add another placeholder character for the URL part
+      stripped += '⁂'; // Using a special character as placeholder
+      originalToStripped.set(startUrlPos, j); // Map the URL start position
+      strippedToOriginal.set(j, startUrlPos);
+      j++;
+
       inImage = false;
       continue;
     }

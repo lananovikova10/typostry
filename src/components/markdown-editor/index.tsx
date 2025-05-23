@@ -493,6 +493,7 @@ export function MarkdownEditor({
         "flex min-h-[300px] w-full flex-col rounded-md border border-input bg-background shadow-sm hover:shadow-md transition-shadow duration-200",
         className
       )}
+      data-testid="markdown-editor"
     >
       <MarkdownToolbar
         isPreviewMode={isPreviewMode}
