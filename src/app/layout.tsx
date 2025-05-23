@@ -43,12 +43,8 @@ export default function RootLayout({ children }: RootLayoutProps) {
               className={cn(
                 "fixed inset-0 -z-10",
                 "[mask-image:radial-gradient(ellipse_at_center,transparent_20%,black)]",
-                "fill-neutral-300/30 dark:fill-neutral-700/30",
-                "data-[theme=ocean]:fill-blue-400/20 dark:data-[theme=ocean]:fill-blue-600/20",
-                "data-[theme=sunset]:fill-orange-400/20 dark:data-[theme=sunset]:fill-orange-600/20",
-                "data-[theme=forest]:fill-green-400/20 dark:data-[theme=forest]:fill-green-600/20",
-                "data-[theme=lavender]:fill-purple-400/20 dark:data-[theme=lavender]:fill-purple-600/20",
-                "data-[theme=rose]:fill-pink-400/20 dark:data-[theme=rose]:fill-pink-600/20"
+                "fill-neutral-400/40 dark:fill-neutral-600/40",
+                "high-contrast-light:fill-black/60 high-contrast-dark:fill-white/60"
               )}
               width={20}
               height={20}
