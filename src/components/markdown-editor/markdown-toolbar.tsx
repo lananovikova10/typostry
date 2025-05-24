@@ -84,14 +84,9 @@ export function MarkdownToolbar({
   const handleEmojiSelect = (emoji: any) => {
     console.log("Selected emoji:", emoji)
     
-    // Convert emoji label to shortcode format
-    // frimousse only provides emoji.emoji (character) and emoji.label (name)
-    const shortcode = emoji.label?.toLowerCase()
-      .replace(/[^\w\s]/g, '') // Remove special characters
-      .replace(/\s+/g, '_') // Replace spaces with underscores
-      .trim()
-    
-    onInsertAction(`:${shortcode || 'emoji'}:`)
+    // Insert the actual emoji character directly instead of creating shortcodes
+    // This ensures compatibility regardless of whether the shortcode exists in our mapping
+    onInsertAction(emoji.emoji || '😀')
     setIsEmojiPickerOpen(false)
   }
 
