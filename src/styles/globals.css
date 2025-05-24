@@ -179,6 +179,32 @@
   }
 }
 
+/* Editor Gradients */
+textarea.bg-gradient-to-br::before,
+textarea.bg-gradient-to-br::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 20px; /* Minimum height requirement */
+  pointer-events: none;
+  z-index: 10;
+}
+
+textarea.bg-gradient-to-br::before {
+  top: 0;
+  background: linear-gradient(to bottom, 
+    hsla(var(--editor-gradient-start), 1) 0%, 
+    hsla(var(--editor-gradient-start), 0) 100%);
+}
+
+textarea.bg-gradient-to-br::after {
+  bottom: 0;
+  background: linear-gradient(to top, 
+    hsla(var(--editor-gradient-end), 1) 0%, 
+    hsla(var(--editor-gradient-end), 0) 100%);
+}
+
 /* Grammar check styling */
 /* Base style for all grammar errors */
 .grammar-error {

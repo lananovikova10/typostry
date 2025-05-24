@@ -374,7 +374,7 @@ export const MarkdownInput = forwardRef<
         ref={textareaRef}
         value={value}
         onChange={(e) => onChange(e.target.value)}
-        className="h-full w-full resize-none rounded-md border border-solid border-[hsl(var(--markdown-input-border))] bg-gradient-to-br from-[hsl(var(--editor-gradient-start))] to-[hsl(var(--editor-gradient-end))] px-6 py-4 font-mono text-sm leading-relaxed tracking-wide text-[hsl(var(--markdown-input-text))] shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-opacity-50"
+        className="h-full w-full min-h-[200px] resize-none rounded-md border border-solid border-[hsl(var(--markdown-input-border))] bg-gradient-to-br from-[hsl(var(--editor-gradient-start))] to-[hsl(var(--editor-gradient-end))] px-6 py-4 font-mono text-sm leading-relaxed tracking-wide text-[hsl(var(--markdown-input-text))] shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-opacity-50"
         placeholder="Write your markdown here..."
         aria-label="Markdown editor"
         spellCheck="false"

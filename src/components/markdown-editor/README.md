@@ -1,75 +1,75 @@
 # Markdown Editor Component
 
-A Next.js markdown editor component with real-time preview and theme support.
+A fully-featured Markdown editor with real-time preview, toolbar, and grammar checking capabilities.
 
 ## Features
 
 - Real-time markdown preview
-- Emoji support using `:emoji_code:` syntax
-- Toolbar with common markdown shortcuts
-- Theme support (light/dark)
-- Executable JavaScript code blocks in preview mode
-- File system operations:
-  - Create new files
-  - Open existing files directly from the local filesystem
-  - Save files directly to the opened file
-  - Save As functionality
+- Toolbar with common formatting options
+- Grammar and spelling checking
+- File system access for saving and loading files
+- Reading statistics
+- Keyboard shortcuts
+- Light and dark mode support
+- Fully responsive design
 
 ## Usage
 
 ```jsx
 import { MarkdownEditor } from "@/components/markdown-editor"
 
-export default function YourComponent() {
+export default function MyEditor() {
   return (
     <MarkdownEditor
-      initialValue="# Hello World\n\nI'm happy :smile: about this editor!"
+      initialValue="# Hello World"
       onChange={(value) => console.log(value)}
     />
   )
 }
 ```
 
-### Emoji Support
-
-You can use emoji shortcodes like `:smile:` in your markdown, and they will be rendered as actual emoji characters (😄) in the preview.
-
-Examples:
-
-- `:heart:` → ❤️
-- `:thumbsup:` → 👍
-- `:rocket:` → 🚀
-
-To insert emojis, click the emoji button in the toolbar and select an emoji from the picker. The appropriate markdown shortcode will be inserted at your cursor position.
-
-See the [emoji documentation](../../lib/emoji/README.md) for a full list of supported emoji codes.
-
-### JavaScript Code Execution
-
-When in preview mode, JavaScript code blocks will display a run button that allows you to execute the code directly in the browser:
-
-````markdown
-```js
-console.log("Hello from executable JavaScript!")
-alert("This will be executed when you click the run button")
-```
-````
-
 ## Props
 
-| Prop           | Type                      | Description                             |
-| -------------- | ------------------------- | --------------------------------------- |
-| `initialValue` | `string`                  | Initial markdown content                |
-| `className`    | `string`                  | Additional CSS class names              |
-| `onChange`     | `(value: string) => void` | Callback fired when the content changes |
+| Prop | Type | Default | Description |
+|------|------|---------|-------------|
+| `initialValue` | string | `""` | Initial markdown content |
+| `className` | string | `undefined` | Additional CSS classes |
+| `onChange` | function | `undefined` | Callback function when content changes |
+| `sidebarEnabled` | boolean | `true` | Whether to show the sidebar with document structure |
 
-## File System Access API
+## Keyboard Shortcuts
 
-This component uses the modern File System Access API, which provides the following benefits:
+See the [KEYBOARD_SHORTCUTS.md](./KEYBOARD_SHORTCUTS.md) file for a full list of available keyboard shortcuts.
 
-- Access to local file system (e.g., Documents folder)
-- Direct saving to the opened file
-- Better user experience with native file picker
-- Fallback for browsers that don't support the API
+## Components
 
-Note: The File System Access API is supported in Chrome 86+, Edge 86+, and Opera 72+. For other browsers, the component falls back to traditional file input and download methods.
+The Markdown Editor is composed of several components:
+
+- `MarkdownInput`: The text area where markdown is typed
+- `MarkdownPreview`: Real-time rendered preview of the markdown
+- `MarkdownToolbar`: Buttons for formatting and file operations
+- `MarkdownSidebar`: Document outline and navigation
+- `ReadingStats`: Word count and estimated reading time
+
+## Responsive Design
+
+The editor features a fully responsive layout:
+
+- On small screens (≤640px): Editor spans full width with the preview below
+- On larger screens (>640px): Editor and preview share horizontal space (side-by-side)
+- Minimum editor height of 200px on all screen sizes
+- Top and bottom scroll-fade gradients maintain a minimum height of 20px
+
+## Styling
+
+The component uses CSS custom properties for theming:
+
+```css
+:root {
+  --markdown-toolbar-bg: /* toolbar background color */;
+  --markdown-toolbar-border: /* toolbar border color */;
+  /* ... additional custom properties */
+}
+```
+
+See the `globals.css` file for a complete list of custom properties.
