@@ -156,4 +156,26 @@ describe("MarkdownEditor", () => {
     // Back in edit mode, textarea should be visible again
     expect(screen.getByRole("textbox")).toBeInTheDocument()
   })
+
+  test("shows reading stats in edit mode but not in preview mode", () => {
+    render(<MarkdownEditor initialValue="# Hello World" />)
+
+    // In edit mode, reading stats should be visible
+    expect(screen.getByRole("status")).toBeInTheDocument()
+    expect(screen.getByRole("status").textContent).toContain("Reading Time")
+
+    // Switch to preview mode
+    const previewButton = screen.getByTestId("toggle-preview")
+    fireEvent.click(previewButton)
+
+    // In preview mode, reading stats should not be visible
+    expect(screen.queryByRole("status")).not.toBeInTheDocument()
+
+    // Switch back to edit mode
+    fireEvent.click(previewButton)
+
+    // Reading stats should be visible again
+    expect(screen.getByRole("status")).toBeInTheDocument()
+    expect(screen.getByRole("status").textContent).toContain("Reading Time")
+  })
 })

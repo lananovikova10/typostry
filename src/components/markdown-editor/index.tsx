@@ -581,10 +581,6 @@ export function MarkdownEditor({
                 source={markdown}
                 className="flex-1 border-l dark:border-gray-700"
               />
-              <ReadingStats 
-                content={markdown}
-                className="border-t border-input"
-              />
             </>
           )}
         </div>
