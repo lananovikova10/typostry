@@ -4,6 +4,9 @@
 
 [build.environment]
   NEXT_PRIVATE_TARGET = "server"
+  NODE_VERSION = "20"
+  NPM_FLAGS = "--production=false"
+  PNPM_FLAGS = "--frozen-lockfile=false"
 
 [[plugins]]
   package = "@netlify/plugin-nextjs"
@@ -16,12 +19,6 @@
 # Configure to use pnpm instead of npm
 [build.processing]
   skip_processing = false
-
-# Ensure we use the correct Node.js version
-[build.environment]
-  NODE_VERSION = "20"
-  NPM_FLAGS = "--production=false"
-  PNPM_FLAGS = "--frozen-lockfile=false"
 
 # Configure Next.js settings
 [[headers]]
