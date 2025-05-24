@@ -15,7 +15,7 @@ export function ReadingStats({ content, className }: ReadingStatsProps) {
   const [stats, setStats] = useState({
     readingTime: 0,
     wordCount: 0,
-    characterCount: 0
+    characterCount: 0,
   })
   const { resolvedTheme } = useTheme()
 
@@ -25,18 +25,12 @@ export function ReadingStats({ content, className }: ReadingStatsProps) {
     setStats(newStats)
   }, [content])
 
-  // Determine text color based on theme
-  const textColorClass = resolvedTheme === "dark" 
-    ? "text-neutral-400" 
-    : "text-neutral-500"
+  // Using consistent text-neutral-400 class to prevent hydration errors
+  const textColorClass = "text-neutral-400"
 
   return (
-    <div 
-      className={cn(
-        "py-2 px-3 text-xs font-mono", 
-        textColorClass,
-        className
-      )}
+    <div
+      className={cn("px-3 py-2 font-mono text-xs", textColorClass, className)}
       role="status"
       aria-live="polite"
     >

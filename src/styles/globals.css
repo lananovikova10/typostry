@@ -193,16 +193,20 @@ textarea.bg-gradient-to-br::after {
 
 textarea.bg-gradient-to-br::before {
   top: 0;
-  background: linear-gradient(to bottom, 
-    hsla(var(--editor-gradient-start), 1) 0%, 
-    hsla(var(--editor-gradient-start), 0) 100%);
+  background: linear-gradient(
+    to bottom,
+    hsla(var(--editor-gradient-start), 1) 0%,
+    hsla(var(--editor-gradient-start), 0) 100%
+  );
 }
 
 textarea.bg-gradient-to-br::after {
   bottom: 0;
-  background: linear-gradient(to top, 
-    hsla(var(--editor-gradient-end), 1) 0%, 
-    hsla(var(--editor-gradient-end), 0) 100%);
+  background: linear-gradient(
+    to top,
+    hsla(var(--editor-gradient-end), 1) 0%,
+    hsla(var(--editor-gradient-end), 0) 100%
+  );
 }
 
 /* Grammar check styling */

@@ -229,4 +229,72 @@ describe('Markdown Editor', () => {
       .should('have.css', 'text-decoration-style', 'wavy')
       .should('have.css', 'text-decoration-color', 'rgb(245, 101, 101)')  // #f56565 in RGB
   })
+
+  it('should render Mermaid diagrams in preview mode', () => {
+    // Create a mermaid sequence diagram
+    const mermaidCode = 
+`\`\`\`mermaid
+sequenceDiagram
+Alice ->> Bob: Hello Bob, how are you?
+Bob-->>John: How about you John?
+Bob--x Alice: I am good thanks!
+Bob-x John: I am good thanks!
+Note right of John: Bob thinks a long<br/>long time, so long<br/>that the text does<br/>not fit on a row.
+\`\`\``;
+
+    // Type the mermaid code
+    cy.get('[data-testid="markdown-input"]')
+      .clear()
+      .type(mermaidCode, { delay: 0 });
+    
+    // Toggle preview mode
+    cy.get('[data-testid="toggle-preview"]').click();
+    
+    // Wait for Mermaid to render
+    cy.get('[data-testid="markdown-preview"]').should('be.visible');
+    
+    // Check that a Mermaid diagram container exists
+    // The exact element depends on how Mermaid renders, but we can verify the SVG exists
+    cy.get('[data-testid="markdown-preview"]')
+      .find('svg')
+      .should('exist');
+    
+    // Verify some expected elements in the SVG (class names may vary)
+    cy.get('[data-testid="markdown-preview"]')
+      .find('svg g')
+      .should('exist');
+  })
+
+  it('should render Mermaid flowcharts in preview mode', () => {
+    // Create a mermaid flowchart
+    const mermaidCode = 
+`\`\`\`mermaid
+graph LR
+A[Square Rect] -- Link text --> B((Circle))
+A --> C(Round Rect)
+B --> D{Rhombus}
+C --> D
+\`\`\``;
+
+    // Type the mermaid code
+    cy.get('[data-testid="markdown-input"]')
+      .clear()
+      .type(mermaidCode, { delay: 0 });
+    
+    // Toggle preview mode
+    cy.get('[data-testid="toggle-preview"]').click();
+    
+    // Wait for Mermaid to render
+    cy.get('[data-testid="markdown-preview"]').should('be.visible');
+    
+    // Check that a Mermaid diagram container exists
+    cy.get('[data-testid="markdown-preview"]')
+      .find('svg')
+      .should('exist');
+    
+    // Verify some expected elements for flowchart
+    cy.get('[data-testid="markdown-preview"]')
+      .find('svg g')
+      .should('exist');
+  })
 })

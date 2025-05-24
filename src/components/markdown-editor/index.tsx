@@ -6,9 +6,9 @@ import { cn } from "@/lib/utils"
 
 import { MarkdownInput, MarkdownInputHandle } from "./markdown-input"
 import { MarkdownPreview } from "./markdown-preview"
-import { ReadingStats } from "./reading-stats"
 import { MarkdownSidebar } from "./markdown-sidebar"
 import { MarkdownToolbar } from "./markdown-toolbar"
+import { ReadingStats } from "./reading-stats"
 
 export interface MarkdownEditorProps {
   initialValue?: string
@@ -566,10 +566,10 @@ export function MarkdownEditor({
               <MarkdownInput
                 value={markdown}
                 onChange={handleChange}
-                className="flex-1 min-h-[200px] p-2"
+                className="min-h-[200px] flex-1 p-2"
                 ref={markdownInputRef}
               />
-              <ReadingStats 
+              <ReadingStats
                 content={markdown}
                 className="border-t border-input"
               />
@@ -579,7 +579,7 @@ export function MarkdownEditor({
             <>
               <MarkdownPreview
                 source={markdown}
-                className="flex-1 sm:border-l dark:border-gray-700"
+                className="flex-1 dark:border-gray-700 sm:border-l"
               />
             </>
           )}
