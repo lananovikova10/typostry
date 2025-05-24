@@ -6,6 +6,7 @@ import { cn } from "@/lib/utils"
 
 import { MarkdownInput, MarkdownInputHandle } from "./markdown-input"
 import { MarkdownPreview } from "./markdown-preview"
+import { ReadingStats } from "./reading-stats"
 import { MarkdownSidebar } from "./markdown-sidebar"
 import { MarkdownToolbar } from "./markdown-toolbar"
 
@@ -561,18 +562,30 @@ export function MarkdownEditor({
         {/* Editor or Preview */}
         <div className={cn("flex flex-1", !isPreviewMode && "flex-col")}>
           {!isPreviewMode && (
-            <MarkdownInput
-              value={markdown}
-              onChange={handleChange}
-              className="flex-1 p-2"
-              ref={markdownInputRef}
-            />
+            <>
+              <MarkdownInput
+                value={markdown}
+                onChange={handleChange}
+                className="flex-1 p-2"
+                ref={markdownInputRef}
+              />
+              <ReadingStats 
+                content={markdown}
+                className="border-t border-input"
+              />
+            </>
           )}
           {isPreviewMode && (
-            <MarkdownPreview
-              source={markdown}
-              className="flex-1 border-l dark:border-gray-700"
-            />
+            <>
+              <MarkdownPreview
+                source={markdown}
+                className="flex-1 border-l dark:border-gray-700"
+              />
+              <ReadingStats 
+                content={markdown}
+                className="border-t border-input"
+              />
+            </>
           )}
         </div>
       </div>
