@@ -548,14 +548,14 @@ export function MarkdownEditor({
         }
       />
 
-      <div className="relative flex flex-1 flex-col md:flex-row">
+      <div className="relative flex flex-1 flex-col sm:flex-row">
         {/* Sidebar */}
         {sidebarEnabled && (
           <MarkdownSidebar
             content={markdown}
             onHeadingClick={handleHeadingClick}
             isCollapsed={isSidebarCollapsed}
-            className="hidden md:block" // Hide on mobile
+            className="hidden sm:block" // Hide on mobile
           />
         )}
 
@@ -566,7 +566,7 @@ export function MarkdownEditor({
               <MarkdownInput
                 value={markdown}
                 onChange={handleChange}
-                className="flex-1 p-2"
+                className="flex-1 min-h-[200px] p-2"
                 ref={markdownInputRef}
               />
               <ReadingStats 
@@ -579,7 +579,7 @@ export function MarkdownEditor({
             <>
               <MarkdownPreview
                 source={markdown}
-                className="flex-1 border-l dark:border-gray-700"
+                className="flex-1 sm:border-l dark:border-gray-700"
               />
             </>
           )}

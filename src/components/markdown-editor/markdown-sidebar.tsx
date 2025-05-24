@@ -167,6 +167,7 @@ export function MarkdownSidebar({
         className
       )}
       data-testid="markdown-sidebar"
+      role="complementary"
     >
       <h3 className="mb-2 px-2 text-sm font-semibold">Document Outline</h3>
       <div className="space-y-1">
