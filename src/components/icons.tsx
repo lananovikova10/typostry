@@ -1,5 +1,5 @@
-import { CheckCircle, ContrastIcon, Moon, SunMedium } from "lucide-react"
 import React from "react"
+import { CheckCircle, ContrastIcon, Moon, SunMedium } from "lucide-react"
 
 export type IconKeys = keyof typeof icons
 

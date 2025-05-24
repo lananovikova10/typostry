@@ -191,15 +191,30 @@
 
 /* Severity-based colors */
 .grammar-error-low {
-  text-decoration-color: rgba(144, 205, 244, 0.8); /* Semi-transparent light blue for low severity */
+  text-decoration-color: rgba(
+    144,
+    205,
+    244,
+    0.8
+  ); /* Semi-transparent light blue for low severity */
 }
 
 .grammar-error-medium {
-  text-decoration-color: rgba(246, 173, 85, 0.8); /* Semi-transparent orange for medium severity */
+  text-decoration-color: rgba(
+    246,
+    173,
+    85,
+    0.8
+  ); /* Semi-transparent orange for medium severity */
 }
 
 .grammar-error-high {
-  text-decoration-color: rgba(245, 101, 101, 0.8); /* Semi-transparent red for high severity */
+  text-decoration-color: rgba(
+    245,
+    101,
+    101,
+    0.8
+  ); /* Semi-transparent red for high severity */
 }
 
 /* Hover effect for better discoverability */

@@ -18,15 +18,15 @@ A Next.js markdown editor component with real-time preview and theme support.
 ## Usage
 
 ```jsx
-import { MarkdownEditor } from "@/components/markdown-editor";
+import { MarkdownEditor } from "@/components/markdown-editor"
 
 export default function YourComponent() {
   return (
-    <MarkdownEditor 
+    <MarkdownEditor
       initialValue="# Hello World\n\nI'm happy :smile: about this editor!"
       onChange={(value) => console.log(value)}
     />
-  );
+  )
 }
 ```
 
@@ -35,9 +35,12 @@ export default function YourComponent() {
 You can use emoji shortcodes like `:smile:` in your markdown, and they will be rendered as actual emoji characters (😄) in the preview.
 
 Examples:
+
 - `:heart:` → ❤️
 - `:thumbsup:` → 👍
 - `:rocket:` → 🚀
+
+To insert emojis, click the emoji button in the toolbar and select an emoji from the picker. The appropriate markdown shortcode will be inserted at your cursor position.
 
 See the [emoji documentation](../../lib/emoji/README.md) for a full list of supported emoji codes.
 
@@ -47,18 +50,18 @@ When in preview mode, JavaScript code blocks will display a run button that allo
 
 ````markdown
 ```js
-console.log('Hello from executable JavaScript!');
-alert('This will be executed when you click the run button');
+console.log("Hello from executable JavaScript!")
+alert("This will be executed when you click the run button")
 ```
 ````
 
 ## Props
 
-| Prop | Type | Description |
-|------|------|-------------|
-| `initialValue` | `string` | Initial markdown content |
-| `className` | `string` | Additional CSS class names |
-| `onChange` | `(value: string) => void` | Callback fired when the content changes |
+| Prop           | Type                      | Description                             |
+| -------------- | ------------------------- | --------------------------------------- |
+| `initialValue` | `string`                  | Initial markdown content                |
+| `className`    | `string`                  | Additional CSS class names              |
+| `onChange`     | `(value: string) => void` | Callback fired when the content changes |
 
 ## File System Access API
 

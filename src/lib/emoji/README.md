@@ -14,6 +14,12 @@ Which will be rendered as:
 
 😄 ❤️ 👍
 
+You can insert emoji shortcodes by:
+
+1. Typing them directly (`:smile:`)
+2. Using the emoji picker in the toolbar (click the smile icon)
+3. Selecting from the emoji picker will insert the shortcode at your cursor position
+
 ## Available Emoji Codes
 
 The module includes a wide range of common emojis, including:

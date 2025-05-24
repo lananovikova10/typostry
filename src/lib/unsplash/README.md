@@ -21,19 +21,19 @@ Note: The `NEXT_PUBLIC_` prefix is required for client-side access.
 ### API Functions
 
 ```typescript
-import { getRandomPhoto, getRandomPhotoAsMarkdown } from '@/lib/unsplash';
+import { getRandomPhoto, getRandomPhotoAsMarkdown } from "@/lib/unsplash"
 
 // Get a random photo
-const photo = await getRandomPhoto();
+const photo = await getRandomPhoto()
 
 // Get a random photo formatted as markdown
-const markdown = await getRandomPhotoAsMarkdown();
+const markdown = await getRandomPhotoAsMarkdown()
 
 // Get a random photo with specific parameters
 const landscapePhoto = await getRandomPhoto({
-  orientation: 'landscape',
-  query: 'nature',
-});
+  orientation: "landscape",
+  query: "nature",
+})
 ```
 
 ### Parameters

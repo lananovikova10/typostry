@@ -1,16 +1,16 @@
 import { siteConfig } from "@/config/site"
+import { SparklesText } from "@/components/ui/sparkles-text"
 import { Icons } from "@/components/icons"
 import { MarkdownEditor } from "@/components/markdown-editor"
-import { SparklesText } from "@/components/ui/sparkles-text"
 
 export default function Home() {
   return (
     <main className="container py-10">
-      <div className="max-w-4xl mx-auto">
+      <div className="mx-auto max-w-4xl">
         <div className="mb-8 flex flex-col items-start gap-4 text-left">
           <div className="flex items-center gap-3">
             <Icons.logo className="h-10 w-10" />
-            <SparklesText 
+            <SparklesText
               text={siteConfig.name}
               className="text-3xl font-semibold sm:text-4xl md:text-5xl"
               sparklesCount={12}
@@ -20,7 +20,6 @@ export default function Home() {
           <p className="leading-normal text-muted-foreground sm:text-xl sm:leading-8">
             A fully-featured markdown editor with preview functionality
           </p>
-
         </div>
 
         <MarkdownEditor

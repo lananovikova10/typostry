@@ -3,41 +3,44 @@ import { render, screen, waitFor } from "@testing-library/react"
 // Import emoji replacement to test integration
 import { replaceEmojis } from "@/lib/emoji"
 
+// Import the component after mocking
+import { MarkdownPreview } from "../markdown-preview"
+
 // Mock the MarkdownPreview component instead of trying to test it directly
 // This avoids issues with the remark module in tests
 jest.mock("../markdown-preview", () => ({
   MarkdownPreview: ({ source }: { source: string; className?: string }) => {
     // Process the source with emoji replacement like the real component would
-    const processedSource = replaceEmojis(source);
-    
+    const processedSource = replaceEmojis(source)
+
     // Simple mock implementation that returns HTML for tests
-    let html = processedSource;
+    let html = processedSource
 
     // Convert simple markdown to HTML for tests
-    html = html.replace(/^# (.+)$/gm, "<h1>$1</h1>");
-    html = html.replace(/^## (.+)$/gm, "<h2>$1</h2>");
-    html = html.replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>");
-    html = html.replace(/\*(.+?)\*/g, "<em>$1</em>");
-    
-    return (
-      <div data-testid="markdown-preview" dangerouslySetInnerHTML={{ __html: html }} />
-    );
-  },
-}));
+    html = html.replace(/^# (.+)$/gm, "<h1>$1</h1>")
+    html = html.replace(/^## (.+)$/gm, "<h2>$1</h2>")
+    html = html.replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>")
+    html = html.replace(/\*(.+?)\*/g, "<em>$1</em>")
 
-// Import the component after mocking
-import { MarkdownPreview } from "../markdown-preview";
+    return (
+      <div
+        data-testid="markdown-preview"
+        dangerouslySetInnerHTML={{ __html: html }}
+      />
+    )
+  },
+}))
 
 describe("MarkdownPreview", () => {
   it("renders markdown with emojis correctly", async () => {
-    const markdown = "# Test Heading with :smile: emoji";
-    render(<MarkdownPreview source={markdown} />);
+    const markdown = "# Test Heading with :smile: emoji"
+    render(<MarkdownPreview source={markdown} />)
 
     // The mock will show the processed content
-    const content = screen.getByTestId("markdown-preview");
-    expect(content).toBeInTheDocument();
-    expect(content.innerHTML).toContain("Test Heading with 😄 emoji");
-  });
+    const content = screen.getByTestId("markdown-preview")
+    expect(content).toBeInTheDocument()
+    expect(content.innerHTML).toContain("Test Heading with 😄 emoji")
+  })
 
   it("handles different markdown syntax with emojis", async () => {
     const markdown = `
@@ -45,33 +48,33 @@ describe("MarkdownPreview", () => {
 ## Heading 2 :heart:
 **Bold text :thumbsup:**
 *Italic text :star:*
-    `;
+    `
 
-    render(<MarkdownPreview source={markdown} />);
-    
-    const content = screen.getByTestId("markdown-preview");
-    expect(content).toBeInTheDocument();
-    expect(content.innerHTML).toContain("Heading 1 😄");
-    expect(content.innerHTML).toContain("Heading 2 ❤️");
-    expect(content.innerHTML).toContain("Bold text 👍");
-    expect(content.innerHTML).toContain("Italic text ⭐");
-  });
+    render(<MarkdownPreview source={markdown} />)
+
+    const content = screen.getByTestId("markdown-preview")
+    expect(content).toBeInTheDocument()
+    expect(content.innerHTML).toContain("Heading 1 😄")
+    expect(content.innerHTML).toContain("Heading 2 ❤️")
+    expect(content.innerHTML).toContain("Bold text 👍")
+    expect(content.innerHTML).toContain("Italic text ⭐")
+  })
 
   it("renders unrecognized emoji codes as is", async () => {
-    const markdown = "Text with :nonexistent_emoji: code";
-    render(<MarkdownPreview source={markdown} />);
+    const markdown = "Text with :nonexistent_emoji: code"
+    render(<MarkdownPreview source={markdown} />)
 
-    const content = screen.getByTestId("markdown-preview");
-    expect(content).toBeInTheDocument();
-    expect(content.innerHTML).toContain("Text with :nonexistent_emoji: code");
-  });
+    const content = screen.getByTestId("markdown-preview")
+    expect(content).toBeInTheDocument()
+    expect(content.innerHTML).toContain("Text with :nonexistent_emoji: code")
+  })
 
   it("handles multiple emojis in a row", async () => {
-    const markdown = "Multiple emojis: :smile::heart::thumbsup:";
-    render(<MarkdownPreview source={markdown} />);
+    const markdown = "Multiple emojis: :smile::heart::thumbsup:"
+    render(<MarkdownPreview source={markdown} />)
 
-    const content = screen.getByTestId("markdown-preview");
-    expect(content).toBeInTheDocument();
-    expect(content.innerHTML).toContain("Multiple emojis: 😄❤️👍");
-  });
+    const content = screen.getByTestId("markdown-preview")
+    expect(content).toBeInTheDocument()
+    expect(content.innerHTML).toContain("Multiple emojis: 😄❤️👍")
+  })
 })

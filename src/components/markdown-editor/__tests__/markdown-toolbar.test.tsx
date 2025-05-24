@@ -34,7 +34,7 @@ describe("MarkdownToolbar", () => {
     expect(screen.getByTestId("toolbar-code")).toBeInTheDocument()
     expect(screen.getByTestId("toolbar-quote")).toBeInTheDocument()
     expect(screen.getByTestId("toggle-preview")).toBeInTheDocument()
-    
+
     // Check file operation buttons
     expect(screen.getByTestId("file-new")).toBeInTheDocument()
     expect(screen.getByTestId("file-open")).toBeInTheDocument()
@@ -151,7 +151,7 @@ describe("MarkdownToolbar", () => {
 
     // Preview toggle button should still be enabled
     expect(screen.getByTestId("toggle-preview")).not.toBeDisabled()
-    
+
     // File operation buttons should still be enabled
     expect(screen.getByTestId("file-new")).not.toBeDisabled()
     expect(screen.getByTestId("file-save")).not.toBeDisabled()

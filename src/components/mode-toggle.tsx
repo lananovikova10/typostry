@@ -22,26 +22,46 @@ export function ModeToggle() {
   }, [])
 
   // Check if the current theme is a high-contrast variant
-  const isHighContrast = mounted && (theme === 'high-contrast-light' || theme === 'high-contrast-dark')
-  
+  const isHighContrast =
+    mounted &&
+    (theme === "high-contrast-light" || theme === "high-contrast-dark")
+
   // Determine which icon to show based on theme combinations
-  const showSun = mounted && (theme === 'light' || theme === 'high-contrast-light' || (theme === 'system' && !window.matchMedia('(prefers-color-scheme: dark)').matches))
-  const showMoon = mounted && (theme === 'dark' || theme === 'high-contrast-dark' || (theme === 'system' && window.matchMedia('(prefers-color-scheme: dark)').matches))
-  const showContrast = mounted && (theme === 'high-contrast-light' || theme === 'high-contrast-dark')
+  const showSun =
+    mounted &&
+    (theme === "light" ||
+      theme === "high-contrast-light" ||
+      (theme === "system" &&
+        !window.matchMedia("(prefers-color-scheme: dark)").matches))
+  const showMoon =
+    mounted &&
+    (theme === "dark" ||
+      theme === "high-contrast-dark" ||
+      (theme === "system" &&
+        window.matchMedia("(prefers-color-scheme: dark)").matches))
+  const showContrast =
+    mounted &&
+    (theme === "high-contrast-light" || theme === "high-contrast-dark")
 
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
         <Button variant="outline" size="icon" className="relative">
           {/* Sun icon for light themes */}
-          <Icons.sun className={`h-[1.2rem] w-[1.2rem] transition-all ${showSun && !showContrast ? 'rotate-0 scale-100' : 'rotate-90 scale-0'}`} />
-          
+          <Icons.sun
+            className={`h-[1.2rem] w-[1.2rem] transition-all ${showSun && !showContrast ? "rotate-0 scale-100" : "rotate-90 scale-0"}`}
+          />
+
           {/* Moon icon for dark themes */}
-          <Icons.moon className={`absolute h-[1.2rem] w-[1.2rem] transition-all ${showMoon && !showContrast ? 'rotate-0 scale-100' : 'rotate-90 scale-0'}`} />
-          
+          <Icons.moon
+            className={`absolute h-[1.2rem] w-[1.2rem] transition-all ${showMoon && !showContrast ? "rotate-0 scale-100" : "rotate-90 scale-0"}`}
+          />
+
           {/* Contrast icon for high-contrast themes */}
-          <Icons.contrast className={`absolute h-[1.2rem] w-[1.2rem] transition-all ${showContrast ? 'rotate-0 scale-100' : 'rotate-90 scale-0'}`} />
-          
+          <Icons.contrast
+            className={`absolute h-[1.2rem] w-[1.2rem] transition-all ${showContrast ? "rotate-0 scale-100" : "rotate-90 scale-0"}`}
+          />
+
           <span className="sr-only">Toggle theme</span>
         </Button>
       </DropdownMenuTrigger>
@@ -52,8 +72,14 @@ export function ModeToggle() {
         <DropdownMenuItem onClick={() => setTheme("dark")}>
           Dark
         </DropdownMenuItem>
-        <DropdownMenuItem onClick={() => theme?.includes('dark') ? setTheme("high-contrast-dark") : setTheme("high-contrast-light")}>
-          High Contrast {isHighContrast && '✓'}
+        <DropdownMenuItem
+          onClick={() =>
+            theme?.includes("dark")
+              ? setTheme("high-contrast-dark")
+              : setTheme("high-contrast-light")
+          }
+        >
+          High Contrast {isHighContrast && "✓"}
         </DropdownMenuItem>
         <DropdownMenuItem onClick={() => setTheme("system")}>
           System
