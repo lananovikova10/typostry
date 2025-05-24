@@ -74,14 +74,14 @@ export const MarkdownInput = forwardRef<
     // Get the current textarea element
     const textarea = textareaRef.current
     if (!textarea) return
-    
+
     // Get current cursor position
     const start = textarea.selectionStart
     const end = textarea.selectionEnd
-    
+
     // Process emoji to get shortcode
     let shortcode: string | null = null
-    
+
     if (emoji.shortcodes && emoji.shortcodes.length > 0) {
       // Format: { shortcodes: ['smile', 'smiley'] }
       shortcode = emoji.shortcodes[0]
@@ -93,19 +93,20 @@ export const MarkdownInput = forwardRef<
       // Convert name to shortcode format (lowercase, underscores for spaces)
       shortcode = emoji.name.toLowerCase().replace(/\s+/g, "_")
     }
-    
+
     if (shortcode) {
       const emojiCode = `:${shortcode}:`
-      
+
       // Create new value with emoji inserted at cursor position
-      const newValue = value.substring(0, start) + emojiCode + value.substring(end)
-      
+      const newValue =
+        value.substring(0, start) + emojiCode + value.substring(end)
+
       // Update content via onChange prop
       onChange(newValue)
-      
+
       // Calculate new cursor position after the inserted emoji
       const newCursorPosition = start + emojiCode.length
-      
+
       // Restore focus to the textarea and set cursor position
       requestAnimationFrame(() => {
         if (textarea) {

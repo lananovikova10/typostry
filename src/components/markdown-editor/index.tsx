@@ -231,7 +231,7 @@ export function MarkdownEditor({
 
   /**
    * Inserts text at the cursor position in the editor
-   * 
+   *
    * @param text - The text to insert at the cursor position
    * @returns The inserted text
    */
@@ -303,7 +303,7 @@ export function MarkdownEditor({
         textareaElement.setSelectionRange(newCursorPosition, newCursorPosition)
       }
     }, 0)
-    
+
     return insertedText
   }
 
