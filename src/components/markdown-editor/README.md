@@ -1,17 +1,20 @@
-# Markdown Editor Component
+# Markdown Editor
 
-A fully-featured Markdown editor with real-time preview, toolbar, and grammar checking capabilities.
+A feature-rich Markdown editor with real-time preview, built with React and Next.js.
 
 ## Features
 
-- Real-time markdown preview
+- Real-time preview with split-screen and full-screen modes
+- Support for GitHub Flavored Markdown
 - Toolbar with common formatting options
-- Grammar and spelling checking
-- File system access for saving and loading files
-- Reading statistics
-- Keyboard shortcuts
-- Light and dark mode support
-- Fully responsive design
+- Emoji support using `:emoji_code:` syntax
+- Grammar and spelling checking with LanguageTool API
+- Executable JavaScript code blocks
+- Mermaid diagram support
+- File system operations (open, save, save as)
+- Keyboard shortcuts for common actions
+- Dark and light theme support
+- Reading statistics (words, chars, reading time)
 
 ## Usage
 
@@ -30,46 +33,50 @@ export default function MyEditor() {
 
 ## Props
 
-| Prop | Type | Default | Description |
-|------|------|---------|-------------|
-| `initialValue` | string | `""` | Initial markdown content |
-| `className` | string | `undefined` | Additional CSS classes |
-| `onChange` | function | `undefined` | Callback function when content changes |
-| `sidebarEnabled` | boolean | `true` | Whether to show the sidebar with document structure |
+| Prop           | Type     | Default     | Description                              |
+| -------------- | -------- | ----------- | ---------------------------------------- |
+| `initialValue` | string   | `""`        | Initial markdown content                 |
+| `onChange`     | function | `undefined` | Callback fired when content changes      |
+| `className`    | string   | `undefined` | Additional class names for the container |
+
+## Mermaid Diagram Support
+
+The editor supports Mermaid.js diagrams for creating visualizations directly in your markdown. Use a code block with the "mermaid" language identifier:
+
+````markdown
+```mermaid
+graph LR
+A[Square Rect] -- Link text --> B((Circle))
+A --> C(Round Rect)
+B --> D{Rhombus}
+C --> D
+```
+````
+
+This will render as an interactive diagram in the preview mode.
+
+### Supported Diagram Types
+
+- Flowcharts
+- Sequence diagrams
+- Class diagrams
+- State diagrams
+- Entity Relationship diagrams
+- User Journey diagrams
+- Gantt charts
+- Pie charts
+
+### Example: Sequence Diagram
+
+````markdown
+```mermaid
+sequenceDiagram
+    Alice->>John: Hello John, how are you?
+    John-->>Alice: Great!
+    Alice-)John: See you later!
+```
+````
 
 ## Keyboard Shortcuts
 
-See the [KEYBOARD_SHORTCUTS.md](./KEYBOARD_SHORTCUTS.md) file for a full list of available keyboard shortcuts.
-
-## Components
-
-The Markdown Editor is composed of several components:
-
-- `MarkdownInput`: The text area where markdown is typed
-- `MarkdownPreview`: Real-time rendered preview of the markdown
-- `MarkdownToolbar`: Buttons for formatting and file operations
-- `MarkdownSidebar`: Document outline and navigation
-- `ReadingStats`: Word count and estimated reading time
-
-## Responsive Design
-
-The editor features a fully responsive layout:
-
-- On small screens (≤640px): Editor spans full width with the preview below
-- On larger screens (>640px): Editor and preview share horizontal space (side-by-side)
-- Minimum editor height of 200px on all screen sizes
-- Top and bottom scroll-fade gradients maintain a minimum height of 20px
-
-## Styling
-
-The component uses CSS custom properties for theming:
-
-```css
-:root {
-  --markdown-toolbar-bg: /* toolbar background color */;
-  --markdown-toolbar-border: /* toolbar border color */;
-  /* ... additional custom properties */
-}
-```
-
-See the `globals.css` file for a complete list of custom properties.
+See [KEYBOARD_SHORTCUTS.md](./KEYBOARD_SHORTCUTS.md) for a full list of available keyboard shortcuts.

@@ -1,6 +1,7 @@
 "use client"
 
 import React, { useCallback, useEffect, useRef, useState } from "react"
+import dynamic from "next/dynamic"
 import { useTheme } from "next-themes"
 import { remark } from "remark"
 import remarkGfm from "remark-gfm"
@@ -11,6 +12,8 @@ import { replaceEmojis } from "@/lib/emoji"
 import { cn } from "@/lib/utils"
 import { CodeBlock, CodeBlockCode } from "@/components/ui/code-block"
 
+// Don't need to use dynamic for mermaid as we'll import it directly in useEffect
+
 export interface MarkdownPreviewProps {
   source: string
   className?: string
@@ -18,8 +21,82 @@ export interface MarkdownPreviewProps {
 
 export function MarkdownPreview({ source, className }: MarkdownPreviewProps) {
   const [html, setHtml] = useState("")
+  const [mermaidInstance, setMermaidInstance] = useState<any>(null)
   const previewRef = useRef<HTMLDivElement>(null)
   const { theme, resolvedTheme } = useTheme()
+
+  // Initialize mermaid library on client-side only
+  useEffect(() => {
+    const initMermaid = async () => {
+      try {
+        // Dynamically import mermaid
+        const mermaid = await import("mermaid")
+
+        // Initialize with theme-specific configuration
+        mermaid.default.initialize({
+          startOnLoad: false,
+          theme: resolvedTheme === "dark" ? "dark" : "default",
+          securityLevel: "loose", // needed for client-side rendering
+          fontFamily: "inherit",
+        })
+
+        // Set the mermaid instance for later use
+        setMermaidInstance(mermaid.default)
+      } catch (error) {
+        console.error("Failed to initialize mermaid:", error)
+      }
+    }
+
+    initMermaid()
+  }, [resolvedTheme]) // Function to render Mermaid diagrams
+  const renderMermaidDiagram = useCallback(
+    async (code: string, codeBlock: Element) => {
+      if (!mermaidInstance) {
+        console.warn("Mermaid instance not initialized")
+        return
+      }
+
+      // Find parent element
+      const pre = codeBlock.parentElement
+      if (!pre) return
+
+      // Create a unique ID for the diagram
+      const diagramId = `mermaid-diagram-${Math.random().toString(36).substring(2, 11)}`
+
+      // Create container for the Mermaid diagram
+      const container = document.createElement("div")
+      container.id = diagramId
+      container.className = "mermaid-diagram"
+      container.style.width = "100%"
+      container.style.overflow = "auto"
+      container.style.marginBottom = "1rem"
+      container.textContent = code
+
+      // Replace the pre element with our Mermaid container
+      pre.replaceWith(container)
+
+      try {
+        // Render the Mermaid diagram
+        const result = await mermaidInstance.render(diagramId, code)
+
+        // Create a wrapper for the SVG
+        const svgContainer = document.createElement("div")
+        svgContainer.className = "mermaid-svg-container"
+        svgContainer.style.width = "100%"
+        svgContainer.style.overflow = "auto"
+        svgContainer.style.marginBottom = "1rem"
+        svgContainer.innerHTML = result.svg
+
+        // Replace the container with the rendered SVG
+        container.replaceWith(svgContainer)
+      } catch (error) {
+        console.error("Error rendering Mermaid diagram:", error)
+        container.textContent = `Error rendering diagram: ${(error as Error).message}`
+        container.style.color = "red"
+      }
+    },
+    [mermaidInstance]
+  )
 
   // Function to execute JavaScript code and display output under the code block
   const executeJavaScript = useCallback(
@@ -118,6 +195,16 @@ export function MarkdownPreview({ source, className }: MarkdownPreviewProps) {
     const codeBlockTheme =
       resolvedTheme === "dark" ? "github-dark" : "github-light"
 
+    // Process any mermaid diagrams if mermaidInstance is available
+    if (mermaidInstance) {
+      const mermaidBlocks = previewRef.current.querySelectorAll(
+        "pre.mermaid-pre > code.language-mermaid"
+      )
+      mermaidBlocks.forEach((block) => {
+        renderMermaidDiagram(block.textContent || "", block as Element)
+      })
+    }
+
     // Find all pre > code elements
     const codeBlocks = previewRef.current.querySelectorAll("pre > code")
 
@@ -154,8 +241,22 @@ export function MarkdownPreview({ source, className }: MarkdownPreviewProps) {
       codeContent.className =
         "w-full overflow-x-auto text-[13px] [&>pre]:px-4 [&>pre]:py-4"
 
+      // For Mermaid diagrams
+      if (language === "mermaid") {
+        // We don't need the code block wrapper for Mermaid
+        codeContent.innerHTML = `<pre class="mermaid-pre"><code class="language-${language}">${code}</code></pre>`
+
+        // Process the Mermaid diagram
+        const mermaidCodeElement = codeContent.querySelector("code")
+        if (mermaidCodeElement && mermaidInstance) {
+          renderMermaidDiagram(code, mermaidCodeElement)
+        }
+
+        // Skip the rest of the processing for Mermaid
+        return
+      }
       // For JavaScript code, make sure we keep the pre > code structure for executability
-      if (language === "js" || language === "javascript") {
+      else if (language === "js" || language === "javascript") {
         codeContent.innerHTML = `<pre><code class="language-${language}">${code}</code></pre>`
 
         // Create button container with absolute positioning
@@ -238,7 +339,7 @@ export function MarkdownPreview({ source, className }: MarkdownPreviewProps) {
       // Replace the original pre element with our custom block
       pre.replaceWith(codeBlockContainer)
     })
-  }, [resolvedTheme, executeJavaScript])
+  }, [resolvedTheme, executeJavaScript, mermaidInstance, renderMermaidDiagram])
 
   useEffect(() => {
     const parseMarkdown = async () => {
@@ -279,6 +380,38 @@ export function MarkdownPreview({ source, className }: MarkdownPreviewProps) {
 
     parseMarkdown()
   }, [source])
+
+  // Initialize Mermaid
+  useEffect(() => {
+    let mounted = true
+
+    const initMermaid = async () => {
+      try {
+        const mermaidModule = await import("mermaid")
+        const mermaid = mermaidModule.default
+
+        if (mounted) {
+          // Initialize Mermaid with configuration
+          mermaid.initialize({
+            startOnLoad: false,
+            theme: resolvedTheme === "dark" ? "dark" : "default",
+            securityLevel: "loose",
+            fontFamily: "inherit",
+          })
+
+          setMermaidInstance(mermaid)
+        }
+      } catch (error) {
+        console.error("Failed to load Mermaid:", error)
+      }
+    }
+
+    initMermaid()
+
+    return () => {
+      mounted = false
+    }
+  }, [resolvedTheme])
 
   // Process code blocks after the HTML has been rendered
   useEffect(() => {

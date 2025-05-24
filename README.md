@@ -1,10 +1,10 @@
 # typostry
 
-A Next.js markdown editor with real-time preview, grammar checking, and theme support.
+A Next.js markdown editor with real-time preview, grammar checking, theme support, and diagram rendering.
 
 ## Description
 
-`typostry` is a feature-rich markdown editor built with Next.js that provides a seamless writing experience with real-time preview and advanced features like grammar checking, emoji support, and executable JavaScript code blocks.
+`typostry` is a feature-rich markdown editor built with Next.js that provides a seamless writing experience with real-time preview and advanced features like grammar checking, emoji support, executable JavaScript code blocks, and Mermaid diagrams.
 
 ## Features
 
@@ -14,6 +14,7 @@ A Next.js markdown editor with real-time preview, grammar checking, and theme su
 - Theme support (light/dark)
 - Emoji support using `:emoji_code:` syntax
 - Executable JavaScript code blocks in preview mode
+- Mermaid diagram support for visualizations
 - Keyboard shortcuts for common operations
 
 ### Grammar Checking
@@ -96,3 +97,20 @@ export default function YourComponent() {
   );
 }
 ```
+
+## Mermaid Diagram Support
+
+The editor supports Mermaid diagrams for creating visualizations directly in your markdown. Simply use a code block with the "mermaid" language identifier:
+
+```markdown
+```mermaid
+graph LR
+A[Square Rect] -- Link text --> B((Circle))
+A --> C(Round Rect)
+B --> D{Rhombus}
+C --> D
+```
+
+This will render as an interactive diagram in the preview:
+
+![Mermaid Diagram Example](https://mermaid.ink/img/pako:eNpVjk2LwjAURf_KI6u24JC3GadQcOFGcDcP8nhtA01S8lFxKP3vTRwQZ3X53XNyJjSQCYrQe9a8NuQ7e_0w7TvTXN47pDHVyiVGnXbdYPc85F6R_cLb-JGjx7kdSMOdvSq2cPSdTXIQvMa9CkekRlW0XHuBZyGvQtZS1FJUUEQYUuRoT67NJH_CIkPLbobZYeQxQdGTCZhlIXL-i5bn6XzU4ZnTrS8uhrZQIB84f5s-1FD-8Wdr3V8OVUmV)
