@@ -1,13 +1,15 @@
 "use client"
 
-import { useEffect, useRef, useState } from "react"
-import { Play } from "lucide-react"
+import React, { useCallback, useEffect, useRef, useState } from "react"
+import { useTheme } from "next-themes"
 import { remark } from "remark"
 import remarkGfm from "remark-gfm"
 import remarkHtml from "remark-html"
+import { codeToHtml } from "shiki"
 
 import { replaceEmojis } from "@/lib/emoji"
 import { cn } from "@/lib/utils"
+import { CodeBlock, CodeBlockCode } from "@/components/ui/code-block"
 
 export interface MarkdownPreviewProps {
   source: string
@@ -17,159 +19,226 @@ export interface MarkdownPreviewProps {
 export function MarkdownPreview({ source, className }: MarkdownPreviewProps) {
   const [html, setHtml] = useState("")
   const previewRef = useRef<HTMLDivElement>(null)
+  const { theme, resolvedTheme } = useTheme()
 
   // Function to execute JavaScript code and display output under the code block
-  const executeJavaScript = (code: string, codeBlock: Element) => {
-    // Find or create output area
-    const pre = codeBlock.parentElement
-    if (!pre) return
+  const executeJavaScript = useCallback(
+    (code: string, codeBlock: Element) => {
+      // Find or create output area
+      const pre = codeBlock.parentElement
+      if (!pre) return
 
-    // Remove any existing output area
-    const existingOutput = pre.nextElementSibling
-    if (
-      existingOutput &&
-      existingOutput.classList.contains("code-output-area")
-    ) {
-      existingOutput.remove()
-    }
-
-    // Create new output area
-    const outputArea = document.createElement("div")
-    outputArea.className = "code-output-area"
-    outputArea.style.marginTop = "0" // Connect directly to code block
-    outputArea.style.marginBottom = "1rem"
-    outputArea.style.padding = "0.75rem"
-    outputArea.style.backgroundColor = "#f8f8f8"
-    outputArea.style.borderBottomLeftRadius = "4px"
-    outputArea.style.borderBottomRightRadius = "4px"
-    outputArea.style.fontSize = "0.9rem"
-    outputArea.style.color = "#333"
-    outputArea.style.overflow = "auto"
-
-    // Add separator line
-    const separator = document.createElement("div")
-    separator.style.height = "1px"
-    separator.style.backgroundColor = "#ddd"
-    separator.style.margin = "0 0 0.75rem 0"
-    outputArea.appendChild(separator)
-
-    // Create output content container
-    const outputContent = document.createElement("div")
-    outputContent.className = "code-output-content"
-    outputArea.appendChild(outputContent)
-
-    // Insert output area after the code block
-    pre.after(outputArea)
-
-    // Capture console.log outputs
-    const originalConsoleLog = console.log
-    const logs: string[] = []
-
-    console.log = (...args) => {
-      originalConsoleLog.apply(console, args)
-      const log = args
-        .map((arg) =>
-          typeof arg === "object" ? JSON.stringify(arg, null, 2) : String(arg)
-        )
-        .join(" ")
-      logs.push(log)
-
-      // Update output content
-      outputContent.innerHTML = logs.map((l) => `<div>${l}</div>`).join("")
-    }
-
-    try {
-      // Using Function constructor for safer execution than eval
-      const executeCode = new Function(code)
-      executeCode()
-    } catch (error) {
-      console.error("Error executing JavaScript:", error)
-
-      // Display error in output area
-      const errorMsg = document.createElement("div")
-      errorMsg.style.color = "red"
-      errorMsg.textContent = `Error: ${(error as Error).message}`
-      outputContent.appendChild(errorMsg)
-    } finally {
-      // Restore original console.log
-      console.log = originalConsoleLog
-
-      // If no output was generated, show a message
-      if (outputContent.children.length === 0) {
-        outputContent.textContent = "Code executed successfully with no output"
+      // Remove any existing output area
+      const existingOutput = pre.nextElementSibling
+      if (
+        existingOutput &&
+        existingOutput.classList.contains("code-output-area")
+      ) {
+        existingOutput.remove()
       }
-    }
-  }
 
-  // Function to add run buttons to JavaScript code blocks
-  const addRunButtonsToCodeBlocks = () => {
+      // Create new output area
+      const outputArea = document.createElement("div")
+      outputArea.className = "code-output-area"
+      outputArea.style.marginTop = "0" // Connect directly to code block
+      outputArea.style.marginBottom = "1rem"
+      outputArea.style.padding = "0.75rem"
+      outputArea.style.backgroundColor =
+        resolvedTheme === "dark" ? "#1e1e1e" : "#f8f8f8"
+      outputArea.style.color = resolvedTheme === "dark" ? "#e0e0e0" : "#333"
+      outputArea.style.borderBottomLeftRadius = "4px"
+      outputArea.style.borderBottomRightRadius = "4px"
+      outputArea.style.fontSize = "0.9rem"
+      outputArea.style.overflow = "auto"
+
+      // Add separator line
+      const separator = document.createElement("div")
+      separator.style.height = "1px"
+      separator.style.backgroundColor =
+        resolvedTheme === "dark" ? "#444" : "#ddd"
+      separator.style.margin = "0 0 0.75rem 0"
+      outputArea.appendChild(separator)
+
+      // Create output content container
+      const outputContent = document.createElement("div")
+      outputContent.className = "code-output-content"
+      outputArea.appendChild(outputContent)
+
+      // Insert output area after the code block
+      pre.after(outputArea)
+
+      // Capture console.log outputs
+      const originalConsoleLog = console.log
+      const logs: string[] = []
+
+      console.log = (...args) => {
+        originalConsoleLog.apply(console, args)
+        const log = args
+          .map((arg) =>
+            typeof arg === "object" ? JSON.stringify(arg, null, 2) : String(arg)
+          )
+          .join(" ")
+        logs.push(log)
+
+        // Update output content
+        outputContent.innerHTML = logs.map((l) => `<div>${l}</div>`).join("")
+      }
+
+      try {
+        // Using Function constructor for safer execution than eval
+        const executeCode = new Function(code)
+        executeCode()
+      } catch (error) {
+        console.error("Error executing JavaScript:", error)
+
+        // Display error in output area
+        const errorMsg = document.createElement("div")
+        errorMsg.style.color = "red"
+        errorMsg.textContent = `Error: ${(error as Error).message}`
+        outputContent.appendChild(errorMsg)
+      } finally {
+        // Restore original console.log
+        console.log = originalConsoleLog
+
+        // If no output was generated, show a message
+        if (outputContent.children.length === 0) {
+          outputContent.textContent =
+            "Code executed successfully with no output"
+        }
+      }
+    },
+    [resolvedTheme]
+  )
+
+  // Function to replace code blocks with CodeBlock component
+  const processCodeBlocks = useCallback(() => {
     if (!previewRef.current) return
 
-    // Find all pre > code elements with language-js or language-javascript class
-    const jsCodeBlocks = previewRef.current.querySelectorAll(
-      "pre > code.language-js, pre > code.language-javascript"
-    )
+    // Determine the theme to use for code blocks
+    const codeBlockTheme =
+      resolvedTheme === "dark" ? "github-dark" : "github-light"
 
-    jsCodeBlocks.forEach((codeBlock, index) => {
+    // Find all pre > code elements
+    const codeBlocks = previewRef.current.querySelectorAll("pre > code")
+
+    codeBlocks.forEach((codeBlock) => {
       const pre = codeBlock.parentElement
-      if (!pre || pre.querySelector(".code-run-button")) return // Skip if already processed
+      if (!pre || pre.querySelector(".code-block-processed")) return // Skip if already processed
 
-      // Create button container with absolute positioning
-      const buttonContainer = document.createElement("div")
-      buttonContainer.className = "code-run-button-container"
-      buttonContainer.style.position = "absolute"
-      buttonContainer.style.top = "0.5rem"
-      buttonContainer.style.right = "0.5rem"
+      // Mark as processed
+      pre.classList.add("code-block-processed")
 
-      // Create run button
-      const runButton = document.createElement("button")
-      runButton.className = "code-run-button"
-      runButton.title = "Run JavaScript"
-      runButton.innerHTML =
-        '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>'
-      runButton.style.display = "flex"
-      runButton.style.alignItems = "center"
-      runButton.style.justifyContent = "center"
-      runButton.style.backgroundColor = "#f0f0f0"
-      runButton.style.color = "#555"
-      runButton.style.border = "none"
-      runButton.style.borderRadius = "4px"
-      runButton.style.width = "28px"
-      runButton.style.height = "28px"
-      runButton.style.cursor = "pointer"
-      runButton.style.opacity = "0.7"
-      runButton.style.transition = "all 0.2s"
-      runButton.style.boxShadow = "0 1px 2px rgba(0,0,0,0.1)"
+      // Get the language from the class (language-xxx)
+      const languageClass = Array.from(codeBlock.classList).find((cls) =>
+        cls.startsWith("language-")
+      )
+      const language = languageClass
+        ? languageClass.replace("language-", "")
+        : "text"
 
-      // Hover effect
-      runButton.addEventListener("mouseenter", () => {
-        runButton.style.opacity = "0.9"
-        runButton.style.boxShadow = "0 1px 3px rgba(0,0,0,0.15)"
-      })
-      runButton.addEventListener("mouseleave", () => {
+      // Get the code content
+      const code = codeBlock.textContent || ""
+
+      // Create a container to hold our custom CodeBlock
+      const codeBlockContainer = document.createElement("div")
+      codeBlockContainer.className = "code-block-container"
+
+      // Create CodeBlock wrapper
+      const codeBlockWrapper = document.createElement("div")
+      codeBlockWrapper.className =
+        "not-prose flex w-full flex-col overflow-clip border border-border bg-card text-card-foreground rounded-xl"
+      codeBlockWrapper.style.position = "relative"
+
+      // Create the code content element
+      const codeContent = document.createElement("div")
+      codeContent.className =
+        "w-full overflow-x-auto text-[13px] [&>pre]:px-4 [&>pre]:py-4"
+
+      // For JavaScript code, make sure we keep the pre > code structure for executability
+      if (language === "js" || language === "javascript") {
+        codeContent.innerHTML = `<pre><code class="language-${language}">${code}</code></pre>`
+
+        // Create button container with absolute positioning
+        const buttonContainer = document.createElement("div")
+        buttonContainer.className = "code-run-button-container"
+        buttonContainer.style.position = "absolute"
+        buttonContainer.style.top = "0.5rem"
+        buttonContainer.style.right = "0.5rem"
+        buttonContainer.style.zIndex = "10"
+
+        // Create run button
+        const runButton = document.createElement("button")
+        runButton.className = "code-run-button"
+        runButton.title = "Run JavaScript"
+        runButton.innerHTML =
+          '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>'
+        runButton.style.display = "flex"
+        runButton.style.alignItems = "center"
+        runButton.style.justifyContent = "center"
+        runButton.style.backgroundColor =
+          resolvedTheme === "dark" ? "#333" : "#f0f0f0"
+        runButton.style.color = resolvedTheme === "dark" ? "#eee" : "#555"
+        runButton.style.border = "none"
+        runButton.style.borderRadius = "4px"
+        runButton.style.width = "28px"
+        runButton.style.height = "28px"
+        runButton.style.cursor = "pointer"
         runButton.style.opacity = "0.7"
-        runButton.style.boxShadow = "0 1px 2px rgba(0,0,0,0.1)"
-      })
+        runButton.style.transition = "all 0.2s"
+        runButton.style.boxShadow =
+          resolvedTheme === "dark"
+            ? "0 1px 2px rgba(0,0,0,0.3)"
+            : "0 1px 2px rgba(0,0,0,0.1)"
 
-      // Set up click event to execute the code
-      runButton.addEventListener("click", (e) => {
-        e.preventDefault()
-        e.stopPropagation()
-        const code = codeBlock.textContent || ""
-        executeJavaScript(code, codeBlock)
-      })
+        // Hover effect
+        runButton.addEventListener("mouseenter", () => {
+          runButton.style.opacity = "0.9"
+          runButton.style.boxShadow =
+            resolvedTheme === "dark"
+              ? "0 1px 3px rgba(0,0,0,0.5)"
+              : "0 1px 3px rgba(0,0,0,0.15)"
+        })
+        runButton.addEventListener("mouseleave", () => {
+          runButton.style.opacity = "0.7"
+          runButton.style.boxShadow =
+            resolvedTheme === "dark"
+              ? "0 1px 2px rgba(0,0,0,0.3)"
+              : "0 1px 2px rgba(0,0,0,0.1)"
+        })
 
-      // Add button to container and container to pre
-      buttonContainer.appendChild(runButton)
+        // Set up click event to execute the code
+        runButton.addEventListener("click", (e) => {
+          e.preventDefault()
+          e.stopPropagation()
+          const jsCodeElement = codeContent.querySelector("code")
+          if (jsCodeElement) {
+            const jsCode = jsCodeElement.textContent || ""
+            executeJavaScript(jsCode, jsCodeElement)
+          }
+        })
 
-      // Make sure the pre has position relative for absolute positioning of the button
-      pre.style.position = "relative"
-      pre.style.marginBottom = "0" // Remove margin to connect with output area
-      pre.style.borderBottomLeftRadius = "0" // Remove bottom radius when output is shown
-      pre.style.borderBottomRightRadius = "0" // Remove bottom radius when output is shown
-      pre.appendChild(buttonContainer)
+        // Add button to container and container to wrapper
+        buttonContainer.appendChild(runButton)
+        codeBlockWrapper.appendChild(buttonContainer)
+      } else {
+        // For non-JS code, use Shiki highlighting via the CodeBlockCode component
+        // We'll do this in React after hydration, for now just add placeholders
+        codeContent.setAttribute("data-code", code)
+        codeContent.setAttribute("data-language", language)
+        codeContent.setAttribute("data-theme", codeBlockTheme)
+        codeContent.classList.add("shiki-code-block")
+
+        // Add placeholder content until hydration
+        codeContent.innerHTML = `<pre><code class="language-${language}">${code}</code></pre>`
+      }
+
+      codeBlockWrapper.appendChild(codeContent)
+      codeBlockContainer.appendChild(codeBlockWrapper)
+
+      // Replace the original pre element with our custom block
+      pre.replaceWith(codeBlockContainer)
     })
-  }
+  }, [resolvedTheme, executeJavaScript])
 
   useEffect(() => {
     const parseMarkdown = async () => {
@@ -211,16 +280,58 @@ export function MarkdownPreview({ source, className }: MarkdownPreviewProps) {
     parseMarkdown()
   }, [source])
 
-  // Add run buttons after the HTML has been rendered
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+  // Process code blocks after the HTML has been rendered
   useEffect(() => {
     if (html) {
       // Use setTimeout to ensure the DOM has been updated
       setTimeout(() => {
-        addRunButtonsToCodeBlocks()
+        processCodeBlocks()
       }, 0)
     }
-  }, [html])
+  }, [html, processCodeBlocks])
+
+  // React-based code block rendering for non-JS blocks after hydration
+  useEffect(() => {
+    if (!previewRef.current) return
+
+    const shikiBlocks = previewRef.current.querySelectorAll(".shiki-code-block")
+    if (shikiBlocks.length === 0) return
+
+    shikiBlocks.forEach((block) => {
+      const code = block.getAttribute("data-code") || ""
+      const language = block.getAttribute("data-language") || "text"
+      const blockTheme = block.getAttribute("data-theme") || "github-light"
+
+      // Create a temporary container
+      const container = document.createElement("div")
+
+      // Create the code content element
+      const codeElement = document.createElement("div")
+      codeElement.className =
+        "w-full overflow-x-auto text-[13px] [&>pre]:px-4 [&>pre]:py-4"
+
+      // Set placeholder until Shiki processes the code
+      codeElement.innerHTML = `<pre><code class="language-${language}">${code}</code></pre>`
+      codeElement.setAttribute("data-shiki-target", "true")
+
+      container.appendChild(codeElement)
+
+      // Replace the original element
+      block.replaceWith(container)
+
+      // Process with Shiki
+      codeToHtml(code, { lang: language, theme: blockTheme })
+        .then((html) => {
+          const target = container.querySelector("[data-shiki-target]")
+          if (target) {
+            target.innerHTML = html
+          }
+        })
+        .catch((err) => {
+          console.error("Error highlighting code with Shiki:", err)
+        })
+    })
+  }, [html, resolvedTheme])
 
   return (
     <div

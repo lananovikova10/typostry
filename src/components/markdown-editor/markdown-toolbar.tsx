@@ -83,10 +83,10 @@ export function MarkdownToolbar({
   // Handle emoji selection from the emoji picker
   const handleEmojiSelect = (emoji: any) => {
     console.log("Selected emoji:", emoji)
-    
+
     // Insert the actual emoji character directly instead of creating shortcodes
     // This ensures compatibility regardless of whether the shortcode exists in our mapping
-    onInsertAction(emoji.emoji || '😀')
+    onInsertAction(emoji.emoji || "😀")
     setIsEmojiPickerOpen(false)
   }
 
