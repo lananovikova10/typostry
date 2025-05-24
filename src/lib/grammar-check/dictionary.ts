@@ -1,28 +1,28 @@
 /**
  * Custom dictionary management for grammar checker
  */
-import { CustomDictionaryItem } from "./types";
+import { CustomDictionaryItem } from "./types"
 
-const STORAGE_KEY = "markdown-editor-custom-dictionary";
+const STORAGE_KEY = "markdown-editor-custom-dictionary"
 
 /**
  * Load custom dictionary from localStorage
  */
 export function loadCustomDictionary(): CustomDictionaryItem[] {
   if (typeof window === "undefined") {
-    return [];
+    return []
   }
-  
+
   try {
-    const stored = localStorage.getItem(STORAGE_KEY);
+    const stored = localStorage.getItem(STORAGE_KEY)
     if (stored) {
-      return JSON.parse(stored);
+      return JSON.parse(stored)
     }
   } catch (error) {
-    console.error("Failed to load custom dictionary", error);
+    console.error("Failed to load custom dictionary", error)
   }
-  
-  return [];
+
+  return []
 }
 
 /**
@@ -30,13 +30,13 @@ export function loadCustomDictionary(): CustomDictionaryItem[] {
  */
 export function saveCustomDictionary(dictionary: CustomDictionaryItem[]): void {
   if (typeof window === "undefined") {
-    return;
+    return
   }
-  
+
   try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(dictionary));
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(dictionary))
   } catch (error) {
-    console.error("Failed to save custom dictionary", error);
+    console.error("Failed to save custom dictionary", error)
   }
 }
 
@@ -47,27 +47,27 @@ export function addToDictionary(
   word: string,
   ruleId?: string
 ): CustomDictionaryItem[] {
-  const dictionary = loadCustomDictionary();
-  
+  const dictionary = loadCustomDictionary()
+
   // Check if word already exists
   const exists = dictionary.some(
-    (item) => 
-      item.word.toLowerCase() === word.toLowerCase() && 
+    (item) =>
+      item.word.toLowerCase() === word.toLowerCase() &&
       (!ruleId || item.ruleId === ruleId)
-  );
-  
+  )
+
   if (!exists) {
     const newItem: CustomDictionaryItem = {
       word,
       date: new Date().toISOString(),
       ruleId,
-    };
-    
-    dictionary.push(newItem);
-    saveCustomDictionary(dictionary);
+    }
+
+    dictionary.push(newItem)
+    saveCustomDictionary(dictionary)
   }
-  
-  return dictionary;
+
+  return dictionary
 }
 
 /**
@@ -77,35 +77,34 @@ export function removeFromDictionary(
   word: string,
   ruleId?: string
 ): CustomDictionaryItem[] {
-  const dictionary = loadCustomDictionary();
-  
+  const dictionary = loadCustomDictionary()
+
   const filtered = dictionary.filter(
-    (item) => 
-      !(item.word.toLowerCase() === word.toLowerCase() && 
-      (!ruleId || item.ruleId === ruleId))
-  );
-  
+    (item) =>
+      !(
+        item.word.toLowerCase() === word.toLowerCase() &&
+        (!ruleId || item.ruleId === ruleId)
+      )
+  )
+
   if (filtered.length !== dictionary.length) {
-    saveCustomDictionary(filtered);
+    saveCustomDictionary(filtered)
   }
-  
-  return filtered;
+
+  return filtered
 }
 
 /**
  * Check if a word is in the custom dictionary
  */
-export function isInDictionary(
-  word: string,
-  ruleId?: string
-): boolean {
-  const dictionary = loadCustomDictionary();
-  
+export function isInDictionary(word: string, ruleId?: string): boolean {
+  const dictionary = loadCustomDictionary()
+
   return dictionary.some(
-    (item) => 
-      item.word.toLowerCase() === word.toLowerCase() && 
+    (item) =>
+      item.word.toLowerCase() === word.toLowerCase() &&
       (!ruleId || item.ruleId === ruleId)
-  );
+  )
 }
 
 /**
@@ -113,8 +112,8 @@ export function isInDictionary(
  */
 export function clearDictionary(): void {
   if (typeof window === "undefined") {
-    return;
+    return
   }
-  
-  localStorage.removeItem(STORAGE_KEY);
+
+  localStorage.removeItem(STORAGE_KEY)
 }

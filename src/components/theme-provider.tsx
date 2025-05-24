@@ -7,9 +7,15 @@ import { type ThemeProviderProps } from "next-themes/dist/types"
 // Extended ThemeProvider to include high-contrast themes
 export function ThemeProvider({ children, ...props }: ThemeProviderProps) {
   return (
-    <NextThemesProvider 
+    <NextThemesProvider
       {...props}
-      themes={['light', 'dark', 'system', 'high-contrast-light', 'high-contrast-dark']}
+      themes={[
+        "light",
+        "dark",
+        "system",
+        "high-contrast-light",
+        "high-contrast-dark",
+      ]}
     >
       {children}
     </NextThemesProvider>

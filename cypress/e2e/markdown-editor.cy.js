@@ -53,6 +53,25 @@ describe('Markdown Editor', () => {
     cy.get('[data-testid="toolbar-heading-1"]').click()
     cy.get('[data-testid="markdown-input"]').should('contain.value', '# Heading 1')
   })
+  
+  it('should insert emoji shortcode when emoji is selected from picker', () => {
+    cy.get('[data-testid="markdown-input"]').clear()
+    
+    // Open the emoji picker
+    cy.get('[data-testid="toolbar-emoji"]').click()
+    
+    // Wait for the emoji picker to appear
+    cy.get('[data-slot="emoji-picker"]').should('be.visible')
+    
+    // Select an emoji (first emoji in the list)
+    cy.get('[data-slot="emoji-picker-emoji"]').first().click()
+    
+    // Verify the emoji shortcode was inserted
+    cy.get('[data-testid="markdown-input"]').invoke('val').should('match', /^:[a-z_]+:$/)
+    
+    // Verify the emoji picker is closed after selection
+    cy.get('[data-slot="emoji-picker"]').should('not.exist')
+  })
 
   it('should render markdown correctly in preview mode', () => {
     cy.get('[data-testid="markdown-input"]')

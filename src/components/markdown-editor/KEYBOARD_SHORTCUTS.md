@@ -4,20 +4,20 @@ This document outlines the keyboard shortcuts available in the Markdown Editor.
 
 ## Navigation Shortcuts
 
-| Shortcut | Description |
-|----------|-------------|
-| `i` | Focus text area (only works when not in a text input) |
-| `ESC` | Toggle between edit and preview modes |
+| Shortcut | Description                                           |
+| -------- | ----------------------------------------------------- |
+| `i`      | Focus text area (only works when not in a text input) |
+| `ESC`    | Toggle between edit and preview modes                 |
 
 ## Editing Shortcuts
 
-| Shortcut | Description |
-|----------|-------------|
-| `CTRL/CMD + S` | Save the current file |
-| `CTRL/CMD + [` | Insert link markup |
-| `CTRL/CMD + ]` | Insert image markup |
-| `CTRL/CMD + \` | Insert table markup |
-| `CTRL/CMD + Z` | Undo last edit |
+| Shortcut                                 | Description           |
+| ---------------------------------------- | --------------------- |
+| `CTRL/CMD + S`                           | Save the current file |
+| `CTRL/CMD + [`                           | Insert link markup    |
+| `CTRL/CMD + ]`                           | Insert image markup   |
+| `CTRL/CMD + \`                           | Insert table markup   |
+| `CTRL/CMD + Z`                           | Undo last edit        |
 | `CTRL/CMD + SHIFT + Z` or `CTRL/CMD + Y` | Redo last undone edit |
 
 ## Notes

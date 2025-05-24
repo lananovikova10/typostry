@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useEffect, useState } from "react"
 import { ChevronDown, ChevronRight, Hash } from "lucide-react"
 
 import { cn } from "@/lib/utils"
@@ -25,7 +25,9 @@ export function MarkdownSidebar({
   className,
 }: MarkdownSidebarProps) {
   const [headings, setHeadings] = useState<HeadingItem[]>([])
-  const [expandedItems, setExpandedItems] = useState<Record<string, boolean>>({})
+  const [expandedItems, setExpandedItems] = useState<Record<string, boolean>>(
+    {}
+  )
 
   // Extract headings from the markdown content
   useEffect(() => {
@@ -48,7 +50,7 @@ export function MarkdownSidebar({
         .replace(/[^\w\s-]/g, "") // Remove special chars
         .replace(/\s+/g, "-") // Replace spaces with hyphens
         .replace(/--+/g, "-") // Replace multiple hyphens with single hyphen
-      
+
       extractedHeadings.push({ text, level, id })
     }
 
@@ -82,30 +84,33 @@ export function MarkdownSidebar({
   }
 
   // Render the heading hierarchy recursively
-  const renderHeadings = (startIndex: number, parentLevel: number): JSX.Element[] => {
+  const renderHeadings = (
+    startIndex: number,
+    parentLevel: number
+  ): JSX.Element[] => {
     const result: JSX.Element[] = []
-    
+
     for (let i = startIndex; i < headings.length; i++) {
       const heading = headings[i]
-      
+
       // Skip if this is not a direct child of parent (lower level or higher level)
       if (heading.level <= parentLevel) {
         break
       }
-      
+
       // Skip if this is not an immediate child of parent
       if (i > startIndex && heading.level > parentLevel + 1) {
         continue
       }
-      
+
       const isExpanded = expandedItems[i] === true
       const hasChildHeadings = hasChildren(i)
-      
+
       const headingItem = (
         <div key={`${heading.id}-${i}`} className="mb-1">
-          <div 
+          <div
             className={cn(
-              "flex items-center py-1 px-2 rounded-md hover:bg-secondary/50 cursor-pointer text-sm",
+              "flex cursor-pointer items-center rounded-md px-2 py-1 text-sm hover:bg-secondary/50",
               "transition-colors duration-200"
             )}
             onClick={() => onHeadingClick(heading.id)}
@@ -114,7 +119,7 @@ export function MarkdownSidebar({
               {hasChildHeadings ? (
                 <button
                   onClick={(e) => toggleExpand(i, e)}
-                  className="focus:outline-none p-0.5 hover:bg-secondary/80 rounded-sm"
+                  className="rounded-sm p-0.5 hover:bg-secondary/80 focus:outline-none"
                 >
                   {isExpanded ? (
                     <ChevronDown className="h-3.5 w-3.5" />
@@ -123,10 +128,10 @@ export function MarkdownSidebar({
                   )}
                 </button>
               ) : (
-                <Hash className="h-3.5 w-3.5 ml-0.5" />
+                <Hash className="ml-0.5 h-3.5 w-3.5" />
               )}
             </div>
-            <span 
+            <span
               className={cn(
                 "truncate",
                 heading.level === 1 && "font-semibold",
@@ -137,19 +142,17 @@ export function MarkdownSidebar({
               {heading.text}
             </span>
           </div>
-          
+
           {/* Render children if expanded */}
           {hasChildHeadings && isExpanded && (
-            <div className="pl-4">
-              {renderHeadings(i + 1, heading.level)}
-            </div>
+            <div className="pl-4">{renderHeadings(i + 1, heading.level)}</div>
           )}
         </div>
       )
-      
+
       result.push(headingItem)
     }
-    
+
     return result
   }
 
@@ -158,17 +161,19 @@ export function MarkdownSidebar({
   }
 
   return (
-    <div 
+    <div
       className={cn(
-        "w-64 border-r border-border overflow-y-auto p-2 bg-background",
+        "w-64 overflow-y-auto border-r border-border bg-background p-2",
         className
       )}
       data-testid="markdown-sidebar"
     >
-      <h3 className="font-semibold mb-2 px-2 text-sm">Document Outline</h3>
+      <h3 className="mb-2 px-2 text-sm font-semibold">Document Outline</h3>
       <div className="space-y-1">
         {headings.length === 0 ? (
-          <p className="text-sm text-muted-foreground px-2">No headings found</p>
+          <p className="px-2 text-sm text-muted-foreground">
+            No headings found
+          </p>
         ) : (
           renderHeadings(0, 0)
         )}

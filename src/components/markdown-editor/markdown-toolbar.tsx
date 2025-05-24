@@ -17,18 +17,35 @@ import {
   ListOrdered,
   PanelLeftClose,
   PanelLeftOpen,
-  PenLine,
   Pencil,
+  PenLine,
   Quote,
   Save,
   SaveAll,
+  Smile,
 } from "lucide-react"
 
-import { Button } from "@/components/ui/button"
-import { Separator } from "@/components/ui/separator"
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
-import { ModeToggle } from "@/components/mode-toggle"
 import { getRandomPhotoAsMarkdown } from "@/lib/unsplash"
+import { Button } from "@/components/ui/button"
+import {
+  EmojiPicker,
+  EmojiPickerContent,
+  EmojiPickerFooter,
+  EmojiPickerSearch,
+} from "@/components/ui/emoji-picker"
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover"
+import { Separator } from "@/components/ui/separator"
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip"
+import { ModeToggle } from "@/components/mode-toggle"
 
 export interface MarkdownToolbarProps {
   isPreviewMode: boolean
@@ -61,6 +78,23 @@ export function MarkdownToolbar({
   isSidebarCollapsed = false,
   onToggleSidebar,
 }: MarkdownToolbarProps) {
+  const [isEmojiPickerOpen, setIsEmojiPickerOpen] = React.useState(false)
+
+  // Handle emoji selection from the emoji picker
+  const handleEmojiSelect = (emoji: any) => {
+    console.log("Selected emoji:", emoji)
+    
+    // Convert emoji label to shortcode format
+    // frimousse only provides emoji.emoji (character) and emoji.label (name)
+    const shortcode = emoji.label?.toLowerCase()
+      .replace(/[^\w\s]/g, '') // Remove special characters
+      .replace(/\s+/g, '_') // Replace spaces with underscores
+      .trim()
+    
+    onInsertAction(`:${shortcode || 'emoji'}:`)
+    setIsEmojiPickerOpen(false)
+  }
+
   // Organize toolbar items into logical groups
   const toolbarGroups = [
     // Text formatting group
@@ -101,52 +135,76 @@ export function MarkdownToolbar({
         action: async () => {
           try {
             // Read from clipboard
-            const clipboardText = await navigator.clipboard.readText();
+            const clipboardText = await navigator.clipboard.readText()
 
             // Simple URL validation regex
-            const urlRegex = /^(https?:\/\/)?[\w.-]+\.[a-z]{2,}(\/\S*)?$/i;
+            const urlRegex = /^(https?:\/\/)?[\w.-]+\.[a-z]{2,}(\/\S*)?$/i
 
             if (urlRegex.test(clipboardText)) {
               // Get the selected text from the textarea
-              const textarea = document.querySelector('textarea[data-testid="markdown-input"]') as HTMLTextAreaElement;
+              const textarea = document.querySelector(
+                'textarea[data-testid="markdown-input"]'
+              ) as HTMLTextAreaElement
               if (!textarea) {
-                onInsertAction("[Link](" + clipboardText + ")");
-                return;
+                onInsertAction("[Link](" + clipboardText + ")")
+                return
               }
 
-              const selectedText = textarea.value.substring(textarea.selectionStart, textarea.selectionEnd);
+              const selectedText = textarea.value.substring(
+                textarea.selectionStart,
+                textarea.selectionEnd
+              )
 
               // If there's selected text, wrap it with the link format
               if (selectedText) {
-                const beforeSelection = textarea.value.substring(0, textarea.selectionStart);
-                const afterSelection = textarea.value.substring(textarea.selectionEnd);
-                const newValue = beforeSelection + '[' + selectedText + '](' + clipboardText + ')' + afterSelection;
+                const beforeSelection = textarea.value.substring(
+                  0,
+                  textarea.selectionStart
+                )
+                const afterSelection = textarea.value.substring(
+                  textarea.selectionEnd
+                )
+                const newValue =
+                  beforeSelection +
+                  "[" +
+                  selectedText +
+                  "](" +
+                  clipboardText +
+                  ")" +
+                  afterSelection
 
                 // Update the textarea value
-                textarea.value = newValue;
+                textarea.value = newValue
 
                 // Trigger the onChange event
-                const event = new Event('input', { bubbles: true });
-                textarea.dispatchEvent(event);
+                const event = new Event("input", { bubbles: true })
+                textarea.dispatchEvent(event)
 
                 // Set cursor position after the inserted link
                 setTimeout(() => {
-                  const newCursorPosition = textarea.selectionStart + selectedText.length + clipboardText.length + 4;
-                  textarea.setSelectionRange(newCursorPosition, newCursorPosition);
-                  textarea.focus();
-                }, 0);
+                  const newCursorPosition =
+                    textarea.selectionStart +
+                    selectedText.length +
+                    clipboardText.length +
+                    4
+                  textarea.setSelectionRange(
+                    newCursorPosition,
+                    newCursorPosition
+                  )
+                  textarea.focus()
+                }, 0)
               } else {
                 // No selection, just insert the link
-                onInsertAction("[Link](" + clipboardText + ")");
+                onInsertAction("[Link](" + clipboardText + ")")
               }
             } else {
               // Not a URL, insert default link format
-              onInsertAction("[Link text](https://example.com)");
+              onInsertAction("[Link text](https://example.com)")
             }
           } catch (error) {
-            console.error("Failed to read clipboard:", error);
+            console.error("Failed to read clipboard:", error)
             // Fallback to default behavior
-            onInsertAction("[Link text](https://example.com)");
+            onInsertAction("[Link text](https://example.com)")
           }
         },
         ariaLabel: "Insert link",
@@ -164,28 +222,32 @@ export function MarkdownToolbar({
         action: async () => {
           try {
             // Get the textarea element
-            const textarea = document.querySelector('textarea[data-testid="markdown-input"]') as HTMLTextAreaElement;
+            const textarea = document.querySelector(
+              'textarea[data-testid="markdown-input"]'
+            ) as HTMLTextAreaElement
 
             // Fetch random photo from Unsplash
-            const markdownText = await getRandomPhotoAsMarkdown();
+            const markdownText = await getRandomPhotoAsMarkdown()
 
             // Insert the Unsplash image markdown directly using the onInsertAction callback
             // This ensures React state is updated properly
-            onInsertAction(markdownText);
+            onInsertAction(markdownText)
 
             // Set cursor position after the inserted text if textarea is available
             if (textarea) {
               setTimeout(() => {
-                const newCursorPosition = textarea.selectionStart;
-                textarea.setSelectionRange(newCursorPosition, newCursorPosition);
-                textarea.focus();
-              }, 0);
+                const newCursorPosition = textarea.selectionStart
+                textarea.setSelectionRange(newCursorPosition, newCursorPosition)
+                textarea.focus()
+              }, 0)
             }
           } catch (error) {
-            console.error("Failed to fetch Unsplash image:", error);
+            console.error("Failed to fetch Unsplash image:", error)
 
             // Show error message in an alert
-            alert("Failed to fetch image from Unsplash. Please try again later.");
+            alert(
+              "Failed to fetch image from Unsplash. Please try again later."
+            )
           }
         },
         ariaLabel: "Insert random Unsplash image",
@@ -223,6 +285,13 @@ export function MarkdownToolbar({
         action: () => onInsertAction("\n> Blockquote text\n"),
         ariaLabel: "Insert blockquote",
       },
+      {
+        name: "Emoji",
+        icon: <Smile className="h-4 w-4" />,
+        action: () => setIsEmojiPickerOpen(true),
+        ariaLabel: "Insert emoji",
+        isPopover: true,
+      },
     ],
   ]
 
@@ -243,8 +312,8 @@ export function MarkdownToolbar({
       icon: <FolderOpen className="h-4 w-4" />,
       action: onOpenFile,
       ariaLabel: "Open an existing file",
-      tooltip: isFileSystemAPISupported 
-        ? "Open a file from your local file system" 
+      tooltip: isFileSystemAPISupported
+        ? "Open a file from your local file system"
         : "Open a file",
     },
     {
@@ -252,9 +321,10 @@ export function MarkdownToolbar({
       icon: <Save className="h-4 w-4" />,
       action: onSaveFile,
       ariaLabel: "Save current file",
-      tooltip: isFileSystemAPISupported && currentFileName 
-        ? `Save to ${currentFileName}${!isFileSaved ? " *" : ""}` 
-        : "Save file",
+      tooltip:
+        isFileSystemAPISupported && currentFileName
+          ? `Save to ${currentFileName}${!isFileSaved ? " *" : ""}`
+          : "Save file",
     },
   ]
 
@@ -270,10 +340,10 @@ export function MarkdownToolbar({
   }
 
   return (
-    <div className="flex items-center border-b p-2 shadow-sm overflow-hidden whitespace-nowrap">
+    <div className="flex items-center overflow-hidden whitespace-nowrap border-b p-2 shadow-sm">
       {/* Left side: File operations and formatting tools */}
-      <div className="flex items-center gap-1 flex-shrink-0 min-w-0 flex-nowrap">
-        <div className="flex items-center gap-1 mr-1 flex-nowrap">
+      <div className="flex min-w-0 flex-shrink-0 flex-nowrap items-center gap-1">
+        <div className="mr-1 flex flex-nowrap items-center gap-1">
           <TooltipProvider>
             {fileOperations.map((item) => (
               <Tooltip key={item.name}>
@@ -283,7 +353,7 @@ export function MarkdownToolbar({
                     size="icon"
                     onClick={item.action}
                     aria-label={item.ariaLabel}
-                    className="h-8 w-8 flex-shrink-0 text-[hsl(var(--markdown-toolbar-icon))] hover:text-[hsl(var(--markdown-toolbar-icon-hover))] hover:bg-secondary/70"
+                    className="h-8 w-8 flex-shrink-0 text-[hsl(var(--markdown-toolbar-icon))] hover:bg-secondary/70 hover:text-[hsl(var(--markdown-toolbar-icon-hover))]"
                     data-testid={`file-${item.name.toLowerCase()}`}
                   >
                     {item.icon}
@@ -296,32 +366,71 @@ export function MarkdownToolbar({
             ))}
           </TooltipProvider>
         </div>
-        <Separator orientation="vertical" className="h-8 mx-1 flex-shrink-0" />
+        <Separator orientation="vertical" className="mx-1 h-8 flex-shrink-0" />
         <TooltipProvider>
           {toolbarGroups.map((group, groupIndex) => (
             <React.Fragment key={`group-${groupIndex}`}>
               {groupIndex > 0 && (
-                <Separator orientation="vertical" className="h-8 mx-1 flex-shrink-0" />
+                <Separator
+                  orientation="vertical"
+                  className="mx-1 h-8 flex-shrink-0"
+                />
               )}
               {group.map((item) => (
-                <Tooltip key={item.name}>
-                  <TooltipTrigger asChild>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      onClick={item.action}
-                      aria-label={item.ariaLabel}
-                      disabled={isPreviewMode}
-                      className="h-8 w-8 flex-shrink-0 text-[hsl(var(--markdown-toolbar-icon))] hover:text-[hsl(var(--markdown-toolbar-icon-hover))] hover:bg-secondary/70 focus-visible:ring-2 focus-visible:ring-[hsl(var(--markdown-toolbar-active))]"
-                      data-testid={`toolbar-${item.name.toLowerCase().replace(/\s+/g, "-")}`}
+                <React.Fragment key={item.name}>
+                  {item.isPopover ? (
+                    <Popover
+                      open={isEmojiPickerOpen}
+                      onOpenChange={setIsEmojiPickerOpen}
                     >
-                      {item.icon}
-                    </Button>
-                  </TooltipTrigger>
-                  <TooltipContent>
-                    <p>{item.name}</p>
-                  </TooltipContent>
-                </Tooltip>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <PopoverTrigger asChild>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              aria-label={item.ariaLabel}
+                              disabled={isPreviewMode}
+                              className="h-8 w-8 flex-shrink-0 text-[hsl(var(--markdown-toolbar-icon))] hover:bg-secondary/70 hover:text-[hsl(var(--markdown-toolbar-icon-hover))] focus-visible:ring-2 focus-visible:ring-[hsl(var(--markdown-toolbar-active))]"
+                              data-testid={`toolbar-${item.name.toLowerCase().replace(/\s+/g, "-")}`}
+                            >
+                              {item.icon}
+                            </Button>
+                          </PopoverTrigger>
+                        </TooltipTrigger>
+                        <TooltipContent>
+                          <p>{item.name}</p>
+                        </TooltipContent>
+                      </Tooltip>
+                      <PopoverContent className="w-80 p-0" align="start">
+                        <EmojiPicker onEmojiSelect={handleEmojiSelect}>
+                          <EmojiPickerSearch placeholder="Search emojis..." />
+                          <EmojiPickerContent />
+                          <EmojiPickerFooter />
+                        </EmojiPicker>
+                      </PopoverContent>
+                    </Popover>
+                  ) : (
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={item.action}
+                          aria-label={item.ariaLabel}
+                          disabled={isPreviewMode}
+                          className="h-8 w-8 flex-shrink-0 text-[hsl(var(--markdown-toolbar-icon))] hover:bg-secondary/70 hover:text-[hsl(var(--markdown-toolbar-icon-hover))] focus-visible:ring-2 focus-visible:ring-[hsl(var(--markdown-toolbar-active))]"
+                          data-testid={`toolbar-${item.name.toLowerCase().replace(/\s+/g, "-")}`}
+                        >
+                          {item.icon}
+                        </Button>
+                      </TooltipTrigger>
+                      <TooltipContent>
+                        <p>{item.name}</p>
+                      </TooltipContent>
+                    </Tooltip>
+                  )}
+                </React.Fragment>
               ))}
             </React.Fragment>
           ))}
@@ -330,15 +439,19 @@ export function MarkdownToolbar({
 
       {/* Center: Filename with autosave indicator */}
       {currentFileName && (
-        <div className="flex items-center mx-4 text-sm font-medium overflow-hidden flex-shrink min-w-0 max-w-[40%]">
+        <div className="mx-4 flex min-w-0 max-w-[40%] flex-shrink items-center overflow-hidden text-sm font-medium">
           <span className="truncate" title={currentFileName}>
-            {currentFileName}{!isFileSaved ? " *" : ""}
+            {currentFileName}
+            {!isFileSaved ? " *" : ""}
           </span>
           {autoSaveEnabled && (
             <TooltipProvider>
               <Tooltip>
                 <TooltipTrigger asChild>
-                  <div className="ml-1 w-3 h-3 rounded-full bg-green-500 flex-shrink-0" aria-label="Auto-save enabled"></div>
+                  <div
+                    className="ml-1 h-3 w-3 flex-shrink-0 rounded-full bg-green-500"
+                    aria-label="Auto-save enabled"
+                  ></div>
                 </TooltipTrigger>
                 <TooltipContent>
                   <p>Auto-save enabled</p>
@@ -350,7 +463,7 @@ export function MarkdownToolbar({
       )}
 
       {/* Right side: View controls */}
-      <div className="flex items-center ml-auto gap-2 flex-shrink-0 flex-nowrap">
+      <div className="ml-auto flex flex-shrink-0 flex-nowrap items-center gap-2">
         {onToggleSidebar && (
           <TooltipProvider>
             <Tooltip>
@@ -359,8 +472,10 @@ export function MarkdownToolbar({
                   variant="ghost"
                   size="icon"
                   onClick={onToggleSidebar}
-                  aria-label={isSidebarCollapsed ? "Show sidebar" : "Hide sidebar"}
-                  className="h-8 w-8 text-[hsl(var(--markdown-toolbar-icon))] hover:text-[hsl(var(--markdown-toolbar-icon-hover))] hover:bg-secondary/70"
+                  aria-label={
+                    isSidebarCollapsed ? "Show sidebar" : "Hide sidebar"
+                  }
+                  className="h-8 w-8 text-[hsl(var(--markdown-toolbar-icon))] hover:bg-secondary/70 hover:text-[hsl(var(--markdown-toolbar-icon-hover))]"
                   data-testid="toggle-sidebar"
                 >
                   {isSidebarCollapsed ? (
@@ -371,7 +486,11 @@ export function MarkdownToolbar({
                 </Button>
               </TooltipTrigger>
               <TooltipContent>
-                <p>{isSidebarCollapsed ? "Show document outline" : "Hide document outline"}</p>
+                <p>
+                  {isSidebarCollapsed
+                    ? "Show document outline"
+                    : "Hide document outline"}
+                </p>
               </TooltipContent>
             </Tooltip>
           </TooltipProvider>
@@ -381,7 +500,7 @@ export function MarkdownToolbar({
           size="sm"
           onClick={onTogglePreview}
           aria-label={isPreviewMode ? "Edit mode" : "Preview mode"}
-          className="text-[hsl(var(--markdown-toolbar-icon))] hover:text-[hsl(var(--markdown-toolbar-icon-hover))] border border-transparent hover:border-secondary focus-visible:ring-2 focus-visible:ring-[hsl(var(--markdown-toolbar-active))]"
+          className="border border-transparent text-[hsl(var(--markdown-toolbar-icon))] hover:border-secondary hover:text-[hsl(var(--markdown-toolbar-icon-hover))] focus-visible:ring-2 focus-visible:ring-[hsl(var(--markdown-toolbar-active))]"
           data-testid="toggle-preview"
         >
           {isPreviewMode ? (

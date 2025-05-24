@@ -1,13 +1,13 @@
 "use client"
 
 import * as React from "react"
-import { useState, useEffect } from "react"
-import { Check, Info, Plus, X } from "lucide-react"
-import * as TooltipPrimitive from "@radix-ui/react-tooltip"
+import { useEffect, useState } from "react"
 import * as DropdownMenu from "@radix-ui/react-dropdown-menu"
+import * as TooltipPrimitive from "@radix-ui/react-tooltip"
+import { Check, Info, Plus, X } from "lucide-react"
 
-import { cn } from "@/lib/utils"
 import { GrammarError } from "@/lib/grammar-check/types"
+import { cn } from "@/lib/utils"
 
 interface GrammarTooltipProps {
   error: GrammarError
@@ -47,10 +47,7 @@ export function GrammarTooltip({
       <TooltipPrimitive.Root>
         <TooltipPrimitive.Trigger asChild>
           <span
-            className={cn(
-              "grammar-error",
-              `grammar-error-${error.severity}`
-            )}
+            className={cn("grammar-error", `grammar-error-${error.severity}`)}
           />
         </TooltipPrimitive.Trigger>
         <TooltipPrimitive.Portal>
@@ -84,7 +81,10 @@ export function GrammarTooltip({
               )}
 
               {error.replacements.length > 0 && (
-                <div className="h-px w-full bg-border my-1" aria-hidden="true" />
+                <div
+                  className="my-1 h-px w-full bg-border"
+                  aria-hidden="true"
+                />
               )}
 
               <div className="flex justify-end">
@@ -146,9 +146,7 @@ export function GrammarContextMenu({
   return (
     <>
       <DropdownMenu.Root>
-        <DropdownMenu.Trigger asChild>
-          {children}
-        </DropdownMenu.Trigger>
+        <DropdownMenu.Trigger asChild>{children}</DropdownMenu.Trigger>
         <DropdownMenu.Portal>
           <DropdownMenu.Content
             className="z-50 min-w-[12rem] overflow-hidden rounded-md border bg-popover p-2 text-popover-foreground shadow-md animate-in data-[side=bottom]:slide-in-from-top-2 data-[side=left]:slide-in-from-right-2 data-[side=right]:slide-in-from-left-2 data-[side=top]:slide-in-from-bottom-2"
@@ -182,9 +180,7 @@ export function GrammarContextMenu({
               Add to dictionary
             </DropdownMenu.Item>
 
-            <DropdownMenu.Item
-              className="relative flex cursor-pointer select-none items-center rounded-sm px-2 py-1.5 text-sm outline-none transition-colors hover:bg-accent hover:text-accent-foreground focus:bg-accent focus:text-accent-foreground data-[disabled]:pointer-events-none data-[disabled]:opacity-50"
-            >
+            <DropdownMenu.Item className="relative flex cursor-pointer select-none items-center rounded-sm px-2 py-1.5 text-sm outline-none transition-colors hover:bg-accent hover:text-accent-foreground focus:bg-accent focus:text-accent-foreground data-[disabled]:pointer-events-none data-[disabled]:opacity-50">
               <X className="mr-2 h-4 w-4 text-red-600 dark:text-red-500" />
               Ignore
             </DropdownMenu.Item>
