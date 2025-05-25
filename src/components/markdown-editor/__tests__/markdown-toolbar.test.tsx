@@ -33,6 +33,7 @@ describe("MarkdownToolbar", () => {
     expect(screen.getByTestId("toolbar-numbered-list")).toBeInTheDocument()
     expect(screen.getByTestId("toolbar-code")).toBeInTheDocument()
     expect(screen.getByTestId("toolbar-quote")).toBeInTheDocument()
+    expect(screen.getByTestId("toolbar-table")).toBeInTheDocument()
     expect(screen.getByTestId("toggle-preview")).toBeInTheDocument()
 
     // Check file operation buttons

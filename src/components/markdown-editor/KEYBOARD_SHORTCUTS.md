@@ -20,6 +20,15 @@ This document outlines the keyboard shortcuts available in the Markdown Editor.
 | `CTRL/CMD + Z`                           | Undo last edit        |
 | `CTRL/CMD + SHIFT + Z` or `CTRL/CMD + Y` | Redo last undone edit |
 
+## Table Creation
+
+The table button in the toolbar allows you to:
+1. Select a table size by hovering over the grid (up to 10×8)
+2. Click to insert a formatted markdown table at the cursor position
+3. Begin typing immediately in the first header cell
+
+You can also press `CTRL/CMD + \` to insert a default table.
+
 ## Notes
 
 - The `CTRL` key is used on Windows and Linux systems

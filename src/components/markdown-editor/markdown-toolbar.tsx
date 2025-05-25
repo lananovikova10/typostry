@@ -27,6 +27,7 @@ import {
 
 import { getRandomPhotoAsMarkdown } from "@/lib/unsplash"
 import { Button } from "@/components/ui/button"
+import { TableGenerator } from "@/components/markdown-editor/table-generator"
 import {
   EmojiPicker,
   EmojiPickerContent,
@@ -287,6 +288,11 @@ export function MarkdownToolbar({
         ariaLabel: "Insert emoji",
         isPopover: true,
       },
+      {
+        name: "Table",
+        isCustomComponent: true,
+        ariaLabel: "Insert table",
+      },
     ],
   ]
 
@@ -405,6 +411,11 @@ export function MarkdownToolbar({
                         </EmojiPicker>
                       </PopoverContent>
                     </Popover>
+                  ) : item.isCustomComponent && item.name === "Table" ? (
+                    <TableGenerator 
+                      onInsertTable={onInsertAction}
+                      isDisabled={isPreviewMode}
+                    />
                   ) : (
                     <Tooltip>
                       <TooltipTrigger asChild>
