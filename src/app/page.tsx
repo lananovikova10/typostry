@@ -59,7 +59,6 @@ document.querySelector('[data-testid="markdown-preview"]').appendChild(div);
 > Blockquotes are also supported
 
 Enjoy writing markdown!`}
-          className="min-h-[500px]"
         />
       </div>
     </main>
