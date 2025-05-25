@@ -523,7 +523,7 @@ export function MarkdownEditor({
     <div
       ref={editorRef}
       className={cn(
-        "flex min-h-[300px] w-full flex-col rounded-md border border-input bg-background shadow-sm transition-shadow duration-200 hover:shadow-md",
+        "flex w-full flex-col rounded-md border border-input bg-background shadow-sm transition-shadow duration-200 hover:shadow-md",
         className
       )}
       data-testid="markdown-editor"
@@ -566,13 +566,10 @@ export function MarkdownEditor({
               <MarkdownInput
                 value={markdown}
                 onChange={handleChange}
-                className="min-h-[200px] flex-1 p-2"
+                className="flex-1 p-2"
                 ref={markdownInputRef}
               />
-              <ReadingStats
-                content={markdown}
-                className="border-t border-input"
-              />
+
             </>
           )}
           {isPreviewMode && (
