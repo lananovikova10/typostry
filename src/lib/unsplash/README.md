@@ -7,12 +7,15 @@ This module provides integration with the Unsplash API to fetch random images an
 1. Create a `.env.local` file in the root of the project with your Unsplash API credentials:
 
 ```
+# Server-side keys (more secure, not exposed in client bundles)
 UNSPLASH_ACCESS_KEY=your_access_key
 UNSPLASH_SECRET_KEY=your_secret_key
+
+# Client-side key (will be exposed in browser)
 NEXT_PUBLIC_UNSPLASH_ACCESS_KEY=your_access_key
 ```
 
-Note: The `NEXT_PUBLIC_` prefix is required for client-side access.
+Note: The `NEXT_PUBLIC_` prefix makes the variable available in the browser. For security-sensitive keys, use server-side variables when possible.
 
 2. Make sure `.env.local` is in your `.gitignore` file to avoid committing API credentials.
 

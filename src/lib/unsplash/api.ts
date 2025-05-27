@@ -2,6 +2,8 @@
  * Unsplash API integration
  */
 
+import { env } from "@/env.mjs"
+
 import {
   UnsplashPhoto,
   UnsplashRandomPhotoParams,
@@ -12,8 +14,11 @@ import {
 const UNSPLASH_API_URL = "https://api.unsplash.com"
 
 // Get the API key from environment variables
+// Use the client-side key for browser environments, fallback to server-side
 const UNSPLASH_ACCESS_KEY =
-  process.env.NEXT_PUBLIC_UNSPLASH_ACCESS_KEY || process.env.UNSPLASH_ACCESS_KEY
+  typeof window !== "undefined"
+    ? env.NEXT_PUBLIC_UNSPLASH_ACCESS_KEY
+    : env.UNSPLASH_ACCESS_KEY || process.env.UNSPLASH_ACCESS_KEY
 
 /**
  * Fetches a random photo from Unsplash
@@ -25,7 +30,7 @@ export async function getRandomPhoto(
 ): Promise<UnsplashPhoto | UnsplashPhoto[]> {
   if (!UNSPLASH_ACCESS_KEY) {
     throw new Error(
-      "Unsplash API key is not configured. Please add UNSPLASH_ACCESS_KEY to your .env.local file."
+      "Unsplash API key is not configured. Please add UNSPLASH_ACCESS_KEY or NEXT_PUBLIC_UNSPLASH_ACCESS_KEY to your .env.local file."
     )
   }
 

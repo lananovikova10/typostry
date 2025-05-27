@@ -1,0 +1,20 @@
+[
+  {
+    "id": "1",
+    "name": "template_api-reference.md",
+    "type": "blob",
+    "path": "api-reference/template_api-reference.md"
+  },
+  {
+    "id": "2",
+    "name": "template_how-to.md",
+    "type": "blob",
+    "path": "how-to/template_how-to.md"
+  },
+  {
+    "id": "3",
+    "name": "template_tutorial.md",
+    "type": "blob",
+    "path": "tutorial/template_tutorial.md"
+  }
+]

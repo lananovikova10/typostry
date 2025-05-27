@@ -569,7 +569,6 @@ export function MarkdownEditor({
                 className="flex-1 p-2"
                 ref={markdownInputRef}
               />
-
             </>
           )}
           {isPreviewMode && (

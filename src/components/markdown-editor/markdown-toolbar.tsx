@@ -5,6 +5,7 @@ import {
   Bold,
   Code,
   Eye,
+  FileCode,
   FileText,
   FolderOpen,
   Heading1,
@@ -27,7 +28,6 @@ import {
 
 import { getRandomPhotoAsMarkdown } from "@/lib/unsplash"
 import { Button } from "@/components/ui/button"
-import { TableGenerator } from "@/components/markdown-editor/table-generator"
 import {
   EmojiPicker,
   EmojiPickerContent,
@@ -40,12 +40,14 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover"
 import { Separator } from "@/components/ui/separator"
+import { TemplateSelector } from "@/components/ui/template-selector"
 import {
   Tooltip,
   TooltipContent,
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip"
+import { TableGenerator } from "@/components/markdown-editor/table-generator"
 import { ModeToggle } from "@/components/mode-toggle"
 
 export interface MarkdownToolbarProps {
@@ -80,6 +82,8 @@ export function MarkdownToolbar({
   onToggleSidebar,
 }: MarkdownToolbarProps) {
   const [isEmojiPickerOpen, setIsEmojiPickerOpen] = React.useState(false)
+  const [isTemplateSelectorOpen, setIsTemplateSelectorOpen] =
+    React.useState(false)
 
   // Handle emoji selection from the emoji picker
   const handleEmojiSelect = (emoji: any) => {
@@ -293,6 +297,12 @@ export function MarkdownToolbar({
         isCustomComponent: true,
         ariaLabel: "Insert table",
       },
+      {
+        name: "Templates",
+        icon: <FileCode className="h-4 w-4" />,
+        action: () => setIsTemplateSelectorOpen(true),
+        ariaLabel: "Insert template",
+      },
     ],
   ]
 
@@ -412,7 +422,7 @@ export function MarkdownToolbar({
                       </PopoverContent>
                     </Popover>
                   ) : item.isCustomComponent && item.name === "Table" ? (
-                    <TableGenerator 
+                    <TableGenerator
                       onInsertTable={onInsertAction}
                       isDisabled={isPreviewMode}
                     />
@@ -523,6 +533,13 @@ export function MarkdownToolbar({
         </Button>
         <ModeToggle />
       </div>
+
+      {/* Template Selector Modal */}
+      <TemplateSelector
+        isOpen={isTemplateSelectorOpen}
+        onClose={() => setIsTemplateSelectorOpen(false)}
+        onSelectTemplate={onInsertAction}
+      />
     </div>
   )
 }
