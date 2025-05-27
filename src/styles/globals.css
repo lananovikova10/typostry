@@ -2,6 +2,8 @@
 @tailwind components;
 @tailwind utilities;
 
+@import './outline-trigger.css';
+
 @layer base {
   :root {
     --editor-gradient-start: 210 40% 98%;

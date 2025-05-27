@@ -8,6 +8,7 @@ import { MarkdownInput, MarkdownInputHandle } from "./markdown-input"
 import { MarkdownPreview } from "./markdown-preview"
 import { MarkdownSidebar } from "./markdown-sidebar"
 import { MarkdownToolbar } from "./markdown-toolbar"
+import { OutlineTrigger } from "./outline-trigger"
 import { ReadingStats } from "./reading-stats"
 
 export interface MarkdownEditorProps {
@@ -523,7 +524,7 @@ export function MarkdownEditor({
     <div
       ref={editorRef}
       className={cn(
-        "flex w-full flex-col rounded-md border border-input bg-background shadow-sm transition-shadow duration-200 hover:shadow-md",
+        "editor-container flex w-full flex-col rounded-md border border-input bg-background shadow-sm transition-shadow duration-200 hover:shadow-md",
         className
       )}
       data-testid="markdown-editor"
@@ -540,12 +541,6 @@ export function MarkdownEditor({
         currentFileName={currentFileName}
         isFileSaved={isFileSaved}
         autoSaveEnabled={autoSaveEnabled}
-        isSidebarCollapsed={isSidebarCollapsed}
-        onToggleSidebar={
-          sidebarEnabled
-            ? () => setIsSidebarCollapsed(!isSidebarCollapsed)
-            : undefined
-        }
       />
 
       <div className="relative flex flex-1 flex-col sm:flex-row">
@@ -556,6 +551,15 @@ export function MarkdownEditor({
             onHeadingClick={handleHeadingClick}
             isCollapsed={isSidebarCollapsed}
             className="hidden sm:block" // Hide on mobile
+          />
+        )}
+
+        {/* Left-edge outline trigger */}
+        {sidebarEnabled && (
+          <OutlineTrigger 
+            isCollapsed={isSidebarCollapsed}
+            onToggle={() => setIsSidebarCollapsed(!isSidebarCollapsed)}
+            className="editor-container:hover:opacity-60"
           />
         )}
 

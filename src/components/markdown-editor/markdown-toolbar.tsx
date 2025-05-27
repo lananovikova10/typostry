@@ -62,8 +62,6 @@ export interface MarkdownToolbarProps {
   currentFileName?: string | null
   isFileSaved?: boolean
   autoSaveEnabled?: boolean
-  isSidebarCollapsed?: boolean
-  onToggleSidebar?: () => void
 }
 
 export function MarkdownToolbar({
@@ -78,8 +76,6 @@ export function MarkdownToolbar({
   currentFileName = null,
   isFileSaved = true,
   autoSaveEnabled = false,
-  isSidebarCollapsed = false,
-  onToggleSidebar,
 }: MarkdownToolbarProps) {
   const [isEmojiPickerOpen, setIsEmojiPickerOpen] = React.useState(false)
   const [isTemplateSelectorOpen, setIsTemplateSelectorOpen] =
@@ -480,37 +476,6 @@ export function MarkdownToolbar({
 
       {/* Right side: View controls */}
       <div className="ml-auto flex flex-shrink-0 flex-nowrap items-center gap-2">
-        {onToggleSidebar && (
-          <TooltipProvider>
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  onClick={onToggleSidebar}
-                  aria-label={
-                    isSidebarCollapsed ? "Show sidebar" : "Hide sidebar"
-                  }
-                  className="h-8 w-8 text-[hsl(var(--markdown-toolbar-icon))] hover:bg-secondary/70 hover:text-[hsl(var(--markdown-toolbar-icon-hover))]"
-                  data-testid="toggle-sidebar"
-                >
-                  {isSidebarCollapsed ? (
-                    <PanelLeftOpen className="h-4 w-4" />
-                  ) : (
-                    <PanelLeftClose className="h-4 w-4" />
-                  )}
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent>
-                <p>
-                  {isSidebarCollapsed
-                    ? "Show document outline"
-                    : "Hide document outline"}
-                </p>
-              </TooltipContent>
-            </Tooltip>
-          </TooltipProvider>
-        )}
         <Button
           variant="ghost"
           size="sm"

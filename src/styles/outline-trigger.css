@@ -1,0 +1,14 @@
+/* Styles for the outline trigger */
+.editor-container:hover .editor-outline-trigger {
+  opacity: 0.6;
+}
+
+.editor-outline-trigger:hover {
+  opacity: 1 !important;
+}
+
+.editor-outline-trigger:focus-visible {
+  opacity: 1 !important;
+  outline: none;
+  box-shadow: 0 0 0 2px hsl(var(--ring));
+}
