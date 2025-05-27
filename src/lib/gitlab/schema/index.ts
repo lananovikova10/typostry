@@ -1,11 +1,11 @@
-import { z } from 'zod'
+import { z } from "zod"
 
 // Zod schema for GitLab template file
 export const templateFileSchema = z.object({
   id: z.string(),
   name: z.string(),
   path: z.string(),
-  type: z.enum(['blob', 'tree']),
+  type: z.enum(["blob", "tree"]),
   mode: z.string().optional(),
 })
 
@@ -14,7 +14,7 @@ export const gitLabTreeResponseSchema = z.array(
   z.object({
     id: z.string(),
     name: z.string(),
-    type: z.enum(['blob', 'tree']),
+    type: z.enum(["blob", "tree"]),
     path: z.string(),
     mode: z.string().optional(),
   })

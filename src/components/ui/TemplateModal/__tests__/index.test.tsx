@@ -3,6 +3,7 @@ import { render, screen, waitFor } from "@testing-library/react"
 import userEvent from "@testing-library/user-event"
 
 import * as gitlabApi from "@/lib/gitlab"
+
 import { TemplateModal } from "../index"
 
 // Mock the gitlab API functions
@@ -54,7 +55,7 @@ describe("TemplateModal", () => {
 
   it("displays loading state initially", async () => {
     // Mock fetchTemplateFiles to delay response
-    (gitlabApi.fetchTemplateFiles as jest.Mock).mockImplementation(
+    ;(gitlabApi.fetchTemplateFiles as jest.Mock).mockImplementation(
       () => new Promise((resolve) => setTimeout(() => resolve([]), 100))
     )
 
@@ -67,7 +68,9 @@ describe("TemplateModal", () => {
 
   it("displays templates after successful fetch", async () => {
     // Mock successful API response
-    (gitlabApi.fetchTemplateFiles as jest.Mock).mockResolvedValueOnce(mockTemplates)
+    ;(gitlabApi.fetchTemplateFiles as jest.Mock).mockResolvedValueOnce(
+      mockTemplates
+    )
 
     render(<TemplateModal {...mockProps} />)
 
@@ -83,7 +86,7 @@ describe("TemplateModal", () => {
 
   it("displays error message when fetch fails", async () => {
     // Mock failed API response
-    (gitlabApi.fetchTemplateFiles as jest.Mock).mockRejectedValueOnce(
+    ;(gitlabApi.fetchTemplateFiles as jest.Mock).mockRejectedValueOnce(
       new Error("Failed to fetch templates")
     )
 
@@ -100,7 +103,7 @@ describe("TemplateModal", () => {
 
   it("displays empty state when no templates are available", async () => {
     // Mock empty API response
-    (gitlabApi.fetchTemplateFiles as jest.Mock).mockResolvedValueOnce([])
+    ;(gitlabApi.fetchTemplateFiles as jest.Mock).mockResolvedValueOnce([])
 
     render(<TemplateModal {...mockProps} />)
 
@@ -113,7 +116,7 @@ describe("TemplateModal", () => {
 
   it("retries template fetch when try again button is clicked", async () => {
     // First request fails
-    const mockFetchTemplates = gitlabApi.fetchTemplateFiles as jest.Mock;
+    const mockFetchTemplates = gitlabApi.fetchTemplateFiles as jest.Mock
     mockFetchTemplates
       .mockRejectedValueOnce(new Error("Failed to fetch templates"))
       // Second request succeeds
@@ -141,10 +144,11 @@ describe("TemplateModal", () => {
 
   it("fetches template content when a template is selected", async () => {
     // Mock successful API responses
-    (gitlabApi.fetchTemplateFiles as jest.Mock).mockResolvedValueOnce(mockTemplates)
-    (gitlabApi.fetchTemplateContent as jest.Mock).mockResolvedValueOnce(
-      mockTemplateContent
-    )
+    ;(gitlabApi.fetchTemplateFiles as jest.Mock)
+      .mockResolvedValueOnce(mockTemplates)(
+        gitlabApi.fetchTemplateContent as jest.Mock
+      )
+      .mockResolvedValueOnce(mockTemplateContent)
 
     render(<TemplateModal {...mockProps} />)
 
@@ -169,10 +173,11 @@ describe("TemplateModal", () => {
 
   it("inserts template content and closes modal when Insert Template is clicked", async () => {
     // Mock successful API responses
-    (gitlabApi.fetchTemplateFiles as jest.Mock).mockResolvedValueOnce(mockTemplates)
-    (gitlabApi.fetchTemplateContent as jest.Mock).mockResolvedValueOnce(
-      mockTemplateContent
-    )
+    ;(gitlabApi.fetchTemplateFiles as jest.Mock)
+      .mockResolvedValueOnce(mockTemplates)(
+        gitlabApi.fetchTemplateContent as jest.Mock
+      )
+      .mockResolvedValueOnce(mockTemplateContent)
 
     render(<TemplateModal {...mockProps} />)
 
@@ -199,7 +204,9 @@ describe("TemplateModal", () => {
 
   it("filters templates based on search query", async () => {
     // Mock successful API response
-    (gitlabApi.fetchTemplateFiles as jest.Mock).mockResolvedValueOnce(mockTemplates)
+    ;(gitlabApi.fetchTemplateFiles as jest.Mock).mockResolvedValueOnce(
+      mockTemplates
+    )
 
     render(<TemplateModal {...mockProps} />)
 
@@ -210,7 +217,10 @@ describe("TemplateModal", () => {
     })
 
     // Type in search box
-    await userEvent.type(screen.getByPlaceholderText("Search templates..."), "api")
+    await userEvent.type(
+      screen.getByPlaceholderText("Search templates..."),
+      "api"
+    )
 
     // Only "Api Reference" should be visible
     expect(screen.getByText("Api Reference")).toBeInTheDocument()
@@ -219,7 +229,9 @@ describe("TemplateModal", () => {
 
   it("closes the modal when Cancel button is clicked", async () => {
     // Mock successful API response
-    (gitlabApi.fetchTemplateFiles as jest.Mock).mockResolvedValueOnce(mockTemplates)
+    ;(gitlabApi.fetchTemplateFiles as jest.Mock).mockResolvedValueOnce(
+      mockTemplates
+    )
 
     render(<TemplateModal {...mockProps} />)
 

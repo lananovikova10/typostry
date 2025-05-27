@@ -14,24 +14,23 @@ The TemplateModal component provides a dialog interface for browsing, searching,
 ## Usage
 
 ```tsx
-import { TemplateModal } from "@/components/ui/TemplateModal"
 import { useState } from "react"
+
+import { TemplateModal } from "@/components/ui/TemplateModal"
 
 function MyComponent() {
   const [isOpen, setIsOpen] = useState(false)
-  
+
   const handleSelectTemplate = (content: string) => {
     // Insert template content into your editor
     console.log("Selected template content:", content)
   }
-  
+
   return (
     <>
-      <button onClick={() => setIsOpen(true)}>
-        Open Templates
-      </button>
-      
-      <TemplateModal 
+      <button onClick={() => setIsOpen(true)}>Open Templates</button>
+
+      <TemplateModal
         isOpen={isOpen}
         onClose={() => setIsOpen(false)}
         onSelectTemplate={handleSelectTemplate}
@@ -43,10 +42,10 @@ function MyComponent() {
 
 ## Props
 
-| Prop | Type | Description |
-|------|------|-------------|
-| `isOpen` | `boolean` | Controls the visibility of the modal |
-| `onClose` | `() => void` | Function called when the modal is closed |
+| Prop               | Type                        | Description                                        |
+| ------------------ | --------------------------- | -------------------------------------------------- |
+| `isOpen`           | `boolean`                   | Controls the visibility of the modal               |
+| `onClose`          | `() => void`                | Function called when the modal is closed           |
 | `onSelectTemplate` | `(content: string) => void` | Function called with the selected template content |
 
 ## States
@@ -95,5 +94,6 @@ The component implements accessibility features:
 ## Testing
 
 Tests for the component can be found in:
+
 - Unit tests: `/src/components/ui/TemplateModal/__tests__/index.test.tsx`
 - E2E tests: `/cypress/e2e/template-modal.cy.ts`

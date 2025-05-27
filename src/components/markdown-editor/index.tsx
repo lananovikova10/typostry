@@ -556,7 +556,7 @@ export function MarkdownEditor({
 
         {/* Left-edge outline trigger */}
         {sidebarEnabled && (
-          <OutlineTrigger 
+          <OutlineTrigger
             isCollapsed={isSidebarCollapsed}
             onToggle={() => setIsSidebarCollapsed(!isSidebarCollapsed)}
             className="editor-container:hover:opacity-60"
