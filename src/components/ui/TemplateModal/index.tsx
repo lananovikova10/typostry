@@ -124,9 +124,7 @@ export function TemplateModal({
     <Dialog open={isOpen} onOpenChange={handleClose}>
       <DialogContent className="max-w-4xl overflow-hidden sm:max-h-[90vh]">
         <DialogHeader>
-          <DialogTitle id="template-dialog-title">
-            GitLab Templates
-          </DialogTitle>
+          <DialogTitle id="template-dialog-title">GitLab Templates</DialogTitle>
           <DialogDescription id="template-dialog-description">
             Select a template from GitLab to insert into your document.
           </DialogDescription>
@@ -172,14 +170,20 @@ export function TemplateModal({
               data-testid="template-list"
             >
               {loading ? (
-                <div className="flex h-full items-center justify-center" data-testid="loading-indicator">
+                <div
+                  className="flex h-full items-center justify-center"
+                  data-testid="loading-indicator"
+                >
                   <div className="flex items-center text-sm text-muted-foreground">
                     <RefreshCw className="mr-2 h-4 w-4 animate-spin" />
                     Loading templates...
                   </div>
                 </div>
               ) : filteredTemplates.length === 0 ? (
-                <div className="flex h-full items-center justify-center text-sm text-muted-foreground" data-testid="empty-state">
+                <div
+                  className="flex h-full items-center justify-center text-sm text-muted-foreground"
+                  data-testid="empty-state"
+                >
                   {searchQuery
                     ? "No templates match your search"
                     : "No templates available"}
@@ -230,9 +234,15 @@ export function TemplateModal({
                 </a>
               )}
             </div>
-            <div className="h-[300px] overflow-y-auto rounded-md border p-4" data-testid="template-preview">
+            <div
+              className="h-[300px] overflow-y-auto rounded-md border p-4"
+              data-testid="template-preview"
+            >
               {loadingContent ? (
-                <div className="flex h-full items-center justify-center" data-testid="preview-loading">
+                <div
+                  className="flex h-full items-center justify-center"
+                  data-testid="preview-loading"
+                >
                   <div className="flex items-center text-sm text-muted-foreground">
                     <RefreshCw className="mr-2 h-4 w-4 animate-spin" />
                     Loading preview...
@@ -266,7 +276,11 @@ export function TemplateModal({
             </a>
           </div>
           <div className="flex space-x-2">
-            <Button variant="outline" onClick={handleClose} data-testid="cancel-button">
+            <Button
+              variant="outline"
+              onClick={handleClose}
+              data-testid="cancel-button"
+            >
               Cancel
             </Button>
             <Button

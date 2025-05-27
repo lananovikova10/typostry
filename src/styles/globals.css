@@ -2,7 +2,7 @@
 @tailwind components;
 @tailwind utilities;
 
-@import './outline-trigger.css';
+@import "./outline-trigger.css";
 
 @layer base {
   :root {

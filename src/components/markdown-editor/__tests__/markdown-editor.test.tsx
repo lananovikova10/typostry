@@ -1,8 +1,8 @@
 import React from "react"
 import { fireEvent, render, screen, waitFor } from "@testing-library/react"
+import userEvent from "@testing-library/user-event"
 
 import { MarkdownEditor } from "../index"
-import userEvent from "@testing-library/user-event"
 
 // Mock the markdown-preview component to avoid issues with remark
 jest.mock("../markdown-preview", () => ({
@@ -182,7 +182,9 @@ describe("MarkdownEditor", () => {
 
   test("toggles sidebar with left-edge outline trigger", async () => {
     const user = userEvent.setup()
-    render(<MarkdownEditor initialValue="# Hello World" sidebarEnabled={true} />)
+    render(
+      <MarkdownEditor initialValue="# Hello World" sidebarEnabled={true} />
+    )
 
     // Initially the sidebar should be collapsed
     expect(screen.queryByTestId("markdown-sidebar")).not.toBeInTheDocument()
@@ -200,10 +202,12 @@ describe("MarkdownEditor", () => {
     // Sidebar should be hidden again
     expect(screen.queryByTestId("markdown-sidebar")).not.toBeInTheDocument()
   })
-  
+
   test("outline trigger supports keyboard activation", async () => {
     const user = userEvent.setup()
-    render(<MarkdownEditor initialValue="# Hello World" sidebarEnabled={true} />)
+    render(
+      <MarkdownEditor initialValue="# Hello World" sidebarEnabled={true} />
+    )
 
     // Initially the sidebar should be collapsed
     expect(screen.queryByTestId("markdown-sidebar")).not.toBeInTheDocument()
@@ -211,17 +215,17 @@ describe("MarkdownEditor", () => {
     // Find the outline trigger and focus it
     const outlineTrigger = screen.getByTestId("outline-trigger")
     outlineTrigger.focus()
-    
+
     // Press Enter to activate
     await user.keyboard("{Enter}")
 
     // Now the sidebar should be visible
     expect(screen.getByTestId("markdown-sidebar")).toBeInTheDocument()
-    
+
     // Press Space to toggle it back
     outlineTrigger.focus()
     await user.keyboard(" ")
-    
+
     // Sidebar should be hidden again
     expect(screen.queryByTestId("markdown-sidebar")).not.toBeInTheDocument()
   })

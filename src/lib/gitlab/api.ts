@@ -2,7 +2,12 @@
  * GitLab API service for fetching templates from The Good Docs Project
  */
 
-import { GitLabTreeResponse, TemplateContent, TemplateFile, gitLabTreeResponseSchema } from './schema'
+import {
+  GitLabTreeResponse,
+  gitLabTreeResponseSchema,
+  TemplateContent,
+  TemplateFile,
+} from "./schema"
 
 // Cache for storing fetched templates to avoid repeated API calls
 const templateCache = new Map<string, TemplateFile[]>()
@@ -34,7 +39,7 @@ function getCachedData<T>(key: string): T | null {
 function setCachedData<T>(key: string, data: T): void {
   cacheWithTimestamp.set(key, {
     data,
-    timestamp: Date.now()
+    timestamp: Date.now(),
   })
 }
 
@@ -62,7 +67,7 @@ export const getTemplatePreview = (content: string, lines = 3): string => {
  * Fetches the list of template files from GitLab using absolute URL
  */
 export const fetchTemplateFiles = async (): Promise<TemplateFile[]> => {
-  const cacheKey = 'template-files'
+  const cacheKey = "template-files"
 
   // Check cache first
   const cachedData = getCachedData<TemplateFile[]>(cacheKey)
@@ -72,35 +77,37 @@ export const fetchTemplateFiles = async (): Promise<TemplateFile[]> => {
 
   try {
     // Use absolute GitLab API URL with pagination to get all files
-    const url = 'https://gitlab.com/api/v4/projects/tgdp%2Ftemplates/repository/tree?ref=v1.3.0&recursive=true&per_page=1000'
+    const url =
+      "https://gitlab.com/api/v4/projects/tgdp%2Ftemplates/repository/tree?ref=v1.3.0&recursive=true&per_page=1000"
 
     const response = await fetch(url, {
       headers: {
-        'Accept': 'application/json',
-        'Content-Type': 'application/json',
+        Accept: "application/json",
+        "Content-Type": "application/json",
       },
     })
 
     if (!response.ok) {
       throw new Error(`Failed to fetch templates: ${response.statusText}`)
-    }      const rawData = await response.json()
-      
-      // Validate response with Zod schema
-      const validatedData = gitLabTreeResponseSchema.parse(rawData)
+    }
+    const rawData = await response.json()
 
-      // Filter for template files matching pattern: {folder}/template_{name}.md
-      const templates: TemplateFile[] = validatedData
-        .filter((item) =>
-          item.type === "blob" &&
-          item.path.match(/^[^/]+\/template_[^/]+\.md$/)
-        )
-        .map((item) => ({
-          id: item.id,
-          name: item.name,
-          path: item.path,
-          type: item.type,
-          mode: item.mode,
-        }))
+    // Validate response with Zod schema
+    const validatedData = gitLabTreeResponseSchema.parse(rawData)
+
+    // Filter for template files matching pattern: {folder}/template_{name}.md
+    const templates: TemplateFile[] = validatedData
+      .filter(
+        (item) =>
+          item.type === "blob" && item.path.match(/^[^/]+\/template_[^/]+\.md$/)
+      )
+      .map((item) => ({
+        id: item.id,
+        name: item.name,
+        path: item.path,
+        type: item.type,
+        mode: item.mode,
+      }))
 
     // Cache the results
     setCachedData(cacheKey, templates)
@@ -115,7 +122,9 @@ export const fetchTemplateFiles = async (): Promise<TemplateFile[]> => {
 /**
  * Fetches the content of a specific template file from GitLab using absolute URL
  */
-export const fetchTemplateContent = async (filePath: string): Promise<string> => {
+export const fetchTemplateContent = async (
+  filePath: string
+): Promise<string> => {
   const cacheKey = `template-content-${filePath}`
 
   // Check cache first
@@ -131,12 +140,14 @@ export const fetchTemplateContent = async (filePath: string): Promise<string> =>
 
     const response = await fetch(url, {
       headers: {
-        'Accept': 'text/plain',
+        Accept: "text/plain",
       },
     })
 
     if (!response.ok) {
-      throw new Error(`Failed to fetch template content: ${response.statusText}`)
+      throw new Error(
+        `Failed to fetch template content: ${response.statusText}`
+      )
     }
 
     const content = await response.text()

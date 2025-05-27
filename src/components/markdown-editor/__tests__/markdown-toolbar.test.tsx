@@ -40,7 +40,7 @@ describe("MarkdownToolbar", () => {
     expect(screen.getByTestId("file-new")).toBeInTheDocument()
     expect(screen.getByTestId("file-open")).toBeInTheDocument()
     expect(screen.getByTestId("file-save")).toBeInTheDocument()
-    
+
     // Verify that sidebar toggle is not present
     expect(screen.queryByTestId("toggle-sidebar")).not.toBeInTheDocument()
   })

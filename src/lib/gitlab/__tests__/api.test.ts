@@ -40,17 +40,29 @@ describe("GitLab API Service", () => {
           name: "template_api-reference.md",
           type: "blob",
           path: "api-reference/template_api-reference.md",
-          mode: "100644"
+          mode: "100644",
         },
         {
           id: "2",
           name: "template_how-to.md",
           type: "blob",
           path: "how-to/template_how-to.md",
-          mode: "100644"
+          mode: "100644",
         },
-        { id: "3", name: "README.md", type: "blob", path: "README.md", mode: "100644" }, // Should be filtered out
-        { id: "4", name: "assets", type: "tree", path: "assets", mode: "040000" }, // Should be filtered out
+        {
+          id: "3",
+          name: "README.md",
+          type: "blob",
+          path: "README.md",
+          mode: "100644",
+        }, // Should be filtered out
+        {
+          id: "4",
+          name: "assets",
+          type: "tree",
+          path: "assets",
+          mode: "040000",
+        }, // Should be filtered out
       ]
 
       // @ts-ignore
@@ -66,8 +78,8 @@ describe("GitLab API Service", () => {
         "https://gitlab.com/api/v4/projects/tgdp%2Ftemplates/repository/tree?ref=v1.3.0&recursive=true",
         {
           headers: {
-            'Accept': 'application/json',
-            'Content-Type': 'application/json',
+            Accept: "application/json",
+            "Content-Type": "application/json",
           },
         }
       )
@@ -108,7 +120,7 @@ describe("GitLab API Service", () => {
         "https://gitlab.com/api/v4/projects/tgdp%2Ftemplates/repository/files/api-reference%2Ftemplate_api-reference.md/raw?ref=v1.3.0",
         {
           headers: {
-            'Accept': 'text/plain',
+            Accept: "text/plain",
           },
         }
       )
