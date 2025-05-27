@@ -48,7 +48,7 @@ export function OutlineTrigger({
         <TooltipTrigger asChild>
           <motion.div
             className={cn(
-              "editor-outline-trigger fixed left-[10px] top-[50vh] z-[1000] flex h-10 w-10 -translate-y-1/2 cursor-pointer items-center justify-center rounded-r-lg border border-l-0 bg-background shadow-md transition-colors hover:bg-secondary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring dark:border-gray-700 dark:bg-gray-800",
+              "editor-outline-trigger absolute left-2 top-1/2 z-[1000] flex h-6 w-6 -translate-y-1/2 cursor-pointer items-center justify-center rounded-md border border-l-1 bg-background shadow-sm transition-colors hover:bg-secondary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring dark:border-gray-700 dark:bg-gray-800",
               className
             )}
             onClick={onToggle}
@@ -70,7 +70,7 @@ export function OutlineTrigger({
           >
             <PanelLeftOpen
               className={cn(
-                "h-5 w-5 text-muted-foreground transition-colors",
+                "h-6 w-6 text-muted-foreground transition-colors",
                 !isCollapsed && "text-primary"
               )}
               aria-hidden="true"

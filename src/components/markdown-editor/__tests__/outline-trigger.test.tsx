@@ -30,7 +30,7 @@ describe("OutlineTrigger", () => {
     jest.useRealTimers()
   })
 
-  it("renders the outline trigger button with fixed positioning", () => {
+  it("renders the outline trigger button with absolute positioning", () => {
     const mockToggle = jest.fn()
 
     render(<OutlineTrigger isCollapsed={true} onToggle={mockToggle} />)
@@ -40,10 +40,10 @@ describe("OutlineTrigger", () => {
     expect(trigger).toHaveAttribute("aria-label", "Show document outline")
     expect(trigger).toHaveAttribute("role", "button")
 
-    // Check for fixed positioning classes
-    expect(trigger.className).toContain("fixed")
-    expect(trigger.className).toContain("left-[10px]")
-    expect(trigger.className).toContain("top-[50vh]")
+    // Check for absolute positioning classes
+    expect(trigger.className).toContain("absolute")
+    expect(trigger.className).toContain("left-2")
+    expect(trigger.className).toContain("top-1/2")
     expect(trigger.className).toContain("z-[1000]")
   })
 
