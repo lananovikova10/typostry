@@ -98,7 +98,7 @@ export function TemplateSelector({
     }
   }
 
-  // Handle template selection
+  // Handle template selection 
   const handleSelectTemplate = () => {
     if (templateContent) {
       onSelectTemplate(templateContent)
