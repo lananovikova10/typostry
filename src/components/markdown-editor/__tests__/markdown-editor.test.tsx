@@ -2,6 +2,7 @@ import React from "react"
 import { fireEvent, render, screen, waitFor } from "@testing-library/react"
 
 import { MarkdownEditor } from "../index"
+import userEvent from "@testing-library/user-event"
 
 // Mock the markdown-preview component to avoid issues with remark
 jest.mock("../markdown-preview", () => ({
@@ -177,5 +178,51 @@ describe("MarkdownEditor", () => {
     // Reading stats should be visible again
     expect(screen.getByRole("status")).toBeInTheDocument()
     expect(screen.getByRole("status").textContent).toContain("Reading Time")
+  })
+
+  test("toggles sidebar with left-edge outline trigger", async () => {
+    const user = userEvent.setup()
+    render(<MarkdownEditor initialValue="# Hello World" sidebarEnabled={true} />)
+
+    // Initially the sidebar should be collapsed
+    expect(screen.queryByTestId("markdown-sidebar")).not.toBeInTheDocument()
+
+    // Find and click the outline trigger
+    const outlineTrigger = screen.getByTestId("outline-trigger")
+    await user.click(outlineTrigger)
+
+    // Now the sidebar should be visible
+    expect(screen.getByTestId("markdown-sidebar")).toBeInTheDocument()
+
+    // Click the trigger again to collapse
+    await user.click(outlineTrigger)
+
+    // Sidebar should be hidden again
+    expect(screen.queryByTestId("markdown-sidebar")).not.toBeInTheDocument()
+  })
+  
+  test("outline trigger supports keyboard activation", async () => {
+    const user = userEvent.setup()
+    render(<MarkdownEditor initialValue="# Hello World" sidebarEnabled={true} />)
+
+    // Initially the sidebar should be collapsed
+    expect(screen.queryByTestId("markdown-sidebar")).not.toBeInTheDocument()
+
+    // Find the outline trigger and focus it
+    const outlineTrigger = screen.getByTestId("outline-trigger")
+    outlineTrigger.focus()
+    
+    // Press Enter to activate
+    await user.keyboard("{Enter}")
+
+    // Now the sidebar should be visible
+    expect(screen.getByTestId("markdown-sidebar")).toBeInTheDocument()
+    
+    // Press Space to toggle it back
+    outlineTrigger.focus()
+    await user.keyboard(" ")
+    
+    // Sidebar should be hidden again
+    expect(screen.queryByTestId("markdown-sidebar")).not.toBeInTheDocument()
   })
 })
