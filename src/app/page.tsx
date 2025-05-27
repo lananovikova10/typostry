@@ -34,7 +34,7 @@ This is a markdown editor. Try editing this text or use the toolbar to add markd
 - [Links](https://example.com)
 - Images
 - Code blocks
-- **NEW**: Executable JavaScript code blocks (click the run button in preview mode)
+- Executable JavaScript code blocks (click the run button in preview mode)
 
 \`\`\`js
 // Click the play button in preview mode to run this code

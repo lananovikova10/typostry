@@ -379,7 +379,7 @@ export const MarkdownInput = forwardRef<
         aria-label="Markdown editor"
         spellCheck="false"
         data-testid="markdown-input"
-        rows={Math.max(3, value.split('\n').length)}
+        rows={Math.max(3, value.split("\n").length)}
       />
 
       {/* Hidden mirror div for highlight calculations */}

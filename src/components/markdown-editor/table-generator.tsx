@@ -127,11 +127,12 @@ export function TableGenerator({
       const textarea = document.querySelector(
         'textarea[data-testid="markdown-input"]'
       ) as HTMLTextAreaElement
-      
+
       if (textarea) {
         const cursorPosition = textarea.selectionStart
-        const headerEndPosition = textarea.value.indexOf("Header 1") + "Header 1".length
-        
+        const headerEndPosition =
+          textarea.value.indexOf("Header 1") + "Header 1".length
+
         if (cursorPosition >= 0 && headerEndPosition > 0) {
           const headerStartPosition = headerEndPosition - "Header 1".length
           textarea.setSelectionRange(headerStartPosition, headerEndPosition)

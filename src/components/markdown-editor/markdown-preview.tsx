@@ -12,7 +12,8 @@ import { replaceEmojis } from "@/lib/emoji"
 import { cn } from "@/lib/utils"
 import { CodeBlock, CodeBlockCode } from "@/components/ui/code-block"
 
-// Don't need to use dynamic for mermaid as we'll import it directly in useEffect
+// Use dynamic import for mermaid to ensure it only loads on client-side
+const isBrowser = typeof window !== "undefined"
 
 export interface MarkdownPreviewProps {
   source: string
@@ -27,13 +28,16 @@ export function MarkdownPreview({ source, className }: MarkdownPreviewProps) {
 
   // Initialize mermaid library on client-side only
   useEffect(() => {
+    if (!isBrowser) return // Skip on server-side
+
     const initMermaid = async () => {
       try {
         // Dynamically import mermaid
-        const mermaid = await import("mermaid")
+        const mermaidModule = await import("mermaid")
+        const mermaid = mermaidModule.default
 
         // Initialize with theme-specific configuration
-        mermaid.default.initialize({
+        mermaid.initialize({
           startOnLoad: false,
           theme: resolvedTheme === "dark" ? "dark" : "default",
           securityLevel: "loose", // needed for client-side rendering
@@ -41,7 +45,7 @@ export function MarkdownPreview({ source, className }: MarkdownPreviewProps) {
         })
 
         // Set the mermaid instance for later use
-        setMermaidInstance(mermaid.default)
+        setMermaidInstance(mermaid)
       } catch (error) {
         console.error("Failed to initialize mermaid:", error)
       }
@@ -51,6 +55,8 @@ export function MarkdownPreview({ source, className }: MarkdownPreviewProps) {
   }, [resolvedTheme]) // Function to render Mermaid diagrams
   const renderMermaidDiagram = useCallback(
     async (code: string, codeBlock: Element) => {
+      if (!isBrowser) return // Skip on server-side
+
       if (!mermaidInstance) {
         console.warn("Mermaid instance not initialized")
         return
@@ -101,6 +107,8 @@ export function MarkdownPreview({ source, className }: MarkdownPreviewProps) {
   // Function to execute JavaScript code and display output under the code block
   const executeJavaScript = useCallback(
     (code: string, codeBlock: Element) => {
+      if (!isBrowser) return // Skip on server-side
+
       // Find or create output area
       const pre = codeBlock.parentElement
       if (!pre) return
@@ -189,6 +197,7 @@ export function MarkdownPreview({ source, className }: MarkdownPreviewProps) {
 
   // Function to replace code blocks with CodeBlock component
   const processCodeBlocks = useCallback(() => {
+    if (!isBrowser) return // Skip on server-side
     if (!previewRef.current) return
 
     // Determine the theme to use for code blocks
@@ -381,40 +390,12 @@ export function MarkdownPreview({ source, className }: MarkdownPreviewProps) {
     parseMarkdown()
   }, [source])
 
-  // Initialize Mermaid
-  useEffect(() => {
-    let mounted = true
-
-    const initMermaid = async () => {
-      try {
-        const mermaidModule = await import("mermaid")
-        const mermaid = mermaidModule.default
-
-        if (mounted) {
-          // Initialize Mermaid with configuration
-          mermaid.initialize({
-            startOnLoad: false,
-            theme: resolvedTheme === "dark" ? "dark" : "default",
-            securityLevel: "loose",
-            fontFamily: "inherit",
-          })
-
-          setMermaidInstance(mermaid)
-        }
-      } catch (error) {
-        console.error("Failed to load Mermaid:", error)
-      }
-    }
-
-    initMermaid()
-
-    return () => {
-      mounted = false
-    }
-  }, [resolvedTheme])
+  // We've already initialized Mermaid in the first useEffect, so this is redundant
 
   // Process code blocks after the HTML has been rendered
   useEffect(() => {
+    if (!isBrowser) return // Skip on server-side
+
     if (html) {
       // Use setTimeout to ensure the DOM has been updated
       setTimeout(() => {
@@ -425,6 +406,7 @@ export function MarkdownPreview({ source, className }: MarkdownPreviewProps) {
 
   // React-based code block rendering for non-JS blocks after hydration
   useEffect(() => {
+    if (!isBrowser) return // Skip on server-side
     if (!previewRef.current) return
 
     const shikiBlocks = previewRef.current.querySelectorAll(".shiki-code-block")

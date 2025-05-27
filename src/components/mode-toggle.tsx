@@ -46,7 +46,11 @@ export function ModeToggle() {
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <Button variant="outline" size="icon" className="relative">
+        <Button
+          variant="outline"
+          size="icon"
+          className="relative flex items-center justify-center"
+        >
           {/* Sun icon for light themes */}
           <Icons.sun
             className={`h-[1.2rem] w-[1.2rem] transition-all ${showSun && !showContrast ? "rotate-0 scale-100" : "rotate-90 scale-0"}`}
@@ -54,12 +58,12 @@ export function ModeToggle() {
 
           {/* Moon icon for dark themes */}
           <Icons.moon
-            className={`absolute h-[1.2rem] w-[1.2rem] transition-all ${showMoon && !showContrast ? "rotate-0 scale-100" : "rotate-90 scale-0"}`}
+            className={`absolute left-1/2 top-1/2 h-[1.2rem] w-[1.2rem] -translate-x-1/2 -translate-y-1/2 transition-all ${showMoon && !showContrast ? "rotate-0 scale-100" : "rotate-90 scale-0"}`}
           />
 
           {/* Contrast icon for high-contrast themes */}
           <Icons.contrast
-            className={`absolute h-[1.2rem] w-[1.2rem] transition-all ${showContrast ? "rotate-0 scale-100" : "rotate-90 scale-0"}`}
+            className={`absolute left-1/2 top-1/2 h-[1.2rem] w-[1.2rem] -translate-x-1/2 -translate-y-1/2 transition-all ${showContrast ? "rotate-0 scale-100" : "rotate-90 scale-0"}`}
           />
 
           <span className="sr-only">Toggle theme</span>

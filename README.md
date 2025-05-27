@@ -4,7 +4,7 @@ A Next.js markdown editor with real-time preview, grammar checking, theme suppor
 
 ## Description
 
-`typostry` is a feature-rich markdown editor built with Next.js that provides a seamless writing experience with real-time preview and advanced features like grammar checking, emoji support, executable JavaScript code blocks, and Mermaid diagrams.
+`typostry` is a feature-rich markdown editor built with Next.js that provides a seamless writing experience with real-time preview and advanced features like grammar checking, emoji support, executable JavaScript code blocks, Mermaid diagrams, and template selection from GitLab repositories.
 
 ## Features
 
@@ -16,6 +16,14 @@ A Next.js markdown editor with real-time preview, grammar checking, theme suppor
 - Executable JavaScript code blocks in preview mode
 - Mermaid diagram support for visualizations
 - Keyboard shortcuts for common operations
+- Template selection from GitLab repositories
+
+### Templates from GitLab
+- Integration with GitLab repositories to fetch markdown templates
+- Configurable repository URL and authentication token
+- Preview and insert templates directly into your document
+- Caching to reduce API calls
+- API route at `/api/gitlab/templates` that connects to GitLab
 
 ### Grammar Checking
 - Real-time grammar and spelling error detection
@@ -56,6 +64,8 @@ A Next.js markdown editor with real-time preview, grammar checking, theme suppor
 - **LanguageTool API**: Used for grammar and spell checking
   - Primary endpoint: https://api.languagetool.org/v2/check
   - Fallback endpoint: https://languagetool.org/api/v2/check
+- **GitLab API**: Used for fetching templates
+  - Requires a GitLab repository URL and access token
 - **File System Access API**: Modern browser API for file system operations
 
 ## Usage
@@ -72,7 +82,26 @@ yarn install
 cp .env.example .env.local
 ```
 
-3. Run the development server:
+3. Configure environment variables in `.env.local`:
+```
+# Required for basic functionality
+NEXT_PUBLIC_APP_URL=http://localhost:3000
+
+# Unsplash API credentials (optional but recommended for image features)
+# Server-side keys (not exposed in client bundles)
+UNSPLASH_ACCESS_KEY=your_unsplash_access_key
+UNSPLASH_SECRET_KEY=your_unsplash_secret_key
+# Client-side key (will be exposed in browser)
+NEXT_PUBLIC_UNSPLASH_ACCESS_KEY=your_unsplash_access_key
+
+# Optional: GitLab API configuration for templates
+NEXT_PUBLIC_GITLAB_REPO_URL=https://gitlab.com/your-repo-path
+NEXT_PUBLIC_GITLAB_TOKEN=your_gitlab_access_token
+```
+
+Note: Environment variables prefixed with `NEXT_PUBLIC_` will be included in the client-side JavaScript bundle. Only use this prefix for non-sensitive values or public API keys that are restricted by domain.
+
+4. Run the development server:
 ```bash
 npm run dev
 # or
@@ -81,7 +110,7 @@ yarn dev
 npx next dev
 ```
 
-4. Open [http://localhost:3000](http://localhost:3000) in your browser to see the application.
+5. Open [http://localhost:3000](http://localhost:3000) in your browser to see the application.
 
 ## Component Usage
 
