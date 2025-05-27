@@ -271,6 +271,54 @@ textarea.bg-gradient-to-br::after {
   background-color: rgba(45, 55, 72, 0.3); /* Dark mode highlight */
 }
 
+/* Editor container and wrapper styling for glow effect */
+.editor-container { 
+  position: relative; 
+  transition: all 0.3s ease; 
+}
+
+.editor-wrapper { 
+  transition: all 0.4s ease; 
+  position: relative; 
+}
+
+.editor-wrapper:hover .editor-container { 
+  box-shadow: 
+    0 0 0 2px rgba(139, 92, 246, 0.3),
+    0 0 20px rgba(139, 92, 246, 0.2),
+    0 0 40px rgba(139, 92, 246, 0.1);
+  animation: breathe 2s ease-in-out infinite;
+  will-change: box-shadow;
+}
+
+@keyframes breathe {
+  0%, 100% {
+    box-shadow: 
+      0 0 0 2px rgba(139, 92, 246, 0.3),
+      0 0 20px rgba(139, 92, 246, 0.2),
+      0 0 40px rgba(139, 92, 246, 0.1);
+  }
+  50% {
+    box-shadow: 
+      0 0 0 3px rgba(139, 92, 246, 0.4),
+      0 0 30px rgba(139, 92, 246, 0.3),
+      0 0 60px rgba(139, 92, 246, 0.15);
+  }
+}
+
+/* Theme-specific glow colors */
+[data-theme="dark"] .editor-wrapper:hover .editor-container {
+  box-shadow: 
+    0 0 0 2px rgba(167, 139, 250, 0.4),
+    0 0 25px rgba(167, 139, 250, 0.2);
+}
+
+[data-theme="light"] .editor-wrapper:hover .editor-container {
+  box-shadow: 
+    0 0 0 2px rgba(139, 92, 246, 0.4),
+    0 0 25px rgba(139, 92, 246, 0.2);
+}
+
 /* Legacy classes for backward compatibility */
 .grammar-error-spelling {
   cursor: pointer;

@@ -15,6 +15,7 @@ A feature-rich Markdown editor with real-time preview, built with React and Next
 - Keyboard shortcuts for common actions
 - Dark and light theme support
 - Reading statistics (words, chars, reading time)
+- Soft purple breathing glow effect on hover
 
 ## Usage
 
@@ -80,3 +81,27 @@ sequenceDiagram
 ## Keyboard Shortcuts
 
 See [KEYBOARD_SHORTCUTS.md](./KEYBOARD_SHORTCUTS.md) for a full list of available keyboard shortcuts.
+
+## Hover Glow Effect
+
+The editor features a subtle breathing glow effect that activates when hovering over the gap/margin area around the editor container. This effect creates a soft purple pulsing border that enhances the user experience without interfering with editing functionality.
+
+### HTML Structure
+
+The editor requires a specific HTML structure to enable the hover effect:
+
+```jsx
+<div className="editor-wrapper">
+  <div className="editor-container">
+    {/* Editor content */}
+  </div>
+</div>
+```
+
+### Effect Details
+
+- **Activation**: The effect only triggers when hovering over the gap/margin around the editor, not inside the editable text area
+- **Animation**: Gentle breathing animation with a 2-second duration and ease-in-out timing
+- **Color**: Soft purple glow (#8b5cf6) with varying opacity levels
+- **Performance**: Uses `will-change: box-shadow` for optimized rendering
+- **Theme Support**: Colors adapt based on light or dark theme

@@ -521,14 +521,12 @@ export function MarkdownEditor({
   }
 
   return (
-    <div
-      ref={editorRef}
-      className={cn(
-        "editor-container flex w-full flex-col rounded-md border border-input bg-background shadow-sm transition-shadow duration-200 hover:shadow-md",
-        className
-      )}
-      data-testid="markdown-editor"
-    >
+    <div className={cn("editor-wrapper", className)}>
+      <div
+        ref={editorRef}
+        className="editor-container flex w-full flex-col rounded-md border border-input bg-background shadow-sm"
+        data-testid="markdown-editor"
+      >
       <MarkdownToolbar
         isPreviewMode={isPreviewMode}
         onTogglePreview={() => setIsPreviewMode(!isPreviewMode)}
@@ -595,6 +593,7 @@ export function MarkdownEditor({
         className="hidden"
         data-testid="file-input"
       />
+    </div>
     </div>
   )
 }
