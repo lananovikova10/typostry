@@ -348,7 +348,7 @@ export function MarkdownToolbar({
   }
 
   return (
-    <div className="flex items-center overflow-hidden whitespace-nowrap border-b p-2 shadow-sm">
+    <div className="flex items-center border-b p-2 shadow-sm">
       {/* Left side: File operations and formatting tools */}
       <div className="flex min-w-0 flex-shrink-0 flex-nowrap items-center gap-1">
         <div className="mr-1 flex flex-nowrap items-center gap-1">
@@ -452,7 +452,7 @@ export function MarkdownToolbar({
 
       {/* Center: Filename with autosave indicator */}
       {currentFileName && (
-        <div className="mx-4 flex min-w-0 max-w-[40%] flex-shrink items-center overflow-hidden text-sm font-medium">
+        <div className="mx-4 flex min-w-0 max-w-[30%] flex-shrink items-center overflow-hidden text-sm font-medium">
           <span className="truncate" title={currentFileName}>
             {currentFileName}
             {!isFileSaved ? " *" : ""}
