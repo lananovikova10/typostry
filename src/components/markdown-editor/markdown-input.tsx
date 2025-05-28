@@ -11,11 +11,12 @@ import {
 
 import {
   addToDictionary,
-  checkGrammar,
   debounce,
   GrammarError,
   isInsideCodeBlock,
   stripMarkdownForGrammarCheck,
+  grammarServiceManager,
+  GrammarServiceProvider,
 } from "@/lib/grammar-check"
 import { cn } from "@/lib/utils"
 
@@ -154,7 +155,7 @@ export const MarkdownInput = forwardRef<
     }
 
     try {
-      const errors = await checkGrammar(text, mapping, {
+      const errors = await grammarServiceManager.checkGrammar(text, mapping, {
         language: grammarCheckLanguage,
       })
 
