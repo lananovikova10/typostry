@@ -95,7 +95,7 @@ export class GrazieService implements IGrammarService {
       } else {
         console.error("Grazie service error:", error)
       }
-      return []
+      throw error
     }
   }
 
