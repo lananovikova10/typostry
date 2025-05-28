@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { Check, Settings, Zap, Globe, Shield, AlertCircle } from "lucide-react"
+import { Check, Settings, Zap, Globe, Shield, AlertCircle, PenLine } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
 import {
@@ -200,9 +200,13 @@ export function GrammarSettings({ onServiceChange }: GrammarSettingsProps) {
   return (
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
       <DialogTrigger asChild>
-        <Button variant="outline" size="sm">
-          <Settings className="h-4 w-4 mr-2" />
-          Grammar Settings
+        <Button 
+          variant="ghost" 
+          size="icon" 
+          className="grammar-settings-btn h-8 w-8 flex-shrink-0 text-[hsl(var(--markdown-toolbar-icon))] hover:bg-secondary/70 hover:text-[hsl(var(--markdown-toolbar-icon-hover))]"
+          title="Grammar & Spell Check Settings"
+        >
+          <PenLine className="h-4 w-4" />
         </Button>
       </DialogTrigger>
       <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
