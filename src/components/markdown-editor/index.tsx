@@ -74,7 +74,7 @@ export function MarkdownEditor({
         clearTimeout(autoSaveTimeoutRef.current)
       }
     }
-  }, [markdown, autoSaveEnabled, fileHandle, isFileSaved])
+  }, [markdown, autoSaveEnabled, fileHandle, isFileSaved]) // eslint-disable-line react-hooks/exhaustive-deps
 
   // Keyboard shortcuts handler
   useEffect(() => {
@@ -172,7 +172,7 @@ export function MarkdownEditor({
     return () => {
       window.removeEventListener("keydown", handleKeyDown)
     }
-  }, [isPreviewMode, markdown, undoStack, redoStack]) // Re-register when relevant state changes
+  }, [isPreviewMode, markdown, undoStack, redoStack]) // eslint-disable-line react-hooks/exhaustive-deps
 
   const handleUndo = () => {
     if (undoStack.length <= 1) return // Keep at least the initial state

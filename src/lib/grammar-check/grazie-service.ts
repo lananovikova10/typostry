@@ -77,18 +77,52 @@ export class GrazieService implements IGrammarService {
         throw new Error("Grazie client is not configured")
       }
       
-      const results = await this.client.correctText([text], grazieLanguage, services)
+      const response = await this.client.correctText([text], grazieLanguage, services)
+
+      console.log("Grazie API raw response:", JSON.stringify(response, null, 2))
       
-      if (results.length === 0) {
-        console.log("No Grazie results returned")
+      // The response can either be directly an array of SentenceWithProblems,
+      // or a structure with a 'corrections' property containing them
+      let corrections: any[] = []
+
+      if (Array.isArray(response)) {
+        corrections = response
+      } else if (response && typeof response === 'object' && 'corrections' in response && Array.isArray(response.corrections)) {
+        corrections = response.corrections
+      } else {
+        console.warn("Unexpected Grazie API response structure:", typeof response, response)
         return []
       }
 
-      const sentenceResult = results[0]
-      const errors = this.convertToGrammarErrors(sentenceResult, mapping)
+      if (corrections.length === 0) {
+        console.log("No Grazie corrections returned")
+        return []
+      }
+
+      console.log(`Found ${corrections.length} correction items`)
       
-      console.log(`Grazie found ${sentenceResult.problems.length} problems, converted to ${errors.length} errors`)
-      return errors
+      let allErrors: GrammarError[] = []
+
+      // Process each sentence with problems
+      for (const correction of corrections) {
+        if (!correction || typeof correction !== 'object') {
+          console.warn("Skipping invalid correction item:", correction)
+          continue
+        }
+
+        // Ensure the correction has problems array
+        if (!correction.problems || !Array.isArray(correction.problems)) {
+          console.warn("Correction is missing problems array:", correction)
+          continue
+        }
+
+        const errors = this.convertToGrammarErrors(correction, mapping)
+        console.log(`Processed correction with ${correction.problems.length} problems, extracted ${errors.length} errors`)
+        allErrors = allErrors.concat(errors)
+      }
+
+      console.log(`Grazie found ${allErrors.length} total errors across all corrections`)
+      return allErrors
     } catch (error) {
       if (error instanceof GrazieError) {
         console.error("Grazie API error:", error.message, error.code)
@@ -160,66 +194,98 @@ export class GrazieService implements IGrammarService {
   ): GrammarError[] {
     const errors: GrammarError[] = []
 
-    for (const problem of sentence.problems) {
-      // Skip problems for words in custom dictionary
-      const problemText = sentence.sentence.substring(
-        problem.highlighting.always.start,
-        problem.highlighting.always.endExclusive
-      )
-      
-      if (isInDictionary(problemText, problem.info.id.id)) {
-        continue
-      }
-
-      // Skip errors that involve image placeholder
-      const IMAGE_PLACEHOLDER = "⁂"
-      if (problemText.includes(IMAGE_PLACEHOLDER)) {
-        continue
-      }
-
-      // Get the best fix for replacement suggestions
-      const replacements = this.extractReplacements(problem)
-
-      // Map positions back to original markdown
-      const originalOffset = mapStrippedToOriginal(
-        problem.highlighting.always.start,
-        mapping
-      )
-      const originalEndOffset = mapStrippedToOriginal(
-        problem.highlighting.always.endExclusive,
-        mapping
-      )
-      const originalLength = originalEndOffset - originalOffset
-
-      // Convert problem to GrammarError format
-      const error: GrammarError = {
-        message: problem.info.message,
-        shortMessage: problem.info.displayName,
-        offset: problem.highlighting.always.start,
-        length: problem.highlighting.always.endExclusive - problem.highlighting.always.start,
-        rule: {
-          id: problem.info.id.id,
-          description: problem.info.displayName,
-          category: {
-            id: problem.info.category,
-            name: this.getCategoryDisplayName(problem.info.category)
-          }
-        },
-        replacements,
-        type: this.convertProblemType(problem.info.category),
-        severity: this.convertSeverity(problem.info.confidence, problem.info.category),
-        originalOffset,
-        originalLength,
-        context: {
-          text: sentence.sentence,
-          offset: problem.highlighting.always.start,
-          length: problem.highlighting.always.endExclusive - problem.highlighting.always.start
-        }
-      }
-
-      errors.push(error)
+    // Additional safety check
+    if (!sentence || !sentence.problems || !Array.isArray(sentence.problems)) {
+      console.warn("Invalid sentence object passed to convertToGrammarErrors")
+      return errors
     }
 
+    // Log information about the sentence and problems
+    console.log(`Processing sentence with ${sentence.problems.length} problems: ${sentence.sentence.substring(0, 50)}...`)
+
+    for (const problem of sentence.problems) {
+      // Add validation for problem structure
+      if (!problem.highlighting || !problem.highlighting.always || !problem.info) {
+        console.warn("Skipping invalid problem:", problem)
+        continue
+      }
+
+      // Log each problem's basic info
+      console.log(`Problem: ${problem.info.category} at position ${problem.highlighting.always.start}-${problem.highlighting.always.endExclusive}`)
+
+      try {
+        // Skip problems for words in custom dictionary
+        const problemText = sentence.sentence.substring(
+          problem.highlighting.always.start,
+          problem.highlighting.always.endExclusive
+        )
+
+        if (isInDictionary(problemText, problem.info?.id?.id)) {
+          console.log(`Skipping "${problemText}" - in dictionary`)
+          continue
+        }
+
+        // Skip errors that involve image placeholder
+        const IMAGE_PLACEHOLDER = "⁂"
+        if (problemText.includes(IMAGE_PLACEHOLDER)) {
+          console.log(`Skipping "${problemText}" - contains image placeholder`)
+          continue
+        }
+
+        // Get the best fix for replacement suggestions
+        const replacements = this.extractReplacements(problem)
+        console.log(`Found ${replacements.length} replacements for problem`)
+
+        // Map positions back to original markdown
+        const originalOffset = mapStrippedToOriginal(
+          problem.highlighting.always.start,
+          mapping
+        )
+        const originalEndOffset = mapStrippedToOriginal(
+          problem.highlighting.always.endExclusive,
+          mapping
+        )
+        const originalLength = originalEndOffset - originalOffset
+
+        // Ensure we have valid mapped positions
+        if (originalOffset < 0 || originalEndOffset < 0 || originalLength <= 0) {
+          console.warn(`Skipping problem with invalid mapping: ${originalOffset}-${originalEndOffset}`)
+          continue
+        }
+
+        // Convert problem to GrammarError format
+        const error: GrammarError = {
+          message: problem.info.message || "Grammatical issue detected",
+          shortMessage: problem.info.displayName || "Grammar issue",
+          offset: problem.highlighting.always.start,
+          length: problem.highlighting.always.endExclusive - problem.highlighting.always.start,
+          rule: {
+            id: problem.info.id?.id || "unknown.rule",
+            description: problem.info.displayName || "Unknown rule",
+            category: {
+              id: problem.info.category || "OTHER",
+              name: this.getCategoryDisplayName(problem.info.category || "OTHER")
+            }
+          },
+          replacements,
+          type: this.convertProblemType(problem.info.category || "OTHER"),
+          severity: this.convertSeverity(problem.info.confidence || "HIGH", problem.info.category || "OTHER"),
+          originalOffset,
+          originalLength,
+          context: {
+            text: sentence.sentence,
+            offset: problem.highlighting.always.start,
+            length: problem.highlighting.always.endExclusive - problem.highlighting.always.start
+          }
+        }
+
+        errors.push(error)
+      } catch (err) {
+        console.error("Error processing problem:", err, problem)
+      }
+    }
+
+    console.log(`Successfully converted ${errors.length} problems to grammar errors`)
     return errors
   }
 
@@ -229,11 +295,24 @@ export class GrazieService implements IGrammarService {
   private extractReplacements(problem: Problem): Array<{ value: string }> {
     const replacements: Array<{ value: string }> = []
 
+    if (!problem.fixes || !Array.isArray(problem.fixes)) {
+      console.warn("Problem has no fixes or fixes is not an array")
+      return replacements
+    }
+
     for (const fix of problem.fixes) {
+      if (!fix.parts || !Array.isArray(fix.parts)) {
+        continue
+      }
+
       for (const part of fix.parts) {
-        if ('text' in part && 'range' in part) {
+        // Make sure this is a change part with text and range properties
+        if (part && typeof part === 'object' && 'text' in part && 'range' in part) {
           const change = part as { text: string; range: any }
-          replacements.push({ value: change.text })
+          // Only add unique values
+          if (change.text && !replacements.some(r => r.value === change.text)) {
+            replacements.push({ value: change.text })
+          }
         }
       }
     }
@@ -244,35 +323,45 @@ export class GrazieService implements IGrammarService {
   /**
    * Convert Grazie problem category to spelling/grammar type
    */
-  private convertProblemType(category: ProblemCategory): "spelling" | "grammar" {
-    switch (category) {
-      case ProblemCategory.SPELLING:
-        return "spelling"
-      case ProblemCategory.TYPOGRAPHY:
-        return "spelling"
-      default:
-        return "grammar"
+  private convertProblemType(category: ProblemCategory | string): "spelling" | "grammar" {
+    // Handle both enum values and direct string values
+    if (
+      category === ProblemCategory.SPELLING ||
+      category === "SPELLING" ||
+      category === ProblemCategory.TYPOGRAPHY ||
+      category === "TYPOGRAPHY"
+    ) {
+      return "spelling"
     }
+
+    return "grammar"
   }
 
   /**
    * Convert Grazie confidence and category to severity
    */
   private convertSeverity(
-    confidence: ConfidenceLevel,
-    category: ProblemCategory
+    confidence: ConfidenceLevel | string,
+    category: ProblemCategory | string
   ): "low" | "medium" | "high" {
     // Spelling errors are generally high priority
-    if (category === ProblemCategory.SPELLING) {
+    if (
+      category === ProblemCategory.SPELLING ||
+      category === "SPELLING"
+    ) {
       return "high"
     }
 
     // Style and readability issues are lower priority
     if (
       category === ProblemCategory.STYLE ||
+      category === "STYLE" ||
       category === ProblemCategory.READABILITY ||
+      category === "READABILITY" ||
       category === ProblemCategory.TONE ||
-      category === ProblemCategory.FORMALITY
+      category === "TONE" ||
+      category === ProblemCategory.FORMALITY ||
+      category === "FORMALITY"
     ) {
       return "low"
     }
@@ -280,20 +369,30 @@ export class GrazieService implements IGrammarService {
     // Grammar and semantic issues depend on confidence
     if (
       category === ProblemCategory.GRAMMAR ||
-      category === ProblemCategory.SEMANTICS
+      category === "GRAMMAR" ||
+      category === ProblemCategory.SEMANTICS ||
+      category === "SEMANTICS"
     ) {
-      return confidence === ConfidenceLevel.HIGH ? "high" : "medium"
+      return confidence === ConfidenceLevel.HIGH || confidence === "HIGH"
+        ? "high"
+        : "medium"
     }
 
     // Default based on confidence
-    return confidence === ConfidenceLevel.HIGH ? "medium" : "low"
+    return confidence === ConfidenceLevel.HIGH || confidence === "HIGH"
+      ? "medium"
+      : "low"
   }
 
   /**
    * Get display name for problem category
+   *
+   * This method safely maps a category string to a display name, handling
+   * both enum values and direct strings for better compatibility with API responses.
    */
-  private getCategoryDisplayName(category: ProblemCategory): string {
-    const categoryNames: Record<ProblemCategory, string> = {
+  private getCategoryDisplayName(category: ProblemCategory | string): string {
+    const categoryNames: Record<string, string> = {
+      // Enum values
       [ProblemCategory.SPELLING]: "Spelling",
       [ProblemCategory.PUNCTUATION]: "Punctuation",
       [ProblemCategory.TYPOGRAPHY]: "Typography",
@@ -304,9 +403,27 @@ export class GrazieService implements IGrammarService {
       [ProblemCategory.INCLUSIVITY]: "Inclusivity",
       [ProblemCategory.TONE]: "Tone",
       [ProblemCategory.FORMALITY]: "Formality",
-      [ProblemCategory.OTHER]: "Other"
+      [ProblemCategory.OTHER]: "Other",
+
+      // Direct string values (for redundancy)
+      "SPELLING": "Spelling",
+      "PUNCTUATION": "Punctuation",
+      "TYPOGRAPHY": "Typography",
+      "GRAMMAR": "Grammar",
+      "SEMANTICS": "Semantics",
+      "STYLE": "Style",
+      "READABILITY": "Readability",
+      "INCLUSIVITY": "Inclusivity",
+      "TONE": "Tone",
+      "FORMALITY": "Formality",
+      "OTHER": "Other"
     }
 
-    return categoryNames[category] || "Other"
+    // Safely check if the category is a valid key
+    if (typeof category === 'string' && category in categoryNames) {
+      return categoryNames[category]
+    }
+
+    return "Other"
   }
 }

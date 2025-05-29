@@ -122,14 +122,32 @@ export const MarkdownInput = forwardRef<
   useEffect(() => {
     const textarea = textareaRef.current
     if (!textarea) return
+    
+    let scrollTimeout: NodeJS.Timeout
     const handleScroll = () => {
+      // Clear previous timeout to debounce scroll updates
+      clearTimeout(scrollTimeout)
+      
+      // Update scroll position immediately for smooth scrolling
       setScrollPosition({
         top: textarea.scrollTop,
         left: textarea.scrollLeft,
       })
+      
+      // Force a re-render of grammar errors after scroll settles
+      scrollTimeout = setTimeout(() => {
+        setScrollPosition(prev => ({
+          top: textarea.scrollTop,
+          left: textarea.scrollLeft,
+        }))
+      }, 16) // ~60fps
     }
-    textarea.addEventListener("scroll", handleScroll)
-    return () => textarea.removeEventListener("scroll", handleScroll)
+    
+    textarea.addEventListener("scroll", handleScroll, { passive: true })
+    return () => {
+      textarea.removeEventListener("scroll", handleScroll)
+      clearTimeout(scrollTimeout)
+    }
   }, [])
 
   // Memoize the stripped text and mapping for performance
@@ -145,34 +163,6 @@ export const MarkdownInput = forwardRef<
     }
     return stripMarkdownForGrammarCheck(value)
   }, [value, grammarCheckEnabled])
-
-  // Function to perform grammar check
-  const performGrammarCheck = async (text: string) => {
-    if (!grammarCheckEnabled || !text.trim()) {
-      setGrammarErrors([])
-      setIsGrammarCheckLoading(false)
-      return
-    }
-
-    try {
-      const errors = await grammarServiceManager.checkGrammar(text, mapping, {
-        language: grammarCheckLanguage,
-      })
-
-      // Filter out errors in code blocks
-      const filteredErrors = errors.filter(
-        (error) => !isInsideCodeBlock(error.originalOffset, value)
-      )
-
-      setGrammarErrors(filteredErrors)
-      console.log("Grammar errors found:", filteredErrors.length)
-    } catch (error) {
-      console.error("Grammar check failed:", error)
-      setGrammarErrors([])
-    } finally {
-      setIsGrammarCheckLoading(false)
-    }
-  }
 
   // Process text for grammar checking
   // Use a ref to store the timeout ID
@@ -191,6 +181,75 @@ export const MarkdownInput = forwardRef<
     // Only set loading state if we're actually going to check
     if (value !== lastProcessedText.current && value.trim()) {
       setIsGrammarCheckLoading(true)
+    }
+
+    // Define performGrammarCheck inside the useEffect to avoid dependency issues
+    const performGrammarCheck = async (text: string) => {
+      if (!grammarCheckEnabled || !text.trim()) {
+        setGrammarErrors([])
+        setIsGrammarCheckLoading(false)
+        return
+      }
+
+      setIsGrammarCheckLoading(true)
+
+      try {
+        if (process.env.NODE_ENV === 'development') {
+          console.log("Starting grammar check for text:", text.length, "characters")
+        }
+        
+        // Validate mapping object
+        if (!mapping || typeof mapping !== 'object') {
+          console.warn("Invalid mapping object for grammar check")
+          setGrammarErrors([])
+          setIsGrammarCheckLoading(false)
+          return
+        }
+
+        const errors = await grammarServiceManager.checkGrammar(text, mapping, {
+          language: grammarCheckLanguage,
+        })
+
+        if (process.env.NODE_ENV === 'development') {
+          console.log("Grammar check completed, found", errors?.length || 0, "errors")
+        }
+
+        // Validate errors array
+        if (!Array.isArray(errors)) {
+          console.warn("Grammar service returned non-array result:", typeof errors)
+          setGrammarErrors([])
+          setIsGrammarCheckLoading(false)
+          return
+        }
+
+        // Filter out errors in code blocks
+        const filteredErrors = errors.filter(
+          (error) => !isInsideCodeBlock(error.originalOffset, value)
+        )
+
+        setGrammarErrors(filteredErrors)
+      } catch (error) {
+        console.error("Grammar check failed:", error)
+        
+        // More specific error handling
+        if (error instanceof Error) {
+          console.error("Error message:", error.message)
+          
+          // Handle specific Grazie API errors
+          if (error.message.includes("problems")) {
+            console.error("Grazie API response structure error - this usually means the API returned unexpected data")
+          } else if (error.message.includes("not configured")) {
+            console.warn("Grammar service not properly configured")
+          } else if (error.message.includes("network") || error.message.includes("fetch")) {
+            console.warn("Network error during grammar check")
+          }
+        }
+        
+        // Always reset to empty array on error to prevent UI issues
+        setGrammarErrors([])
+      } finally {
+        setIsGrammarCheckLoading(false)
+      }
     }
 
     // Set a timeout to process the text after the user has stopped typing
@@ -218,35 +277,118 @@ export const MarkdownInput = forwardRef<
     mapping,
   ])
 
-  // Helper: get error position in pixels using mirror div
+  // Helper: get error position using textarea's native selection measurement
   const getErrorPosition = (offset: number, length: number) => {
     const textarea = textareaRef.current
-    const mirrorDiv = mirrorDivRef.current
-    if (!textarea || !mirrorDiv) return { left: 0, top: 0, width: 0 }
+    if (!textarea) return { left: 0, top: 0, width: 0 }
 
-    // Set mirror content up to error offset
-    const before = value.slice(0, offset)
-    const errorText = value.slice(offset, offset + length) || " "
-    mirrorDiv.innerText = before
-    // Create a span for the error text
-    const errorSpan = document.createElement("span")
-    errorSpan.innerText = errorText
-    errorSpan.style.display = "inline-block"
-    errorSpan.style.verticalAlign = "baseline"
-    mirrorDiv.appendChild(errorSpan)
+    // Validate input parameters
+    if (typeof offset !== 'number' || typeof length !== 'number' || offset < 0 || length <= 0) {
+      console.warn('Invalid offset or length for error position:', { offset, length })
+      return { left: 0, top: 0, width: 0 }
+    }
 
-    // Get bounding rects
-    const spanRect = errorSpan.getBoundingClientRect()
-    const mirrorRect = mirrorDiv.getBoundingClientRect()
-    mirrorDiv.removeChild(errorSpan)
+    // Save current selection state
+    const originalStart = textarea.selectionStart
+    const originalEnd = textarea.selectionEnd
+    const originalFocus = document.activeElement === textarea
 
-    // Tweak: offsetY to align underline with text baseline
-    const offsetY = 3 // px, tweak as needed for perfect alignment
-    return {
-      left: spanRect.left - mirrorRect.left,
-      top: spanRect.top - mirrorRect.top + offsetY,
-      width: spanRect.width,
-      height: spanRect.height,
+    try {
+      // Ensure offset doesn't exceed text length and is valid
+      if (offset >= value.length) {
+        console.warn('Offset exceeds text length:', { offset, textLength: value.length })
+        return { left: 0, top: 0, width: 0 }
+      }
+
+      const maxOffset = Math.min(offset, value.length - 1)
+      const maxLength = Math.min(length, value.length - maxOffset)
+      
+      if (maxLength <= 0) {
+        console.warn('Computed length is zero or negative:', { offset, length, maxOffset, maxLength })
+        return { left: 0, top: 0, width: 0 }
+      }
+
+      try {
+        // Set selection to the error position
+        textarea.setSelectionRange(maxOffset, maxOffset + maxLength)
+      } catch (selectionError) {
+        console.warn('Error setting selection range:', selectionError, { maxOffset, maxLength })
+        return { left: 0, top: 0, width: 0 }
+      }
+      
+      // Force focus temporarily to ensure selection is visible
+      if (!originalFocus) {
+        textarea.focus()
+      }
+
+      // Get textarea's bounding rect for reference
+      const textareaRect = textarea.getBoundingClientRect()
+      
+      // Get computed styles for padding calculation
+      const styles = window.getComputedStyle(textarea)
+      const paddingLeft = parseFloat(styles.paddingLeft) || 0
+      const paddingTop = parseFloat(styles.paddingTop) || 0
+      const borderLeft = parseFloat(styles.borderLeftWidth) || 0
+      const borderTop = parseFloat(styles.borderTopWidth) || 0
+      
+      // Calculate content area offset
+      const contentOffsetX = paddingLeft + borderLeft
+      const contentOffsetY = paddingTop + borderTop
+      
+      // Use a temporary canvas to measure text up to the error position
+      const canvas = document.createElement('canvas')
+      const ctx = canvas.getContext('2d')
+      if (!ctx) {
+        console.warn('Canvas context not available, using fallback positioning')
+        return { left: 0, top: 0, width: Math.max(maxLength * 8, 8) }
+      }
+      
+      // Set canvas font to match textarea
+      const fontSize = styles.fontSize
+      const fontFamily = styles.fontFamily
+      ctx.font = `${fontSize} ${fontFamily}`
+      
+      // Split text into lines to find the correct line
+      const lines = value.slice(0, maxOffset).split('\n')
+      const currentLineIndex = lines.length - 1
+      const currentLineText = lines[currentLineIndex] || ''
+      
+      // Ensure we're not trying to slice beyond text bounds
+      const errorEndOffset = Math.min(maxOffset + maxLength, value.length)
+      const errorText = value.slice(maxOffset, errorEndOffset) || ' '
+      
+      // Calculate line height
+      const lineHeight = parseFloat(styles.lineHeight) || parseFloat(fontSize) * 1.2
+      
+      // Measure text width up to error position in current line
+      const textWidth = ctx.measureText(currentLineText).width
+      const errorWidth = Math.max(ctx.measureText(errorText).width, 8) // Minimum 8px width
+      
+      // Calculate position
+      const left = textWidth
+      const top = currentLineIndex * lineHeight + lineHeight - 2 // Position at baseline
+      
+      return {
+        left: Math.max(0, left),
+        top: Math.max(0, top),
+        width: Math.max(8, errorWidth),
+        height: 2, // Fixed height for underline
+      }
+    } catch (error) {
+      console.error('Error calculating position:', error)
+      return { left: 0, top: 0, width: 8 }
+    } finally {
+      try {
+        // Restore original selection state
+        if (originalFocus) {
+          textarea.setSelectionRange(originalStart || 0, originalEnd || 0)
+        } else {
+          textarea.blur()
+          textarea.setSelectionRange(originalStart || 0, originalEnd || 0)
+        }
+      } catch (restoreError) {
+        console.warn('Error restoring selection state:', restoreError)
+      }
     }
   }
 
@@ -316,57 +458,91 @@ export const MarkdownInput = forwardRef<
   }
 
   // Render grammar errors
+  // Render grammar error highlights
   const renderGrammarErrors = () => {
     if (!grammarCheckEnabled || !grammarErrors.length) {
       return null
     }
 
-    console.log("Rendering grammar errors:", grammarErrors.length)
+    // Debug log is kept for development but doesn't output sensitive data
+    if (process.env.NODE_ENV === 'development') {
+      console.log("Rendering grammar errors:", grammarErrors.length, "scroll:", scrollPosition)
+    }
 
     return grammarErrors.map((error, index) => {
-      const { left, top, width, height } = getErrorPosition(
-        error.originalOffset,
-        error.originalLength
-      )
-      return (
-        <GrammarContextMenu
-          key={`grammar-error-${index}`}
-          error={error}
-          onApplyReplacement={(replacement) =>
-            handleApplyReplacement(error, replacement)
+      // Skip invalid errors or those with invalid offsets/lengths
+      if (error.originalOffset === undefined || 
+          error.originalLength === undefined || 
+          error.originalOffset < 0 || 
+          error.originalLength <= 0 ||
+          error.originalOffset >= value.length) {
+        return null
+      }
+      
+      try {
+        const { left, top, width, height } = getErrorPosition(
+          error.originalOffset,
+          error.originalLength
+        )
+        
+        // Validate position values
+        if (typeof left !== 'number' || typeof top !== 'number' || 
+            isNaN(left) || isNaN(top) || width <= 0) {
+          if (process.env.NODE_ENV === 'development') {
+            console.warn(`Invalid position for error ${index}:`, { left, top, width, height })
           }
-          onAddToDictionary={() => handleAddToDictionary(error)}
-        >
-          <div
-            className={cn(
-              "grammar-error pointer-events-auto absolute cursor-pointer",
-              `grammar-error-${error.severity}`
-            )}
-            style={{
-              left,
-              top,
-              width: width || 2,
-              height: height || 20,
-              zIndex: 10,
-              backgroundColor: "transparent",
-              borderBottom: "2px dotted",
-              borderBottomColor:
-                error.severity === "high"
-                  ? "var(--grammar-error-underline-error)"
-                  : error.severity === "medium"
-                    ? "var(--grammar-error-underline-warning)"
-                    : "var(--grammar-error-underline-info)",
-              position: "absolute",
-              pointerEvents: "auto",
-            }}
-            onMouseEnter={() => setHoveredError(error)}
-            onMouseLeave={() => setHoveredError(null)}
-            data-testid={`grammar-error-${index}`}
-            aria-label={`${error.type} error (${error.severity} severity): ${error.message}`}
-          />
-        </GrammarContextMenu>
-      )
-    })
+          return null
+        }
+        
+        // Direct positioning - no scroll adjustment needed with canvas measurement
+        const finalLeft = left
+        const finalTop = top
+        
+        return (
+          <GrammarContextMenu
+            key={`grammar-error-${index}`}
+            error={error}
+            onApplyReplacement={(replacement) =>
+              handleApplyReplacement(error, replacement)
+            }
+            onAddToDictionary={() => handleAddToDictionary(error)}
+          >
+            <div
+              className={cn(
+                "grammar-error pointer-events-auto absolute cursor-pointer",
+                `grammar-error-${error.severity}`
+              )}
+              style={{
+                left: `${finalLeft}px`,
+                top: `${finalTop}px`,
+                width: `${width}px`,
+                height: `${height || 2}px`, // Ensure at least 2px height
+                zIndex: 10,
+                backgroundColor: "transparent",
+                borderBottom: "2px dotted",
+                borderBottomColor:
+                  error.severity === "high"
+                    ? "var(--grammar-error-underline-error)"
+                    : error.severity === "medium"
+                      ? "var(--grammar-error-underline-warning)"
+                      : "var(--grammar-error-underline-info)",
+                position: "absolute",
+                pointerEvents: "auto",
+              }}
+              onMouseEnter={() => setHoveredError(error)}
+              onMouseLeave={() => setHoveredError(null)}
+              data-testid={`grammar-error-${index}`}
+              aria-label={`${error.type} error (${error.severity} severity): ${error.message}`}
+            />
+          </GrammarContextMenu>
+        )
+      } catch (positionError) {
+        if (process.env.NODE_ENV === 'development') {
+          console.error(`Error rendering grammar error ${index}:`, positionError)
+        }
+        return null
+      }
+    }).filter(Boolean) // Remove null entries
   }
 
   return (
@@ -398,17 +574,17 @@ export const MarkdownInput = forwardRef<
           fontFamily: "monospace",
           fontSize: "inherit",
           lineHeight: "1.5rem",
-          padding: "1rem 1.5rem",
           width: "100%",
-          height: "100%",
+          height: "auto",
           top: 0,
           left: 0,
           background: "none",
-          border: "none",
           boxSizing: "border-box",
           letterSpacing: "inherit",
           boxShadow: "none",
           margin: 0,
+          tabSize: 2,
+          border: "1px solid transparent", // Match textarea border for exact positioning
         }}
       />
 
@@ -419,15 +595,13 @@ export const MarkdownInput = forwardRef<
         style={{
           overflow: "hidden",
           pointerEvents: "none",
-          top: 0,
-          left: 0,
-          right: 0,
-          bottom: 0,
+          top: "1rem",
+          left: "1.5rem",
+          right: "1.5rem", 
+          bottom: "1rem",
           fontFamily: "monospace",
           fontSize: "inherit",
           lineHeight: "1.5rem",
-          padding: "1rem 1.5rem",
-          // Sync overlay with textarea scroll
           transform: `translate(${-scrollPosition.left}px, ${-scrollPosition.top}px)`,
         }}
       >

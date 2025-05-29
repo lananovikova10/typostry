@@ -18,7 +18,7 @@ export class GrazieClient {
     sentences: string[],
     language: Language,
     services?: CorrectionServiceType[]
-  ): Promise<SentenceWithProblems[]> {
+  ): Promise<any> {
     const payload: GrazieRequest = {
       sentences,
       lang: language,
@@ -64,14 +64,27 @@ export class GrazieClient {
         });
         
         throw new GrazieError(
-          errorData.message || `HTTP ${response.status}: ${response.statusText}`,
+          (errorData as any)?.message || `HTTP ${response.status}: ${response.statusText}`,
           response.status.toString(),
           errorData
         );
       }
 
-      const data: SentenceWithProblems[] = await response.json();
-      console.log('Grazie API Success Response:', data);
+      // Return raw data from API - we'll parse the specific structure in the service implementation
+      const data = await response.json();
+      console.log('Grazie API Success Response Type:', typeof data);
+      
+      // Log some details about the structure without verbose output
+      if (data && typeof data === 'object') {
+        if ('corrections' in data && Array.isArray(data.corrections)) {
+          console.log('Response has corrections array with length:', data.corrections.length);
+        } else if (Array.isArray(data)) {
+          console.log('Response is an array with length:', data.length);
+        } else {
+          console.log('Response keys:', Object.keys(data));
+        }
+      }
+      
       return data;
     } catch (error) {
       if (error instanceof GrazieError) {

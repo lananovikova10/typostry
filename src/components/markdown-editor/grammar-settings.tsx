@@ -346,7 +346,7 @@ export function GrammarSettings({ onServiceChange }: GrammarSettingsProps) {
                           </p>
                         </div>
                         <p className="text-xs text-orange-600 dark:text-orange-400">
-                          Get your token from JetBrains AI Platform. The token from your message starts with "eyJhbGciOiJSUzUxMi..."
+                          Get your token from JetBrains AI Platform. The token from your message starts with &quot;eyJhbGciOiJSUzUxMi...&quot;
                         </p>
                       </div>
                       
@@ -399,7 +399,7 @@ export function GrammarSettings({ onServiceChange }: GrammarSettingsProps) {
                         )}
                         {!tokenConfigured && !tokenError && grazieToken && (
                           <p className="text-sm text-muted-foreground">
-                            Click "Configure" to activate Grazie service with your token
+                            Click &quot;Configure&quot; to activate Grazie service with your token
                           </p>
                         )}
                       </div>
