@@ -5,6 +5,10 @@ export * from "./types"
 export * from "./preprocessor"
 export * from "./api"
 export * from "./dictionary"
+export * from "./service-interface"
+export * from "./service-manager"
+export * from "./languagetool-service"
+export * from "./grazie-service"
 
 /**
  * Debounces a function call
