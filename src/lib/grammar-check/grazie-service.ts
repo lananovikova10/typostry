@@ -2,13 +2,25 @@
  * Grazie API service implementation
  */
 
-import { IGrammarService, GrammarServiceProvider, GrammarServiceOptions } from "./service-interface"
-import { GrammarError, PositionMapping } from "./types"
-import { GrazieClient, createGrazieClient, GrazieError } from "../grazie-client"
-import { Language, CorrectionServiceType, SentenceWithProblems, Problem, ProblemCategory, ConfidenceLevel } from "@/types/grazie"
-import { mapStrippedToOriginal } from "./preprocessor"
-import { isInDictionary } from "./dictionary"
+import {
+  ConfidenceLevel,
+  CorrectionServiceType,
+  Language,
+  Problem,
+  ProblemCategory,
+  SentenceWithProblems,
+} from "@/types/grazie"
+
 import { clientEnv } from "../env-client"
+import { createGrazieClient, GrazieClient, GrazieError } from "../grazie-client"
+import { isInDictionary } from "./dictionary"
+import { mapStrippedToOriginal } from "./preprocessor"
+import {
+  GrammarServiceOptions,
+  GrammarServiceProvider,
+  IGrammarService,
+} from "./service-interface"
+import { GrammarError, PositionMapping } from "./types"
 
 export class GrazieService implements IGrammarService {
   private client: GrazieClient | null
@@ -62,35 +74,52 @@ export class GrazieService implements IGrammarService {
 
     try {
       // Convert language format (en-US -> EN)
-      const grazieLanguage = this.convertLanguageFormat(options.language || "en-US")
-      
+      const grazieLanguage = this.convertLanguageFormat(
+        options.language || "en-US"
+      )
+
       // Use services from options or default set
       const services = options.services || [
         CorrectionServiceType.MLEC,
         CorrectionServiceType.SPELL,
-        CorrectionServiceType.RULE
+        CorrectionServiceType.RULE,
       ]
 
-      console.log(`Sending Grazie grammar check request (${text.length} chars)...`)
-      
+      console.log(
+        `Sending Grazie grammar check request (${text.length} chars)...`
+      )
+
       if (!this.client) {
         throw new Error("Grazie client is not configured")
       }
-      
-      const response = await this.client.correctText([text], grazieLanguage, services)
+
+      const response = await this.client.correctText(
+        [text],
+        grazieLanguage,
+        services
+      )
 
       console.log("Grazie API raw response:", JSON.stringify(response, null, 2))
-      
+
       // The response can either be directly an array of SentenceWithProblems,
       // or a structure with a 'corrections' property containing them
       let corrections: any[] = []
 
       if (Array.isArray(response)) {
         corrections = response
-      } else if (response && typeof response === 'object' && 'corrections' in response && Array.isArray(response.corrections)) {
+      } else if (
+        response &&
+        typeof response === "object" &&
+        "corrections" in response &&
+        Array.isArray(response.corrections)
+      ) {
         corrections = response.corrections
       } else {
-        console.warn("Unexpected Grazie API response structure:", typeof response, response)
+        console.warn(
+          "Unexpected Grazie API response structure:",
+          typeof response,
+          response
+        )
         return []
       }
 
@@ -100,12 +129,12 @@ export class GrazieService implements IGrammarService {
       }
 
       console.log(`Found ${corrections.length} correction items`)
-      
+
       let allErrors: GrammarError[] = []
 
       // Process each sentence with problems
       for (const correction of corrections) {
-        if (!correction || typeof correction !== 'object') {
+        if (!correction || typeof correction !== "object") {
           console.warn("Skipping invalid correction item:", correction)
           continue
         }
@@ -117,11 +146,15 @@ export class GrazieService implements IGrammarService {
         }
 
         const errors = this.convertToGrammarErrors(correction, mapping)
-        console.log(`Processed correction with ${correction.problems.length} problems, extracted ${errors.length} errors`)
+        console.log(
+          `Processed correction with ${correction.problems.length} problems, extracted ${errors.length} errors`
+        )
         allErrors = allErrors.concat(errors)
       }
 
-      console.log(`Grazie found ${allErrors.length} total errors across all corrections`)
+      console.log(
+        `Grazie found ${allErrors.length} total errors across all corrections`
+      )
       return allErrors
     } catch (error) {
       if (error instanceof GrazieError) {
@@ -139,16 +172,25 @@ export class GrazieService implements IGrammarService {
 
   getSupportedLanguages(): string[] {
     return [
-      "en-US", "en-GB", "en-CA", "en-AU",
-      "de-DE", "de-AT", "de-CH",
-      "es-ES", "es-MX", "es-AR",
-      "fr-FR", "fr-CA",
+      "en-US",
+      "en-GB",
+      "en-CA",
+      "en-AU",
+      "de-DE",
+      "de-AT",
+      "de-CH",
+      "es-ES",
+      "es-MX",
+      "es-AR",
+      "fr-FR",
+      "fr-CA",
       "it-IT",
-      "pt-PT", "pt-BR",
+      "pt-PT",
+      "pt-BR",
       "ru-RU",
       "zh-CN",
       "ja-JP",
-      "ko-KR"
+      "ko-KR",
     ]
   }
 
@@ -162,7 +204,7 @@ export class GrazieService implements IGrammarService {
   private convertLanguageFormat(languageToolFormat: string): Language {
     const languageMap: Record<string, Language> = {
       "en-US": "EN",
-      "en-GB": "EN", 
+      "en-GB": "EN",
       "en-CA": "EN",
       "en-AU": "EN",
       "de-DE": "DE",
@@ -179,7 +221,7 @@ export class GrazieService implements IGrammarService {
       "ru-RU": "RU",
       "zh-CN": "ZH",
       "ja-JP": "JA",
-      "ko-KR": "KO"
+      "ko-KR": "KO",
     }
 
     return languageMap[languageToolFormat] || "EN"
@@ -201,23 +243,44 @@ export class GrazieService implements IGrammarService {
     }
 
     // Log information about the sentence and problems
-    console.log(`Processing sentence with ${sentence.problems.length} problems: ${sentence.sentence.substring(0, 50)}...`)
+    console.log(
+      `Processing sentence with ${sentence.problems.length} problems: ${sentence.sentence.substring(0, 50)}...`
+    )
 
     for (const problem of sentence.problems) {
       // Add validation for problem structure
-      if (!problem.highlighting || !problem.highlighting.always || !problem.info) {
+      if (
+        !problem.highlighting ||
+        !problem.highlighting.always ||
+        !Array.isArray(problem.highlighting.always) ||
+        problem.highlighting.always.length === 0 ||
+        !problem.info
+      ) {
         console.warn("Skipping invalid problem:", problem)
         continue
       }
 
+      // Get the first highlighting range (always is an array)
+      const highlighting = problem.highlighting.always[0]
+      if (
+        !highlighting ||
+        typeof highlighting.start !== "number" ||
+        typeof highlighting.endExclusive !== "number"
+      ) {
+        console.warn("Skipping problem with invalid highlighting:", problem)
+        continue
+      }
+
       // Log each problem's basic info
-      console.log(`Problem: ${problem.info.category} at position ${problem.highlighting.always.start}-${problem.highlighting.always.endExclusive}`)
+      console.log(
+        `Problem: ${problem.info.category} at position ${highlighting.start}-${highlighting.endExclusive}`
+      )
 
       try {
         // Skip problems for words in custom dictionary
         const problemText = sentence.sentence.substring(
-          problem.highlighting.always.start,
-          problem.highlighting.always.endExclusive
+          highlighting.start,
+          highlighting.endExclusive
         )
 
         if (isInDictionary(problemText, problem.info?.id?.id)) {
@@ -238,18 +301,24 @@ export class GrazieService implements IGrammarService {
 
         // Map positions back to original markdown
         const originalOffset = mapStrippedToOriginal(
-          problem.highlighting.always.start,
+          highlighting.start,
           mapping
         )
         const originalEndOffset = mapStrippedToOriginal(
-          problem.highlighting.always.endExclusive,
+          highlighting.endExclusive,
           mapping
         )
         const originalLength = originalEndOffset - originalOffset
 
         // Ensure we have valid mapped positions
-        if (originalOffset < 0 || originalEndOffset < 0 || originalLength <= 0) {
-          console.warn(`Skipping problem with invalid mapping: ${originalOffset}-${originalEndOffset}`)
+        if (
+          originalOffset < 0 ||
+          originalEndOffset < 0 ||
+          originalLength <= 0
+        ) {
+          console.warn(
+            `Skipping problem with invalid mapping: ${originalOffset}-${originalEndOffset}`
+          )
           continue
         }
 
@@ -257,26 +326,31 @@ export class GrazieService implements IGrammarService {
         const error: GrammarError = {
           message: problem.info.message || "Grammatical issue detected",
           shortMessage: problem.info.displayName || "Grammar issue",
-          offset: problem.highlighting.always.start,
-          length: problem.highlighting.always.endExclusive - problem.highlighting.always.start,
+          offset: highlighting.start,
+          length: highlighting.endExclusive - highlighting.start,
           rule: {
             id: problem.info.id?.id || "unknown.rule",
             description: problem.info.displayName || "Unknown rule",
             category: {
               id: problem.info.category || "OTHER",
-              name: this.getCategoryDisplayName(problem.info.category || "OTHER")
-            }
+              name: this.getCategoryDisplayName(
+                problem.info.category || "OTHER"
+              ),
+            },
           },
           replacements,
           type: this.convertProblemType(problem.info.category || "OTHER"),
-          severity: this.convertSeverity(problem.info.confidence || "HIGH", problem.info.category || "OTHER"),
+          severity: this.convertSeverity(
+            problem.info.confidence || "HIGH",
+            problem.info.category || "OTHER"
+          ),
           originalOffset,
           originalLength,
           context: {
             text: sentence.sentence,
-            offset: problem.highlighting.always.start,
-            length: problem.highlighting.always.endExclusive - problem.highlighting.always.start
-          }
+            offset: highlighting.start,
+            length: highlighting.endExclusive - highlighting.start,
+          },
         }
 
         errors.push(error)
@@ -285,7 +359,9 @@ export class GrazieService implements IGrammarService {
       }
     }
 
-    console.log(`Successfully converted ${errors.length} problems to grammar errors`)
+    console.log(
+      `Successfully converted ${errors.length} problems to grammar errors`
+    )
     return errors
   }
 
@@ -307,10 +383,18 @@ export class GrazieService implements IGrammarService {
 
       for (const part of fix.parts) {
         // Make sure this is a change part with text and range properties
-        if (part && typeof part === 'object' && 'text' in part && 'range' in part) {
+        if (
+          part &&
+          typeof part === "object" &&
+          "text" in part &&
+          "range" in part
+        ) {
           const change = part as { text: string; range: any }
           // Only add unique values
-          if (change.text && !replacements.some(r => r.value === change.text)) {
+          if (
+            change.text &&
+            !replacements.some((r) => r.value === change.text)
+          ) {
             replacements.push({ value: change.text })
           }
         }
@@ -323,7 +407,9 @@ export class GrazieService implements IGrammarService {
   /**
    * Convert Grazie problem category to spelling/grammar type
    */
-  private convertProblemType(category: ProblemCategory | string): "spelling" | "grammar" {
+  private convertProblemType(
+    category: ProblemCategory | string
+  ): "spelling" | "grammar" {
     // Handle both enum values and direct string values
     if (
       category === ProblemCategory.SPELLING ||
@@ -345,10 +431,7 @@ export class GrazieService implements IGrammarService {
     category: ProblemCategory | string
   ): "low" | "medium" | "high" {
     // Spelling errors are generally high priority
-    if (
-      category === ProblemCategory.SPELLING ||
-      category === "SPELLING"
-    ) {
+    if (category === ProblemCategory.SPELLING || category === "SPELLING") {
       return "high"
     }
 
@@ -406,21 +489,21 @@ export class GrazieService implements IGrammarService {
       [ProblemCategory.OTHER]: "Other",
 
       // Direct string values (for redundancy)
-      "SPELLING": "Spelling",
-      "PUNCTUATION": "Punctuation",
-      "TYPOGRAPHY": "Typography",
-      "GRAMMAR": "Grammar",
-      "SEMANTICS": "Semantics",
-      "STYLE": "Style",
-      "READABILITY": "Readability",
-      "INCLUSIVITY": "Inclusivity",
-      "TONE": "Tone",
-      "FORMALITY": "Formality",
-      "OTHER": "Other"
+      SPELLING: "Spelling",
+      PUNCTUATION: "Punctuation",
+      TYPOGRAPHY: "Typography",
+      GRAMMAR: "Grammar",
+      SEMANTICS: "Semantics",
+      STYLE: "Style",
+      READABILITY: "Readability",
+      INCLUSIVITY: "Inclusivity",
+      TONE: "Tone",
+      FORMALITY: "Formality",
+      OTHER: "Other",
     }
 
     // Safely check if the category is a valid key
-    if (typeof category === 'string' && category in categoryNames) {
+    if (typeof category === "string" && category in categoryNames) {
       return categoryNames[category]
     }
 
