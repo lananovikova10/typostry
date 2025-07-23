@@ -48,6 +48,7 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip"
 import { TableGenerator } from "@/components/markdown-editor/table-generator"
+import { GrammarSettings } from "@/components/markdown-editor/grammar-settings"
 import { ModeToggle } from "@/components/mode-toggle"
 
 export interface MarkdownToolbarProps {
@@ -347,7 +348,7 @@ export function MarkdownToolbar({
   }
 
   return (
-    <div className="flex items-center overflow-hidden whitespace-nowrap border-b p-2 shadow-sm">
+    <div className="flex items-center border-b p-2 shadow-sm">
       {/* Left side: File operations and formatting tools */}
       <div className="flex min-w-0 flex-shrink-0 flex-nowrap items-center gap-1">
         <div className="mr-1 flex flex-nowrap items-center gap-1">
@@ -451,7 +452,7 @@ export function MarkdownToolbar({
 
       {/* Center: Filename with autosave indicator */}
       {currentFileName && (
-        <div className="mx-4 flex min-w-0 max-w-[40%] flex-shrink items-center overflow-hidden text-sm font-medium">
+        <div className="mx-4 flex min-w-0 max-w-[30%] flex-shrink items-center overflow-hidden text-sm font-medium">
           <span className="truncate" title={currentFileName}>
             {currentFileName}
             {!isFileSaved ? " *" : ""}
@@ -476,6 +477,7 @@ export function MarkdownToolbar({
 
       {/* Right side: View controls */}
       <div className="ml-auto flex flex-shrink-0 flex-nowrap items-center gap-2">
+        <GrammarSettings />
         <Button
           variant="ghost"
           size="sm"
@@ -487,12 +489,12 @@ export function MarkdownToolbar({
           {isPreviewMode ? (
             <>
               <Pencil className="mr-2 h-4 w-4" />
-              <span className="hidden sm:inline">Edit</span>
+              Edit
             </>
           ) : (
             <>
               <Eye className="mr-2 h-4 w-4" />
-              <span className="hidden sm:inline">Preview</span>
+              Preview
             </>
           )}
         </Button>

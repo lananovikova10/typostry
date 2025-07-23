@@ -42,6 +42,9 @@ export function GrammarTooltip({
     setShowConfirmation("Added to dictionary")
   }
 
+  // Ensure we have valid replacements to work with
+  const validReplacements = Array.isArray(error.replacements) ? error.replacements : []
+
   return (
     <TooltipPrimitive.Provider>
       <TooltipPrimitive.Root>
@@ -65,9 +68,9 @@ export function GrammarTooltip({
                 <span className="flex-1">{error.message}</span>
               </div>
 
-              {error.replacements.length > 0 && (
+              {validReplacements.length > 0 && (
                 <div className="flex flex-wrap gap-2">
-                  {error.replacements.slice(0, 5).map((replacement, index) => (
+                  {validReplacements.slice(0, 5).map((replacement, index) => (
                     <button
                       key={index}
                       className="inline-flex h-8 items-center rounded-full border border-input bg-background px-3 text-xs font-medium ring-offset-background transition-colors hover:bg-accent hover:text-accent-foreground focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2"
@@ -80,7 +83,7 @@ export function GrammarTooltip({
                 </div>
               )}
 
-              {error.replacements.length > 0 && (
+              {validReplacements.length > 0 && (
                 <div
                   className="my-1 h-px w-full bg-border"
                   aria-hidden="true"
@@ -142,6 +145,9 @@ export function GrammarContextMenu({
     onAddToDictionary()
     setShowConfirmation("Added to dictionary")
   }
+  
+  // Ensure we have valid replacements to work with
+  const validReplacements = Array.isArray(error.replacements) ? error.replacements : []
 
   return (
     <>
@@ -157,18 +163,22 @@ export function GrammarContextMenu({
               {error.message}
             </DropdownMenu.Label>
 
-            <DropdownMenu.Separator className="my-1.5 h-px bg-muted" />
-
-            {error.replacements.slice(0, 5).map((replacement, index) => (
-              <DropdownMenu.Item
-                key={index}
-                className="relative flex cursor-pointer select-none items-center rounded-sm px-2 py-1.5 text-sm outline-none transition-colors hover:bg-accent hover:text-accent-foreground focus:bg-accent focus:text-accent-foreground data-[disabled]:pointer-events-none data-[disabled]:opacity-50"
-                onClick={() => handleApplyReplacement(replacement.value)}
-              >
-                <Check className="mr-2 h-4 w-4 text-green-600 dark:text-green-500" />
-                {replacement.value}
-              </DropdownMenu.Item>
-            ))}
+            {validReplacements.length > 0 && (
+              <>
+                <DropdownMenu.Separator className="my-1.5 h-px bg-muted" />
+                
+                {validReplacements.slice(0, 5).map((replacement, index) => (
+                  <DropdownMenu.Item
+                    key={index}
+                    className="relative flex cursor-pointer select-none items-center rounded-sm px-2 py-1.5 text-sm outline-none transition-colors hover:bg-accent hover:text-accent-foreground focus:bg-accent focus:text-accent-foreground data-[disabled]:pointer-events-none data-[disabled]:opacity-50"
+                    onClick={() => handleApplyReplacement(replacement.value)}
+                  >
+                    <Check className="mr-2 h-4 w-4 text-green-600 dark:text-green-500" />
+                    {replacement.value}
+                  </DropdownMenu.Item>
+                ))}
+              </>
+            )}
 
             <DropdownMenu.Separator className="my-1.5 h-px bg-muted" />
 

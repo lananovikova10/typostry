@@ -6,7 +6,7 @@ import { MarkdownEditor } from "@/components/markdown-editor"
 export default function Home() {
   return (
     <main className="container py-10">
-      <div className="mx-auto max-w-4xl">
+      <div className="mx-auto max-w-6xl">
         <div className="mb-8 flex flex-col items-start gap-4 text-left">
           <div className="flex items-center gap-3">
             <Icons.logo className="h-10 w-10" />
