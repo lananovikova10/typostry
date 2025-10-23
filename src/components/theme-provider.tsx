@@ -15,6 +15,7 @@ export function ThemeProvider({ children, ...props }: ThemeProviderProps) {
         "system",
         "high-contrast-light",
         "high-contrast-dark",
+        "acid",
       ]}
     >
       {children}
