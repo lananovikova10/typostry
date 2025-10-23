@@ -162,8 +162,8 @@
   }
 
   .acid {
-    --editor-gradient-start: 84 100% 10%;
-    --editor-gradient-end: 330 100% 10%;
+    --editor-gradient-start: 270 100% 8%;
+    --editor-gradient-end: 270 100% 8%;
 
     --background: 270 100% 5%;
     --foreground: 84 100% 70%;
