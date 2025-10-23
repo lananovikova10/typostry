@@ -213,18 +213,18 @@
     --markdown-toolbar-icon-bg: 270 80% 15%;
     --markdown-toolbar-icon-bg-hover: 330 80% 30%;
 
-    --markdown-input-bg: 270 100% 5%;
+    --markdown-input-bg: 270 100% 98%;
     --markdown-input-border: 330 100% 50%;
-    --markdown-input-text: 84 100% 70%;
-    --markdown-input-placeholder: 280 60% 50%;
+    --markdown-input-text: 270 100% 10%;
+    --markdown-input-placeholder: 280 60% 40%;
 
-    --markdown-preview-bg: 270 100% 5%;
-    --markdown-preview-text: 84 100% 70%;
-    --markdown-preview-heading: 330 100% 60%;
-    --markdown-preview-link: 195 100% 60%;
-    --markdown-preview-code-bg: 270 80% 15%;
-    --markdown-preview-code-text: 54 100% 60%;
-    --markdown-preview-blockquote: 280 60% 60%;
+    --markdown-preview-bg: 270 100% 98%;
+    --markdown-preview-text: 270 100% 10%;
+    --markdown-preview-heading: 330 100% 30%;
+    --markdown-preview-link: 195 100% 35%;
+    --markdown-preview-code-bg: 270 80% 90%;
+    --markdown-preview-code-text: 54 100% 25%;
+    --markdown-preview-blockquote: 280 60% 30%;
     --markdown-preview-hr: 330 100% 50%;
     --markdown-preview-table-border: 330 100% 50%;
 
