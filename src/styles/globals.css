@@ -213,10 +213,10 @@
     --markdown-toolbar-icon-bg: 270 80% 15%;
     --markdown-toolbar-icon-bg-hover: 330 80% 30%;
 
-    --markdown-input-bg: 270 100% 8%;
+    --markdown-input-bg: 270 100% 95%;
     --markdown-input-border: 330 100% 50%;
-    --markdown-input-text: 84 100% 70%;
-    --markdown-input-placeholder: 195 100% 60%;
+    --markdown-input-text: 270 100% 10%;
+    --markdown-input-placeholder: 280 60% 40%;
 
     --markdown-preview-bg: 270 100% 98%;
     --markdown-preview-text: 270 100% 10%;
