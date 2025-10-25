@@ -1,5 +1,6 @@
 "use client"
 
+import { useEffect, useState } from "react"
 import type * as React from "react"
 import {
   EmojiPicker as EmojiPickerPrimitive,
@@ -15,6 +16,25 @@ function EmojiPicker({
   className,
   ...props
 }: React.ComponentProps<typeof EmojiPickerPrimitive.Root>) {
+  const [isClient, setIsClient] = useState(false)
+
+  useEffect(() => {
+    setIsClient(true)
+  }, [])
+
+  if (!isClient) {
+    return (
+      <div
+        className={cn(
+          "isolate flex h-full w-fit flex-col overflow-hidden rounded-md bg-popover text-popover-foreground",
+          className
+        )}
+      >
+        <LoaderIcon className="m-auto size-4 animate-spin" />
+      </div>
+    )
+  }
+
   return (
     <EmojiPickerPrimitive.Root
       className={cn(
@@ -31,6 +51,16 @@ function EmojiPickerSearch({
   className,
   ...props
 }: React.ComponentProps<typeof EmojiPickerPrimitive.Search>) {
+  const [isClient, setIsClient] = useState(false)
+
+  useEffect(() => {
+    setIsClient(true)
+  }, [])
+
+  if (!isClient) {
+    return null
+  }
+
   return (
     <div
       className={cn("flex h-9 items-center gap-2 border-b px-3", className)}
@@ -92,6 +122,22 @@ function EmojiPickerContent({
   className,
   ...props
 }: React.ComponentProps<typeof EmojiPickerPrimitive.Viewport>) {
+  const [isClient, setIsClient] = useState(false)
+
+  useEffect(() => {
+    setIsClient(true)
+  }, [])
+
+  if (!isClient) {
+    return (
+      <div className={cn("outline-hidden relative flex-1", className)}>
+        <div className="absolute inset-0 flex items-center justify-center text-muted-foreground">
+          <LoaderIcon className="size-4 animate-spin" />
+        </div>
+      </div>
+    )
+  }
+
   return (
     <EmojiPickerPrimitive.Viewport
       className={cn("outline-hidden relative flex-1", className)}
@@ -127,6 +173,16 @@ function EmojiPickerFooter({
   className,
   ...props
 }: React.ComponentProps<"div">) {
+  const [isClient, setIsClient] = useState(false)
+
+  useEffect(() => {
+    setIsClient(true)
+  }, [])
+
+  if (!isClient) {
+    return null
+  }
+
   return (
     <div
       className={cn(
