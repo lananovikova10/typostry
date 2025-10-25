@@ -1,0 +1,93 @@
+# Typostry Development Guidelines
+
+This document outlines the development guidelines and tech stack for the typostry project.
+
+## Tech Stack
+
+### Core Technologies
+- **Next.js 14+** with App Router
+- **TypeScript** for type safety
+- **React 18+** for UI components
+- **Tailwind CSS** for styling
+- **shadcn/ui** built on Radix UI for component library
+
+### Testing
+- **Vitest** for unit and integration tests
+- **Jest** for additional testing utilities
+- **Cypress** for end-to-end testing
+- **@testing-library/react** for React component testing
+
+### Styling Conventions
+- **CSS Modules** for component-specific styling
+- **Tailwind CSS** for utility-first styling
+- **tailwindcss-animate** for animations
+- **Framer Motion** for complex animations
+
+### Development Tools
+- **ESLint** for code linting
+- **Prettier** for code formatting
+- **TypeScript** for type checking
+- **Zod** for schema validation
+
+## Project Structure
+
+```
+src/
+├── app/                 # Next.js app router pages
+├── components/          # Reusable UI components
+├── lib/                 # Utility functions and configurations
+├── styles/              # Global styles and CSS modules
+├── types/               # TypeScript type definitions
+├── config/              # Application configuration
+└── stories/             # Storybook stories
+```
+
+## Development Guidelines
+
+### Code Style
+- Use TypeScript for all new files
+- Follow the existing component patterns
+- Use CSS modules for component-specific styles
+- Prefer composition over inheritance
+- Write tests for all new features
+
+### Component Guidelines
+- Use shadcn/ui components when available
+- Create reusable components in the components directory
+- Use TypeScript interfaces for props
+- Follow the existing naming conventions
+
+### Testing Strategy
+- Write unit tests with Vitest
+- Use @testing-library/react for component testing
+- Create E2E tests with Cypress for critical user flows
+- Aim for good test coverage of core functionality
+
+### Performance Considerations
+- Use Next.js built-in optimizations
+- Implement code splitting where appropriate
+- Optimize images and assets
+- Use React.memo() for expensive renders
+
+## File Naming Conventions
+
+- Components: PascalCase (e.g., `MarkdownEditor.tsx`)
+- Utilities: camelCase (e.g., `formatText.ts`)
+- Styles: kebab-case (e.g., `markdown-editor.module.css`)
+- Tests: `*.test.tsx` or `*.spec.tsx`
+
+## Getting Started
+
+1. Clone the repository
+2. Install dependencies with `npm install`
+3. Copy `.env.example` to `.env.local` and configure
+4. Run development server with `npm run dev`
+5. Run tests with `npm test`
+
+## Additional Resources
+
+- [Next.js Documentation](https://nextjs.org/docs)
+- [TypeScript Documentation](https://www.typescriptlang.org/docs/)
+- [Tailwind CSS Documentation](https://tailwindcss.com/docs)
+- [shadcn/ui Documentation](https://ui.shadcn.com/)
+- [Vitest Documentation](https://vitest.dev/)
