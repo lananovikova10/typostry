@@ -160,6 +160,156 @@
     --markdown-sidebar-border: 217.2 32.6% 17.5%;
     --markdown-sidebar-link: 217.2 91.2% 59.8%;
   }
+
+  .high-contrast-light {
+    --editor-gradient-start: 0 0% 100%;
+    --editor-gradient-end: 0 0% 0%;
+
+    --background: 0 0% 100%;
+    --foreground: 0 0% 0%;
+
+    --muted: 0 0% 95%;
+    --muted-foreground: 0 0% 20%;
+
+    --popover: 0 0% 100%;
+    --popover-foreground: 0 0% 0%;
+
+    --card: 0 0% 100%;
+    --card-foreground: 0 0% 0%;
+
+    --border: 0 0% 0%;
+    --input: 0 0% 0%;
+
+    --primary: 0 0% 0%;
+    --primary-foreground: 0 0% 100%;
+
+    --secondary: 0 0% 90%;
+    --secondary-foreground: 0 0% 0%;
+
+    --accent: 0 0% 90%;
+    --accent-foreground: 0 0% 0%;
+
+    --destructive: 0 100% 40%;
+    --destructive-foreground: 0 0% 100%;
+
+    --success: 120 100% 25%;
+    --success-foreground: 0 0% 100%;
+
+    --warning-bg: 45 100% 45%;
+    --warning-text: 0 0% 0%;
+
+    --ring: 0 0% 0%;
+
+    --grammar-error-underline-error: #cc0000;
+    --grammar-error-underline-warning: #ff8800;
+    --grammar-error-underline-info: #0066cc;
+
+    /* Custom Colors for Markdown Editor - High Contrast Light */
+    --markdown-toolbar-bg: 0 0% 100%;
+    --markdown-toolbar-border: 0 0% 0%;
+    --markdown-toolbar-text: 0 0% 0%;
+    --markdown-toolbar-icon: 0 0% 0%;
+    --markdown-toolbar-icon-active: 0 0% 0%;
+    --markdown-toolbar-icon-bg: 0 0% 95%;
+    --markdown-toolbar-icon-bg-hover: 0 0% 85%;
+
+    --markdown-input-bg: 0 0% 100%;
+    --markdown-input-border: 0 0% 0%;
+    --markdown-input-text: 0 0% 0%;
+    --markdown-input-placeholder: 0 0% 40%;
+
+    --markdown-preview-bg: 0 0% 100%;
+    --markdown-preview-text: 0 0% 0%;
+    --markdown-preview-heading: 0 0% 0%;
+    --markdown-preview-link: 240 100% 40%;
+    --markdown-preview-code-bg: 0 0% 95%;
+    --markdown-preview-code-text: 0 0% 0%;
+    --markdown-preview-blockquote: 0 0% 20%;
+    --markdown-preview-hr: 0 0% 0%;
+    --markdown-preview-table-border: 0 0% 0%;
+
+    --markdown-sidebar-bg: 0 0% 100%;
+    --markdown-sidebar-text: 0 0% 20%;
+    --markdown-sidebar-heading: 0 0% 0%;
+    --markdown-sidebar-icon: 0 0% 0%;
+    --markdown-sidebar-border: 0 0% 0%;
+    --markdown-sidebar-link: 240 100% 40%;
+  }
+
+  .high-contrast-dark {
+    --editor-gradient-start: 0 0% 0%;
+    --editor-gradient-end: 0 0% 100%;
+
+    --background: 0 0% 0%;
+    --foreground: 0 0% 100%;
+
+    --muted: 0 0% 15%;
+    --muted-foreground: 0 0% 85%;
+
+    --popover: 0 0% 0%;
+    --popover-foreground: 0 0% 100%;
+
+    --card: 0 0% 0%;
+    --card-foreground: 0 0% 100%;
+
+    --border: 0 0% 100%;
+    --input: 0 0% 100%;
+
+    --primary: 0 0% 100%;
+    --primary-foreground: 0 0% 0%;
+
+    --secondary: 0 0% 20%;
+    --secondary-foreground: 0 0% 100%;
+
+    --accent: 0 0% 20%;
+    --accent-foreground: 0 0% 100%;
+
+    --destructive: 0 100% 60%;
+    --destructive-foreground: 0 0% 0%;
+
+    --success: 120 100% 50%;
+    --success-foreground: 0 0% 0%;
+
+    --warning-bg: 45 100% 55%;
+    --warning-text: 0 0% 0%;
+
+    --ring: 0 0% 100%;
+
+    --grammar-error-underline-error: #ff4444;
+    --grammar-error-underline-warning: #ffaa00;
+    --grammar-error-underline-info: #4499ff;
+
+    /* Custom Colors for Markdown Editor - High Contrast Dark */
+    --markdown-toolbar-bg: 0 0% 0%;
+    --markdown-toolbar-border: 0 0% 100%;
+    --markdown-toolbar-text: 0 0% 100%;
+    --markdown-toolbar-icon: 0 0% 100%;
+    --markdown-toolbar-icon-active: 0 0% 100%;
+    --markdown-toolbar-icon-bg: 0 0% 15%;
+    --markdown-toolbar-icon-bg-hover: 0 0% 25%;
+
+    --markdown-input-bg: 0 0% 0%;
+    --markdown-input-border: 0 0% 100%;
+    --markdown-input-text: 0 0% 100%;
+    --markdown-input-placeholder: 0 0% 70%;
+
+    --markdown-preview-bg: 0 0% 0%;
+    --markdown-preview-text: 0 0% 100%;
+    --markdown-preview-heading: 0 0% 100%;
+    --markdown-preview-link: 200 100% 70%;
+    --markdown-preview-code-bg: 0 0% 15%;
+    --markdown-preview-code-text: 0 0% 100%;
+    --markdown-preview-blockquote: 0 0% 85%;
+    --markdown-preview-hr: 0 0% 100%;
+    --markdown-preview-table-border: 0 0% 100%;
+
+    --markdown-sidebar-bg: 0 0% 0%;
+    --markdown-sidebar-text: 0 0% 85%;
+    --markdown-sidebar-heading: 0 0% 100%;
+    --markdown-sidebar-icon: 0 0% 100%;
+    --markdown-sidebar-border: 0 0% 100%;
+    --markdown-sidebar-link: 200 100% 70%;
+  }
 }
 
 @layer base {

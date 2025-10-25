@@ -1,0 +1,12 @@
+# Project Setup Instructions
+
+This guide will walk you through setting up the project on your local machine.
+
+## 1. Clone the repository
+
+Use the following command to clone the repo:
+
+```bash
+git clone https://github.com/example/project.git
+cd project
+```
