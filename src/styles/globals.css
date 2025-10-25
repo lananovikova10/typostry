@@ -53,9 +53,9 @@
 
     --radius: 0.5rem;
 
-    --grammar-error-underline-error: #e53e3e;
-    --grammar-error-underline-warning: #dd6b20;
-    --grammar-error-underline-info: #3182ce;
+    --grammar-error-underline-error: #ff0080;
+    --grammar-error-underline-warning: #ff8c00;
+    --grammar-error-underline-info: #00d4ff;
 
     /* Custom Colors for Markdown Editor */
     --markdown-toolbar-bg: 210 40% 98%;
@@ -125,9 +125,9 @@
 
     --ring: 212.7 26.8% 83.9%;
 
-    --grammar-error-underline-error: #ff8b8b;
-    --grammar-error-underline-warning: #f6ad55;
-    --grammar-error-underline-info: #90cdf4;
+    --grammar-error-underline-error: #ff66b3;
+    --grammar-error-underline-warning: #ffaa33;
+    --grammar-error-underline-info: #33ddff;
 
     /* Custom Colors for Markdown Editor - Dark Mode */
     --markdown-toolbar-bg: 222.2 47.4% 11.2%;
@@ -299,51 +299,51 @@ textarea.bg-gradient-to-br::after {
 /* Severity-based colors */
 .grammar-error-low {
   text-decoration-color: rgba(
-    144,
-    205,
-    244,
-    0.8
-  ); /* Semi-transparent light blue for low severity */
+    0,
+    212,
+    255,
+    0.9
+  ); /* Bright cyan for low severity */
 }
 
 .grammar-error-medium {
   text-decoration-color: rgba(
-    246,
-    173,
-    85,
-    0.8
-  ); /* Semi-transparent orange for medium severity */
+    255,
+    140,
+    0,
+    0.9
+  ); /* Bright orange for medium severity */
 }
 
 .grammar-error-high {
   text-decoration-color: rgba(
-    245,
-    101,
-    101,
-    0.8
-  ); /* Semi-transparent red for high severity */
+    255,
+    0,
+    128,
+    0.9
+  ); /* Bright magenta for high severity */
 }
 
 /* Hover effect for better discoverability */
 .grammar-error:hover {
-  background-color: rgba(226, 232, 240, 0.3); /* Faint highlight effect */
+  background-color: rgba(255, 140, 0, 0.15); /* Bright highlight effect */
 }
 
 /* Ensure the grammar errors are visible in both light and dark modes */
 .dark .grammar-error-low {
-  text-decoration-color: rgba(144, 205, 244, 0.9);
+  text-decoration-color: rgba(51, 221, 255, 1);
 }
 
 .dark .grammar-error-medium {
-  text-decoration-color: rgba(246, 173, 85, 0.9);
+  text-decoration-color: rgba(255, 170, 51, 1);
 }
 
 .dark .grammar-error-high {
-  text-decoration-color: rgba(252, 129, 129, 0.9);
+  text-decoration-color: rgba(255, 102, 179, 1);
 }
 
 .dark .grammar-error:hover {
-  background-color: rgba(45, 55, 72, 0.3); /* Dark mode highlight */
+  background-color: rgba(255, 170, 51, 0.15); /* Bright dark mode highlight */
 }
 
 /* Editor container and wrapper styling for glow effect */
@@ -414,7 +414,7 @@ textarea.bg-gradient-to-br::after {
   right: 0;
   bottom: 0;
   height: 0;
-  border-bottom: 2px dotted rgba(245, 101, 101, 0.7);
+  border-bottom: 2px dotted rgba(255, 0, 128, 0.9);
 }
 
 .grammar-error-grammar {
@@ -429,7 +429,7 @@ textarea.bg-gradient-to-br::after {
   right: 0;
   bottom: 0;
   height: 0;
-  border-bottom: 2px dotted rgba(49, 130, 206, 0.7);
+  border-bottom: 2px dotted rgba(0, 212, 255, 0.9);
 }
 
 /* Tooltip confirmation message */
