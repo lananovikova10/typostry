@@ -246,6 +246,10 @@ export function MarkdownEditor({
       return text
     }
 
+    // Save the current scroll position
+    const scrollTop = textarea.scrollTop
+    const scrollLeft = textarea.scrollLeft
+
     const { selectionStart, selectionEnd } = textarea
     const selectedText = markdown.substring(selectionStart, selectionEnd)
     const beforeSelection = markdown.substring(0, selectionStart)
@@ -297,12 +301,18 @@ export function MarkdownEditor({
     // Update the markdown content
     handleChange(newValue)
 
-    // After React re-renders, set the cursor position
+    // After React re-renders, restore scroll position and set cursor position
     setTimeout(() => {
       const textareaElement = markdownInputRef.current?.getTextarea()
       if (textareaElement) {
-        textareaElement.focus()
+        // Restore the scroll position BEFORE focusing to prevent auto-scroll
+        textareaElement.scrollTop = scrollTop
+        textareaElement.scrollLeft = scrollLeft
+        textareaElement.focus({ preventScroll: true })
         textareaElement.setSelectionRange(newCursorPosition, newCursorPosition)
+        // Ensure scroll position is maintained after selection
+        textareaElement.scrollTop = scrollTop
+        textareaElement.scrollLeft = scrollLeft
       }
     }, 0)
 

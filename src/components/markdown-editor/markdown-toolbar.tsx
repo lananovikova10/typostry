@@ -88,7 +88,11 @@ export function MarkdownToolbar({
     // Insert the actual emoji character directly instead of creating shortcodes
     // This ensures compatibility regardless of whether the shortcode exists in our mapping
     onInsertAction(emoji.emoji || "😀")
-    setIsEmojiPickerOpen(false)
+
+    // Close the picker after a small delay to allow focus restoration to complete
+    setTimeout(() => {
+      setIsEmojiPickerOpen(false)
+    }, 10)
   }
 
   // Organize toolbar items into logical groups
