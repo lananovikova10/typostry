@@ -26,6 +26,9 @@ export function ModeToggle() {
     mounted &&
     (theme === "high-contrast-light" || theme === "high-contrast-dark")
 
+  // Check if the current theme is acid
+  const isAcid = mounted && theme === "acid"
+
   // Determine which icon to show based on theme combinations
   const showSun =
     mounted &&
@@ -42,6 +45,7 @@ export function ModeToggle() {
   const showContrast =
     mounted &&
     (theme === "high-contrast-light" || theme === "high-contrast-dark")
+  const showZap = mounted && theme === "acid"
 
   return (
     <DropdownMenu>
@@ -53,17 +57,22 @@ export function ModeToggle() {
         >
           {/* Sun icon for light themes */}
           <Icons.sun
-            className={`h-[1.2rem] w-[1.2rem] transition-all ${showSun && !showContrast ? "rotate-0 scale-100" : "rotate-90 scale-0"}`}
+            className={`h-[1.2rem] w-[1.2rem] transition-all ${showSun && !showContrast && !showZap ? "rotate-0 scale-100" : "rotate-90 scale-0"}`}
           />
 
           {/* Moon icon for dark themes */}
           <Icons.moon
-            className={`absolute left-1/2 top-1/2 h-[1.2rem] w-[1.2rem] -translate-x-1/2 -translate-y-1/2 transition-all ${showMoon && !showContrast ? "rotate-0 scale-100" : "rotate-90 scale-0"}`}
+            className={`absolute left-1/2 top-1/2 h-[1.2rem] w-[1.2rem] -translate-x-1/2 -translate-y-1/2 transition-all ${showMoon && !showContrast && !showZap ? "rotate-0 scale-100" : "rotate-90 scale-0"}`}
           />
 
           {/* Contrast icon for high-contrast themes */}
           <Icons.contrast
             className={`absolute left-1/2 top-1/2 h-[1.2rem] w-[1.2rem] -translate-x-1/2 -translate-y-1/2 transition-all ${showContrast ? "rotate-0 scale-100" : "rotate-90 scale-0"}`}
+          />
+
+          {/* Zap icon for acid theme */}
+          <Icons.zap
+            className={`absolute left-1/2 top-1/2 h-[1.2rem] w-[1.2rem] -translate-x-1/2 -translate-y-1/2 transition-all ${showZap ? "rotate-0 scale-100" : "rotate-90 scale-0"}`}
           />
 
           <span className="sr-only">Toggle theme</span>
@@ -84,6 +93,9 @@ export function ModeToggle() {
           }
         >
           High Contrast {isHighContrast && "✓"}
+        </DropdownMenuItem>
+        <DropdownMenuItem onClick={() => setTheme("acid")}>
+          Acid {isAcid && "✓"}
         </DropdownMenuItem>
         <DropdownMenuItem onClick={() => setTheme("system")}>
           System
