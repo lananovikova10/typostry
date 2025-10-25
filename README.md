@@ -131,7 +131,7 @@ export default function YourComponent() {
 
 The editor supports Mermaid diagrams for creating visualizations directly in your markdown. Simply use a code block with the "mermaid" language identifier:
 
-```markdown
+````markdown
 ```mermaid
 graph LR
 A[Square Rect] -- Link text --> B((Circle))
@@ -139,6 +139,7 @@ A --> C(Round Rect)
 B --> D{Rhombus}
 C --> D
 ```
+````
 
 This will render as an interactive diagram in the preview:
 
