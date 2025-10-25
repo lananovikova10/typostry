@@ -161,154 +161,79 @@
     --markdown-sidebar-link: 217.2 91.2% 59.8%;
   }
 
-  .high-contrast-light {
-    --editor-gradient-start: 0 0% 100%;
-    --editor-gradient-end: 0 0% 0%;
+  .acid {
+    --editor-gradient-start: 270 100% 8%;
+    --editor-gradient-end: 270 100% 8%;
 
-    --background: 0 0% 100%;
-    --foreground: 0 0% 0%;
+    --background: 270 100% 5%;
+    --foreground: 84 100% 70%;
 
-    --muted: 0 0% 95%;
-    --muted-foreground: 0 0% 20%;
+    --muted: 270 80% 15%;
+    --muted-foreground: 280 60% 60%;
 
-    --popover: 0 0% 100%;
-    --popover-foreground: 0 0% 0%;
+    --popover: 270 100% 8%;
+    --popover-foreground: 84 100% 70%;
 
-    --card: 0 0% 100%;
-    --card-foreground: 0 0% 0%;
+    --card: 270 100% 8%;
+    --card-foreground: 84 100% 70%;
 
-    --border: 0 0% 0%;
-    --input: 0 0% 0%;
+    --border: 330 100% 50%;
+    --input: 330 100% 50%;
 
-    --primary: 0 0% 0%;
-    --primary-foreground: 0 0% 100%;
+    --primary: 84 100% 50%;
+    --primary-foreground: 270 100% 10%;
 
-    --secondary: 0 0% 90%;
-    --secondary-foreground: 0 0% 0%;
+    --secondary: 330 100% 50%;
+    --secondary-foreground: 270 100% 10%;
 
-    --accent: 0 0% 90%;
-    --accent-foreground: 0 0% 0%;
-
-    --destructive: 0 100% 40%;
-    --destructive-foreground: 0 0% 100%;
-
-    --success: 120 100% 25%;
-    --success-foreground: 0 0% 100%;
-
-    --warning-bg: 45 100% 45%;
-    --warning-text: 0 0% 0%;
-
-    --ring: 0 0% 0%;
-
-    --grammar-error-underline-error: #cc0000;
-    --grammar-error-underline-warning: #ff8800;
-    --grammar-error-underline-info: #0066cc;
-
-    /* Custom Colors for Markdown Editor - High Contrast Light */
-    --markdown-toolbar-bg: 0 0% 100%;
-    --markdown-toolbar-border: 0 0% 0%;
-    --markdown-toolbar-text: 0 0% 0%;
-    --markdown-toolbar-icon: 0 0% 0%;
-    --markdown-toolbar-icon-active: 0 0% 0%;
-    --markdown-toolbar-icon-bg: 0 0% 95%;
-    --markdown-toolbar-icon-bg-hover: 0 0% 85%;
-
-    --markdown-input-bg: 0 0% 100%;
-    --markdown-input-border: 0 0% 0%;
-    --markdown-input-text: 0 0% 0%;
-    --markdown-input-placeholder: 0 0% 40%;
-
-    --markdown-preview-bg: 0 0% 100%;
-    --markdown-preview-text: 0 0% 0%;
-    --markdown-preview-heading: 0 0% 0%;
-    --markdown-preview-link: 240 100% 40%;
-    --markdown-preview-code-bg: 0 0% 95%;
-    --markdown-preview-code-text: 0 0% 0%;
-    --markdown-preview-blockquote: 0 0% 20%;
-    --markdown-preview-hr: 0 0% 0%;
-    --markdown-preview-table-border: 0 0% 0%;
-
-    --markdown-sidebar-bg: 0 0% 100%;
-    --markdown-sidebar-text: 0 0% 20%;
-    --markdown-sidebar-heading: 0 0% 0%;
-    --markdown-sidebar-icon: 0 0% 0%;
-    --markdown-sidebar-border: 0 0% 0%;
-    --markdown-sidebar-link: 240 100% 40%;
-  }
-
-  .high-contrast-dark {
-    --editor-gradient-start: 0 0% 0%;
-    --editor-gradient-end: 0 0% 100%;
-
-    --background: 0 0% 0%;
-    --foreground: 0 0% 100%;
-
-    --muted: 0 0% 15%;
-    --muted-foreground: 0 0% 85%;
-
-    --popover: 0 0% 0%;
-    --popover-foreground: 0 0% 100%;
-
-    --card: 0 0% 0%;
-    --card-foreground: 0 0% 100%;
-
-    --border: 0 0% 100%;
-    --input: 0 0% 100%;
-
-    --primary: 0 0% 100%;
-    --primary-foreground: 0 0% 0%;
-
-    --secondary: 0 0% 20%;
-    --secondary-foreground: 0 0% 100%;
-
-    --accent: 0 0% 20%;
-    --accent-foreground: 0 0% 100%;
+    --accent: 195 100% 50%;
+    --accent-foreground: 270 100% 10%;
 
     --destructive: 0 100% 60%;
-    --destructive-foreground: 0 0% 0%;
+    --destructive-foreground: 270 100% 10%;
 
-    --success: 120 100% 50%;
-    --success-foreground: 0 0% 0%;
+    --success: 84 100% 50%;
+    --success-foreground: 270 100% 10%;
 
-    --warning-bg: 45 100% 55%;
-    --warning-text: 0 0% 0%;
+    --warning-bg: 54 100% 50%;
+    --warning-text: 270 100% 10%;
 
-    --ring: 0 0% 100%;
+    --ring: 84 100% 50%;
 
-    --grammar-error-underline-error: #ff4444;
-    --grammar-error-underline-warning: #ffaa00;
-    --grammar-error-underline-info: #4499ff;
+    --grammar-error-underline-error: #ff00ff;
+    --grammar-error-underline-warning: #ffff00;
+    --grammar-error-underline-info: #00ffff;
 
-    /* Custom Colors for Markdown Editor - High Contrast Dark */
-    --markdown-toolbar-bg: 0 0% 0%;
-    --markdown-toolbar-border: 0 0% 100%;
-    --markdown-toolbar-text: 0 0% 100%;
-    --markdown-toolbar-icon: 0 0% 100%;
-    --markdown-toolbar-icon-active: 0 0% 100%;
-    --markdown-toolbar-icon-bg: 0 0% 15%;
-    --markdown-toolbar-icon-bg-hover: 0 0% 25%;
+    /* Custom Colors for Markdown Editor - Acid Mode */
+    --markdown-toolbar-bg: 270 100% 8%;
+    --markdown-toolbar-border: 330 100% 50%;
+    --markdown-toolbar-text: 84 100% 70%;
+    --markdown-toolbar-icon: 195 100% 60%;
+    --markdown-toolbar-icon-active: 84 100% 60%;
+    --markdown-toolbar-icon-bg: 270 80% 15%;
+    --markdown-toolbar-icon-bg-hover: 330 80% 30%;
 
-    --markdown-input-bg: 0 0% 0%;
-    --markdown-input-border: 0 0% 100%;
-    --markdown-input-text: 0 0% 100%;
-    --markdown-input-placeholder: 0 0% 70%;
+    --markdown-input-bg: 270 100% 8%;
+    --markdown-input-border: 330 100% 50%;
+    --markdown-input-text: 84 100% 60%;
+    --markdown-input-placeholder: 84 100% 40%;
 
-    --markdown-preview-bg: 0 0% 0%;
-    --markdown-preview-text: 0 0% 100%;
-    --markdown-preview-heading: 0 0% 100%;
-    --markdown-preview-link: 200 100% 70%;
-    --markdown-preview-code-bg: 0 0% 15%;
-    --markdown-preview-code-text: 0 0% 100%;
-    --markdown-preview-blockquote: 0 0% 85%;
-    --markdown-preview-hr: 0 0% 100%;
-    --markdown-preview-table-border: 0 0% 100%;
+    --markdown-preview-bg: 270 100% 8%;
+    --markdown-preview-text: 84 100% 70%;
+    --markdown-preview-heading: 330 100% 30%;
+    --markdown-preview-link: 195 100% 35%;
+    --markdown-preview-code-bg: 270 80% 90%;
+    --markdown-preview-code-text: 54 100% 25%;
+    --markdown-preview-blockquote: 280 60% 30%;
+    --markdown-preview-hr: 330 100% 50%;
+    --markdown-preview-table-border: 330 100% 50%;
 
-    --markdown-sidebar-bg: 0 0% 0%;
-    --markdown-sidebar-text: 0 0% 85%;
-    --markdown-sidebar-heading: 0 0% 100%;
-    --markdown-sidebar-icon: 0 0% 100%;
-    --markdown-sidebar-border: 0 0% 100%;
-    --markdown-sidebar-link: 200 100% 70%;
+    --markdown-sidebar-bg: 270 100% 8%;
+    --markdown-sidebar-text: 280 60% 60%;
+    --markdown-sidebar-heading: 84 100% 70%;
+    --markdown-sidebar-icon: 195 100% 60%;
+    --markdown-sidebar-border: 330 100% 50%;
+    --markdown-sidebar-link: 195 100% 60%;
   }
 }
 
@@ -467,6 +392,13 @@ textarea.bg-gradient-to-br::after {
   box-shadow: 
     0 0 0 2px rgba(139, 92, 246, 0.4),
     0 0 25px rgba(139, 92, 246, 0.2);
+}
+
+[data-theme="acid"] .editor-wrapper:hover .editor-container {
+  box-shadow: 
+    0 0 0 3px rgba(204, 255, 0, 0.6),
+    0 0 30px rgba(255, 0, 255, 0.4),
+    0 0 50px rgba(0, 255, 255, 0.3);
 }
 
 /* Legacy classes for backward compatibility */
