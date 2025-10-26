@@ -3,6 +3,13 @@
 import { useEffect, useRef, useState } from "react"
 
 import { cn } from "@/lib/utils"
+import {
+  saveToLocalStorage,
+  loadFromLocalStorage,
+  clearLocalStorage,
+  hasRecoverableContent,
+  getTimeSinceLastSave,
+} from "@/lib/auto-save"
 
 import { MarkdownInput, MarkdownInputHandle } from "./markdown-input"
 import { MarkdownPreview } from "./markdown-preview"
@@ -35,6 +42,11 @@ export function MarkdownEditor({
     useState(false)
   const [autoSaveEnabled, setAutoSaveEnabled] = useState(false)
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(true)
+  const [showRecoveryBanner, setShowRecoveryBanner] = useState(false)
+  const [recoveredContent, setRecoveredContent] = useState<string | null>(null)
+  const [recoveryTimestamp, setRecoveryTimestamp] = useState<number | null>(
+    null
+  )
 
   // Undo history management
   const [undoStack, setUndoStack] = useState<string[]>([initialValue])
@@ -45,6 +57,7 @@ export function MarkdownEditor({
   const markdownInputRef = useRef<MarkdownInputHandle>(null)
   const editorRef = useRef<HTMLDivElement>(null)
   const autoSaveTimeoutRef = useRef<NodeJS.Timeout | null>(null)
+  const localStorageAutoSaveRef = useRef<NodeJS.Timeout | null>(null)
 
   // Check if File System Access API is supported
   useEffect(() => {
@@ -52,6 +65,43 @@ export function MarkdownEditor({
       "showOpenFilePicker" in window && "showSaveFilePicker" in window
     )
   }, [])
+
+  // Check for recoverable content on mount (client-side only)
+  useEffect(() => {
+    if (typeof window === "undefined") return
+
+    if (hasRecoverableContent()) {
+      const data = loadFromLocalStorage()
+      if (data && data.content !== initialValue) {
+        setRecoveredContent(data.content)
+        setRecoveryTimestamp(data.timestamp)
+        setShowRecoveryBanner(true)
+      }
+    }
+  }, [initialValue])
+
+  // Auto-save to localStorage
+  useEffect(() => {
+    if (typeof window === "undefined") return
+
+    // Clear any existing timeout
+    if (localStorageAutoSaveRef.current) {
+      clearTimeout(localStorageAutoSaveRef.current)
+    }
+
+    // Debounce the save to localStorage (save after 2 seconds of inactivity)
+    localStorageAutoSaveRef.current = setTimeout(() => {
+      if (markdown.trim().length > 0) {
+        saveToLocalStorage(markdown)
+      }
+    }, 2000)
+
+    return () => {
+      if (localStorageAutoSaveRef.current) {
+        clearTimeout(localStorageAutoSaveRef.current)
+      }
+    }
+  }, [markdown])
 
   // Auto-save effect that triggers when markdown content changes
   useEffect(() => {
@@ -319,6 +369,22 @@ export function MarkdownEditor({
     return insertedText
   }
 
+  const handleRecoverContent = () => {
+    if (recoveredContent) {
+      setMarkdown(recoveredContent)
+      setUndoStack([recoveredContent])
+      setRedoStack([])
+      onChange?.(recoveredContent)
+      setIsFileSaved(false)
+    }
+    setShowRecoveryBanner(false)
+  }
+
+  const handleDismissRecovery = () => {
+    setShowRecoveryBanner(false)
+    clearLocalStorage()
+  }
+
   const handleNewFile = async () => {
     if (
       !isFileSaved &&
@@ -340,6 +406,9 @@ export function MarkdownEditor({
     setUndoStack([""])
     setRedoStack([])
 
+    // Clear localStorage when creating a new file
+    clearLocalStorage()
+
     onChange?.("")
   }
 
@@ -352,6 +421,8 @@ export function MarkdownEditor({
         await writableStream.write(markdown)
         await writableStream.close()
         setIsFileSaved(true)
+        // Clear localStorage after successful save
+        clearLocalStorage()
         return
       } catch (error) {
         console.error("Error saving file:", error)
@@ -389,6 +460,8 @@ export function MarkdownEditor({
         setIsFileSaved(true)
         // Enable auto-save after a successful save
         setAutoSaveEnabled(true)
+        // Clear localStorage after successful save
+        clearLocalStorage()
       } catch (error) {
         if ((error as Error).name !== "AbortError") {
           console.error("Error saving file:", error)
@@ -532,6 +605,38 @@ export function MarkdownEditor({
 
   return (
     <div className={cn("editor-wrapper", className)}>
+      {/* Recovery Banner */}
+      {showRecoveryBanner && recoveredContent && recoveryTimestamp && (
+        <div className="mb-4 rounded-md border border-amber-500 bg-amber-50 p-4 dark:bg-amber-950">
+          <div className="flex items-start justify-between gap-4">
+            <div className="flex-1">
+              <h3 className="mb-1 font-semibold text-amber-900 dark:text-amber-100">
+                Recover unsaved content?
+              </h3>
+              <p className="text-sm text-amber-800 dark:text-amber-200">
+                We found unsaved content from{" "}
+                {getTimeSinceLastSave(recoveryTimestamp)}. Would you like to
+                recover it?
+              </p>
+            </div>
+            <div className="flex gap-2">
+              <button
+                onClick={handleRecoverContent}
+                className="rounded-md bg-amber-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-amber-700 focus:outline-none focus:ring-2 focus:ring-amber-500 focus:ring-offset-2"
+              >
+                Recover
+              </button>
+              <button
+                onClick={handleDismissRecovery}
+                className="rounded-md border border-amber-300 bg-white px-3 py-1.5 text-sm font-medium text-amber-900 hover:bg-amber-50 focus:outline-none focus:ring-2 focus:ring-amber-500 focus:ring-offset-2 dark:border-amber-700 dark:bg-amber-900 dark:text-amber-100 dark:hover:bg-amber-800"
+              >
+                Dismiss
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       <div
         ref={editorRef}
         className="editor-container flex w-full flex-col rounded-md border border-input bg-background shadow-sm"

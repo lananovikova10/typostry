@@ -37,6 +37,9 @@ A Next.js markdown editor with real-time preview, grammar checking, theme suppor
 - Open existing files directly from the local filesystem
 - Save files directly to the opened file
 - Save As functionality
+- **Auto-save to localStorage**: Automatically saves your work to browser localStorage every 2 seconds
+- **Recovery on load**: If unsaved content is detected when you return, you'll see a recovery banner with the option to restore your work
+- Recovery shows how long ago the content was saved
 
 ## Limitations
 
@@ -126,6 +129,33 @@ export default function YourComponent() {
   );
 }
 ```
+
+## Auto-Save & Recovery
+
+The editor automatically saves your work to browser localStorage to prevent data loss:
+
+### How it works
+- **Automatic saving**: Content is automatically saved to localStorage every 2 seconds after you stop typing
+- **Recovery on reload**: When you return to the editor, if unsaved content is detected, a recovery banner appears
+- **Smart detection**: The recovery banner only appears if the saved content differs from the initial value
+- **Timestamp display**: Shows how long ago the content was saved (e.g., "5 minutes ago", "2 hours ago")
+- **User control**: You can choose to recover the content or dismiss it
+
+### Recovery Banner
+When recoverable content is found, you'll see an amber-colored banner at the top with two options:
+- **Recover**: Restores the auto-saved content to the editor
+- **Dismiss**: Clears the auto-saved content from localStorage and proceeds with the current state
+
+### Data Persistence
+- Auto-saved data is stored in your browser's localStorage
+- Data persists across browser sessions
+- Successfully saving a file to the file system clears the auto-save data
+- Creating a new file clears the auto-save data
+
+### Privacy
+- All auto-save data is stored locally in your browser
+- No data is sent to any server
+- Clearing your browser data will remove auto-saved content
 
 ## Mermaid Diagram Support
 
