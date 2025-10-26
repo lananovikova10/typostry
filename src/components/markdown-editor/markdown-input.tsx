@@ -2,6 +2,7 @@
 
 import {
   forwardRef,
+  useCallback,
   useEffect,
   useImperativeHandle,
   useMemo,
@@ -12,6 +13,8 @@ import {
 import {
   addToDictionary,
   checkGrammar,
+  checkGrammarManual,
+  clearGrammarCache,
   debounce,
   GrammarError,
   isInsideCodeBlock,
@@ -28,6 +31,8 @@ export interface MarkdownInputProps {
   grammarCheckEnabled?: boolean
   grammarCheckLanguage?: string
   grammarCheckDebounceTime?: number
+  showGrammarButton?: boolean
+  autoGrammarCheck?: boolean
 }
 
 export interface MarkdownInputHandle {
@@ -47,6 +52,8 @@ export const MarkdownInput = forwardRef<
     grammarCheckEnabled = true,
     grammarCheckLanguage = "en-US",
     grammarCheckDebounceTime = 3000, // Increased to 3 seconds to reduce API call frequency
+    showGrammarButton = true,
+    autoGrammarCheck = false, // Default to manual checking to avoid rate limiting
   },
   ref
 ) {
@@ -57,6 +64,10 @@ export const MarkdownInput = forwardRef<
   const [grammarErrors, setGrammarErrors] = useState<GrammarError[]>([])
   const [hoveredError, setHoveredError] = useState<GrammarError | null>(null)
   const [isGrammarCheckLoading, setIsGrammarCheckLoading] = useState(false)
+  const [truncationNotification, setTruncationNotification] = useState<{
+    originalLength: number
+    truncatedLength: number
+  } | null>(null)
   // Add a state to track scroll position for re-rendering
   const [scrollPosition, setScrollPosition] = useState({ top: 0, left: 0 })
 
@@ -146,7 +157,7 @@ export const MarkdownInput = forwardRef<
   }, [value, grammarCheckEnabled])
 
   // Function to perform grammar check
-  const performGrammarCheck = async (text: string) => {
+  const performGrammarCheck = useCallback(async (text: string, isManual = false) => {
     if (!grammarCheckEnabled || !text.trim()) {
       setGrammarErrors([])
       setIsGrammarCheckLoading(false)
@@ -154,8 +165,14 @@ export const MarkdownInput = forwardRef<
     }
 
     try {
-      const errors = await checkGrammar(text, mapping, {
+      const checkFunction = isManual ? checkGrammarManual : checkGrammar
+      const errors = await checkFunction(text, mapping, {
         language: grammarCheckLanguage,
+        onTextTruncated: (originalLength, truncatedLength) => {
+          setTruncationNotification({ originalLength, truncatedLength })
+          // Hide notification after 5 seconds
+          setTimeout(() => setTruncationNotification(null), 5000)
+        },
       })
 
       // Filter out errors in code blocks
@@ -171,6 +188,17 @@ export const MarkdownInput = forwardRef<
     } finally {
       setIsGrammarCheckLoading(false)
     }
+  }, [grammarCheckEnabled, mapping, grammarCheckLanguage, value])
+
+  // Manual grammar check function
+  const handleManualGrammarCheck = async () => {
+    if (!grammarCheckEnabled || !stripped.trim()) {
+      return
+    }
+
+    setIsGrammarCheckLoading(true)
+    lastProcessedText.current = value
+    await performGrammarCheck(stripped, true)
   }
 
   // Process text for grammar checking
@@ -178,7 +206,7 @@ export const MarkdownInput = forwardRef<
   const grammarCheckTimeoutRef = useRef<NodeJS.Timeout | null>(null)
 
   useEffect(() => {
-    if (!grammarCheckEnabled) {
+    if (!grammarCheckEnabled || !autoGrammarCheck) {
       return
     }
 
@@ -212,9 +240,11 @@ export const MarkdownInput = forwardRef<
     value,
     stripped,
     grammarCheckEnabled,
+    autoGrammarCheck,
     grammarCheckDebounceTime,
     grammarCheckLanguage,
     mapping,
+    performGrammarCheck,
   ])
 
   // Helper: get error position in pixels using mirror div
@@ -442,6 +472,93 @@ export const MarkdownInput = forwardRef<
           }
           onAddToDictionary={() => handleAddToDictionary(hoveredError)}
         />
+      )}
+
+      {/* Grammar check button */}
+      {showGrammarButton && grammarCheckEnabled && !autoGrammarCheck && (
+        <div className="absolute top-2 right-2 flex gap-1">
+          <button
+            onClick={handleManualGrammarCheck}
+            disabled={isGrammarCheckLoading || !stripped.trim()}
+            className="flex items-center gap-1 px-2 py-1 text-xs bg-blue-100 hover:bg-blue-200 disabled:bg-gray-100 disabled:text-gray-400 text-blue-700 rounded border border-blue-300 hover:border-blue-400 disabled:border-gray-300 transition-colors"
+            title="Check grammar and spelling"
+          >
+            <svg
+              className="h-3 w-3"
+              xmlns="http://www.w3.org/2000/svg"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
+              />
+            </svg>
+            Check Grammar
+          </button>
+          <button
+            onClick={() => {
+              clearGrammarCache()
+              setGrammarErrors([])
+            }}
+            className="flex items-center px-2 py-1 text-xs bg-gray-100 hover:bg-gray-200 text-gray-600 rounded border border-gray-300 hover:border-gray-400 transition-colors"
+            title="Clear grammar cache and errors"
+          >
+            <svg
+              className="h-3 w-3"
+              xmlns="http://www.w3.org/2000/svg"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
+              />
+            </svg>
+          </button>
+        </div>
+      )}
+
+      {/* Text truncation notification */}
+      {truncationNotification && (
+        <div className="absolute top-2 left-2 right-2 z-20 bg-yellow-50 border border-yellow-200 text-yellow-800 px-3 py-2 rounded-md text-xs flex items-start gap-2">
+          <svg
+            className="h-4 w-4 mt-0.5 flex-shrink-0"
+            xmlns="http://www.w3.org/2000/svg"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={2}
+              d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.732-.833-2.464 0L4.35 15.5c-.77.833.192 2.5 1.732 2.5z"
+            />
+          </svg>
+          <div className="flex-1">
+            <div className="font-medium">Text truncated for grammar check</div>
+            <div className="text-yellow-700">
+              Only the first {truncationNotification.truncatedLength.toLocaleString()} characters
+              (of {truncationNotification.originalLength.toLocaleString()}) were checked due to API limits.
+            </div>
+          </div>
+          <button
+            onClick={() => setTruncationNotification(null)}
+            className="text-yellow-600 hover:text-yellow-800 ml-2"
+            title="Dismiss"
+          >
+            <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
+        </div>
       )}
 
       {/* Loading indicator for grammar checking */}

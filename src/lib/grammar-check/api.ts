@@ -21,8 +21,311 @@ const MAX_TEXT_LENGTH = 10000 // 10KB per request to be safe
 const MIN_REQUEST_INTERVAL = 5000 // Minimum 5 seconds between requests
 let lastRequestTime = 0
 
+// Request queue for managing API calls
+interface QueuedRequest {
+  text: string
+  mapping: PositionMapping
+  options: GrammarCheckOptions
+  resolve: (value: GrammarError[]) => void
+  reject: (error: Error) => void
+  timestamp: number
+}
+
+interface GrammarCheckOptions {
+  language?: string
+  apiUrl?: string
+  disabledRules?: string[]
+  onTextTruncated?: (originalLength: number, truncatedLength: number) => void
+}
+
+// Paragraph-level cache for results
+interface CacheEntry {
+  result: GrammarError[]
+  timestamp: number
+  paragraph: string
+}
+
+class GrammarCheckManager {
+  private requestQueue: QueuedRequest[] = []
+  private processing = false
+  private cache = new Map<string, CacheEntry>()
+  private readonly CACHE_TTL = 5 * 60 * 1000 // 5 minutes
+
+  // Generate cache key for paragraph
+  private getCacheKey(text: string, language: string): string {
+    return `${language}:${text.trim().substring(0, 100)}`
+  }
+
+  // Split text into paragraphs for caching
+  private splitIntoParagraphs(text: string): string[] {
+    return text.split(/\n\s*\n/).filter(p => p.trim().length > 0)
+  }
+
+  // Get cached result if available
+  private getCachedResult(text: string, language: string): GrammarError[] | null {
+    const key = this.getCacheKey(text, language)
+    const entry = this.cache.get(key)
+
+    if (entry && Date.now() - entry.timestamp < this.CACHE_TTL) {
+      return entry.result
+    }
+
+    // Remove expired entry
+    if (entry) {
+      this.cache.delete(key)
+    }
+
+    return null
+  }
+
+  // Cache result for paragraph
+  private setCachedResult(text: string, language: string, result: GrammarError[]): void {
+    const key = this.getCacheKey(text, language)
+    this.cache.set(key, {
+      result,
+      timestamp: Date.now(),
+      paragraph: text
+    })
+  }
+
+  // Add request to queue
+  async queueRequest(
+    text: string,
+    mapping: PositionMapping,
+    options: GrammarCheckOptions = {}
+  ): Promise<GrammarError[]> {
+    return new Promise((resolve, reject) => {
+      this.requestQueue.push({
+        text,
+        mapping,
+        options,
+        resolve,
+        reject,
+        timestamp: Date.now()
+      })
+
+      this.processQueue()
+    })
+  }
+
+  // Process request queue
+  private async processQueue(): Promise<void> {
+    if (this.processing || this.requestQueue.length === 0) {
+      return
+    }
+
+    this.processing = true
+
+    while (this.requestQueue.length > 0) {
+      const request = this.requestQueue.shift()!
+
+      try {
+        const result = await this.performGrammarCheck(
+          request.text,
+          request.mapping,
+          request.options
+        )
+        request.resolve(result)
+      } catch (error) {
+        request.reject(error as Error)
+      }
+    }
+
+    this.processing = false
+  }
+
+  // Perform grammar check with caching
+  private async performGrammarCheck(
+    text: string,
+    mapping: PositionMapping,
+    options: GrammarCheckOptions
+  ): Promise<GrammarError[]> {
+    const { language = DEFAULT_LANGUAGE } = options
+
+    // Check cache first for the entire text
+    const cachedResult = this.getCachedResult(text, language)
+    if (cachedResult) {
+      return cachedResult
+    }
+
+    // For large texts, try paragraph-level caching
+    const paragraphs = this.splitIntoParagraphs(text)
+    if (paragraphs.length > 1) {
+      const allErrors: GrammarError[] = []
+      let textOffset = 0
+
+      for (const paragraph of paragraphs) {
+        const paragraphCached = this.getCachedResult(paragraph, language)
+
+        if (paragraphCached) {
+          // Adjust offsets for cached results
+          const adjustedErrors = paragraphCached.map(error => ({
+            ...error,
+            offset: error.offset + textOffset,
+            originalOffset: error.originalOffset + textOffset
+          }))
+          allErrors.push(...adjustedErrors)
+        } else {
+          // Process paragraph individually
+          const paragraphResult = await this.checkGrammarDirect(paragraph, mapping, options)
+
+          // Cache paragraph result
+          this.setCachedResult(paragraph, language, paragraphResult)
+
+          // Adjust offsets and add to results
+          const adjustedErrors = paragraphResult.map(error => ({
+            ...error,
+            offset: error.offset + textOffset,
+            originalOffset: error.originalOffset + textOffset
+          }))
+          allErrors.push(...adjustedErrors)
+        }
+
+        textOffset += paragraph.length + 2 // +2 for the paragraph separator
+      }
+
+      return allErrors
+    }
+
+    // For single paragraph or short text, check directly
+    const result = await this.checkGrammarDirect(text, mapping, options)
+    this.setCachedResult(text, language, result)
+    return result
+  }
+
+  // Direct grammar check (original implementation)
+  private async checkGrammarDirect(
+    text: string,
+    mapping: PositionMapping,
+    options: GrammarCheckOptions
+  ): Promise<GrammarError[]> {
+    const {
+      language = DEFAULT_LANGUAGE,
+      apiUrl = DEFAULT_API_URL,
+      disabledRules = [],
+      onTextTruncated
+    } = options
+
+    // If text is empty, return empty array
+    if (!text.trim()) {
+      return []
+    }
+
+    // Apply rate limiting
+    const now = Date.now()
+    const timeSinceLastRequest = now - lastRequestTime
+    if (timeSinceLastRequest < MIN_REQUEST_INTERVAL) {
+      await new Promise((resolve) =>
+        setTimeout(resolve, MIN_REQUEST_INTERVAL - timeSinceLastRequest)
+      )
+    }
+    lastRequestTime = Date.now()
+
+    // Limit text length and notify user if truncated
+    const originalLength = text.length
+    const limitedText = text.length > MAX_TEXT_LENGTH ? text.substring(0, MAX_TEXT_LENGTH) : text
+
+    if (text.length > MAX_TEXT_LENGTH) {
+      console.warn(
+        `Text truncated from ${originalLength} to ${MAX_TEXT_LENGTH} characters to comply with API limits`
+      )
+
+      // Notify user through callback
+      onTextTruncated?.(originalLength, MAX_TEXT_LENGTH)
+    }
+
+    // Rest of the original implementation...
+    const requestBody: LanguageToolRequest = {
+      text: limitedText,
+      language: language, // Use the specified language instead of "auto"
+      disabledRules: disabledRules.length > 0 ? disabledRules.join(",") : undefined,
+      motherTongue: "en",
+      preferredVariants: language,
+      clientId: "typostry",
+      level: "default",
+    }
+
+    try {
+      console.log(`Sending grammar check request (${limitedText.length} chars)...`)
+
+      let response
+      try {
+        response = await fetch(apiUrl, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/x-www-form-urlencoded",
+            Accept: "application/json",
+          },
+          body: new URLSearchParams(requestBody as any).toString(),
+        })
+      } catch (primaryError) {
+        console.error("Primary API endpoint failed:", primaryError)
+        console.log("Trying fallback API endpoint...")
+
+        response = await fetch(FALLBACK_API_URL, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/x-www-form-urlencoded",
+            Accept: "application/json",
+          },
+          body: new URLSearchParams(requestBody as any).toString(),
+        })
+      }
+
+      console.log(`API Response Status: ${response.status} ${response.statusText}`)
+
+      if (!response.ok) {
+        try {
+          const errorData = await response.text()
+          console.error(`LanguageTool API error (${response.status}): ${errorData}`)
+        } catch {
+          console.error(`LanguageTool API error: ${response.status} ${response.statusText}`)
+        }
+
+        if (response.status === 429 || response.status === 400) {
+          console.warn("Rate limit likely exceeded. Waiting longer before next request.")
+          lastRequestTime = Date.now() + 30000
+        }
+
+        throw new Error(`LanguageTool API error: ${response.status} ${response.statusText}`)
+      }
+
+      const data: LanguageToolResponse = await response.json()
+
+      if (!data.matches || data.matches.length === 0) {
+        console.log("No grammar errors found in the text")
+      } else {
+        console.log(`Found ${data.matches.length} grammar errors`)
+      }
+
+      const results = processGrammarResults(data, mapping)
+      console.log(`Processed ${results.length} grammar results`)
+      return results
+    } catch (error) {
+      console.error("Grammar check failed:", error)
+      return []
+    }
+  }
+
+  // Clear cache
+  clearCache(): void {
+    this.cache.clear()
+  }
+
+  // Get cache stats
+  getCacheStats(): { size: number; entries: string[] } {
+    return {
+      size: this.cache.size,
+      entries: Array.from(this.cache.keys())
+    }
+  }
+}
+
+// Global instance
+const grammarCheckManager = new GrammarCheckManager()
+
 /**
- * Format and send request to LanguageTool API with rate limiting
+ * Public API for grammar checking with queuing and caching
  */
 export async function checkGrammar(
   text: string,
@@ -31,135 +334,41 @@ export async function checkGrammar(
     language?: string
     apiUrl?: string
     disabledRules?: string[]
+    onTextTruncated?: (originalLength: number, truncatedLength: number) => void
   } = {}
 ): Promise<GrammarError[]> {
-  const {
-    language = DEFAULT_LANGUAGE,
-    apiUrl = DEFAULT_API_URL,
-    disabledRules = [],
-  } = options
+  return grammarCheckManager.queueRequest(text, mapping, options)
+}
 
-  // If text is empty, return empty array
-  if (!text.trim()) {
-    return []
-  }
+/**
+ * Manual grammar check function (for button-triggered checks)
+ */
+export async function checkGrammarManual(
+  text: string,
+  mapping: PositionMapping,
+  options: {
+    language?: string
+    apiUrl?: string
+    disabledRules?: string[]
+    onTextTruncated?: (originalLength: number, truncatedLength: number) => void
+  } = {}
+): Promise<GrammarError[]> {
+  // Clear any queued automatic requests and process this manually triggered one immediately
+  return grammarCheckManager.queueRequest(text, mapping, options)
+}
 
-  // Apply rate limiting
-  const now = Date.now()
-  const timeSinceLastRequest = now - lastRequestTime
-  if (timeSinceLastRequest < MIN_REQUEST_INTERVAL) {
-    console.log(
-      `Rate limiting: waiting ${MIN_REQUEST_INTERVAL - timeSinceLastRequest}ms before next request`
-    )
-    await new Promise((resolve) =>
-      setTimeout(resolve, MIN_REQUEST_INTERVAL - timeSinceLastRequest)
-    )
-  }
-  lastRequestTime = Date.now()
+/**
+ * Clear grammar check cache
+ */
+export function clearGrammarCache(): void {
+  grammarCheckManager.clearCache()
+}
 
-  // Limit text length to stay within API limits
-  const limitedText =
-    text.length > MAX_TEXT_LENGTH ? text.substring(0, MAX_TEXT_LENGTH) : text
-
-  if (text.length > MAX_TEXT_LENGTH) {
-    console.warn(
-      `Text truncated from ${text.length} to ${MAX_TEXT_LENGTH} characters to comply with API limits`
-    )
-  }
-
-  // Prepare the request body
-  const requestBody: LanguageToolRequest = {
-    text: limitedText,
-    language: "auto",
-    disabledRules:
-      disabledRules.length > 0 ? disabledRules.join(",") : undefined,
-    // Add additional parameters that might be required
-    motherTongue: "en",
-    preferredVariants: language,
-    clientId: "typostry",
-    // Lower the level to reduce API usage
-    level: "default", // Changed from "picky" to reduce the number of errors returned
-  }
-
-  try {
-    console.log(
-      `Sending grammar check request (${limitedText.length} chars)...`
-    )
-
-    // Try the primary API endpoint
-    let response
-    try {
-      response = await fetch(apiUrl, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/x-www-form-urlencoded",
-          Accept: "application/json",
-        },
-        body: new URLSearchParams(requestBody as any).toString(),
-      })
-    } catch (primaryError) {
-      console.error("Primary API endpoint failed:", primaryError)
-      console.log("Trying fallback API endpoint...")
-
-      // Try the fallback API endpoint
-      response = await fetch(FALLBACK_API_URL, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/x-www-form-urlencoded",
-          Accept: "application/json",
-        },
-        body: new URLSearchParams(requestBody as any).toString(),
-      })
-    }
-
-    // Log detailed information about the response
-    console.log(
-      `API Response Status: ${response.status} ${response.statusText}`
-    )
-
-    if (!response.ok) {
-      // Try to get more error details from the response
-      try {
-        const errorData = await response.text()
-        console.error(
-          `LanguageTool API error (${response.status}): ${errorData}`
-        )
-      } catch {
-        console.error(
-          `LanguageTool API error: ${response.status} ${response.statusText}`
-        )
-      }
-
-      if (response.status === 429 || response.status === 400) {
-        console.warn(
-          "Rate limit likely exceeded. Waiting longer before next request."
-        )
-        // Increase wait time for future requests
-        lastRequestTime = Date.now() + 30000 // Add 30 seconds penalty
-      }
-
-      throw new Error(
-        `LanguageTool API error: ${response.status} ${response.statusText}`
-      )
-    }
-
-    const data: LanguageToolResponse = await response.json()
-
-    // Check if the response contains matches
-    if (!data.matches || data.matches.length === 0) {
-      console.log("No grammar errors found in the text")
-    } else {
-      console.log(`Found ${data.matches.length} grammar errors`)
-    }
-
-    // Transform API response to our internal format
-    const results = processGrammarResults(data, mapping)
-    console.log(`Processed ${results.length} grammar results`)
-    return results
-  } catch (error) {
-    console.error("Grammar check failed:", error)
-    return []
-  }
+/**
+ * Get cache statistics
+ */
+export function getGrammarCacheStats(): { size: number; entries: string[] } {
+  return grammarCheckManager.getCacheStats()
 }
 
 /**
