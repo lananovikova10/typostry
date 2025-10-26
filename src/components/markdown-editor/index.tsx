@@ -48,6 +48,10 @@ export function MarkdownEditor({
     null
   )
 
+  // Distraction-free mode states
+  const [isDistractionFree, setIsDistractionFree] = useState(false)
+  const [isFullScreen, setIsFullScreen] = useState(false)
+
   // Undo history management
   const [undoStack, setUndoStack] = useState<string[]>([initialValue])
   const [redoStack, setRedoStack] = useState<string[]>([])
@@ -126,6 +130,32 @@ export function MarkdownEditor({
     }
   }, [markdown, autoSaveEnabled, fileHandle, isFileSaved])
 
+  // Full-screen mode effect
+  useEffect(() => {
+    if (isFullScreen && document.documentElement.requestFullscreen) {
+      document.documentElement.requestFullscreen().catch((err) => {
+        console.warn("Could not enter fullscreen mode:", err)
+      })
+    } else if (!isFullScreen && document.fullscreenElement) {
+      document.exitFullscreen().catch((err) => {
+        console.warn("Could not exit fullscreen mode:", err)
+      })
+    }
+
+    // Listen for fullscreen changes
+    const handleFullscreenChange = () => {
+      if (!document.fullscreenElement && isFullScreen) {
+        setIsFullScreen(false)
+        setIsDistractionFree(false)
+      }
+    }
+
+    document.addEventListener('fullscreenchange', handleFullscreenChange)
+    return () => {
+      document.removeEventListener('fullscreenchange', handleFullscreenChange)
+    }
+  }, [isFullScreen])
+
   // Keyboard shortcuts handler
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
@@ -153,7 +183,26 @@ export function MarkdownEditor({
       // Toggle view mode: 'ESC'
       if (event.key === "Escape") {
         event.preventDefault()
-        setIsPreviewMode(!isPreviewMode)
+        if (isFullScreen || isDistractionFree) {
+          // Exit all distraction-free modes first
+          setIsFullScreen(false)
+          setIsDistractionFree(false)
+        } else {
+          setIsPreviewMode(!isPreviewMode)
+        }
+      }
+
+      // F11 or CMD+SHIFT+F: Toggle full-screen distraction-free mode
+      if (event.key === "F11" || (isCtrlOrCmd && event.shiftKey && event.key === "F")) {
+        event.preventDefault()
+        setIsFullScreen(!isFullScreen)
+        setIsDistractionFree(!isFullScreen) // Enable distraction-free when going full-screen
+      }
+
+      // CMD+SHIFT+D: Toggle distraction-free mode
+      if (isCtrlOrCmd && event.shiftKey && event.key === "D") {
+        event.preventDefault()
+        setIsDistractionFree(!isDistractionFree)
       }
 
       // Only process these shortcuts if editor element has focus
@@ -222,7 +271,7 @@ export function MarkdownEditor({
     return () => {
       window.removeEventListener("keydown", handleKeyDown)
     }
-  }, [isPreviewMode, markdown, undoStack, redoStack]) // Re-register when relevant state changes
+  }, [isPreviewMode, markdown, undoStack, redoStack, isFullScreen, isDistractionFree]) // Re-register when relevant state changes
 
   const handleUndo = () => {
     if (undoStack.length <= 1) return // Keep at least the initial state
@@ -604,9 +653,13 @@ export function MarkdownEditor({
   }
 
   return (
-    <div className={cn("editor-wrapper", className)}>
-      {/* Recovery Banner */}
-      {showRecoveryBanner && recoveredContent && recoveryTimestamp && (
+    <div className={cn(
+      "editor-wrapper",
+      isFullScreen && "fixed inset-0 z-50 bg-background",
+      className
+    )}>
+      {/* Recovery Banner - hide in distraction-free modes */}
+      {showRecoveryBanner && recoveredContent && recoveryTimestamp && !isDistractionFree && (
         <div className="mb-4 rounded-md border border-amber-500 bg-amber-50 p-4 dark:bg-amber-950">
           <div className="flex items-start justify-between gap-4">
             <div className="flex-1">
@@ -639,7 +692,12 @@ export function MarkdownEditor({
 
       <div
         ref={editorRef}
-        className="editor-container flex w-full flex-col rounded-md border border-input bg-background shadow-sm"
+        className={cn(
+          "editor-container flex w-full flex-col bg-background",
+          !isDistractionFree && "rounded-md border border-input shadow-sm",
+          isFullScreen && "h-full",
+          isDistractionFree && "min-h-screen"
+        )}
         data-testid="markdown-editor"
       >
       <MarkdownToolbar
@@ -654,11 +712,16 @@ export function MarkdownEditor({
         currentFileName={currentFileName}
         isFileSaved={isFileSaved}
         autoSaveEnabled={autoSaveEnabled}
+        // Distraction-free mode props
+        isDistractionFree={isDistractionFree}
+        isFullScreen={isFullScreen}
+        onToggleDistractionFree={() => setIsDistractionFree(!isDistractionFree)}
+        onToggleFullScreen={() => setIsFullScreen(!isFullScreen)}
       />
 
       <div className="relative flex flex-1 flex-col sm:flex-row">
-        {/* Sidebar */}
-        {sidebarEnabled && (
+        {/* Sidebar - hide when distraction-free is active */}
+        {sidebarEnabled && !isDistractionFree && (
           <MarkdownSidebar
             content={markdown}
             onHeadingClick={handleHeadingClick}
@@ -667,8 +730,8 @@ export function MarkdownEditor({
           />
         )}
 
-        {/* Left-edge outline trigger */}
-        {sidebarEnabled && (
+        {/* Left-edge outline trigger - hide when distraction-free is active */}
+        {sidebarEnabled && !isDistractionFree && (
           <OutlineTrigger
             isCollapsed={isSidebarCollapsed}
             onToggle={() => setIsSidebarCollapsed(!isSidebarCollapsed)}
@@ -677,13 +740,20 @@ export function MarkdownEditor({
         )}
 
         {/* Editor or Preview */}
-        <div className={cn("flex flex-1", !isPreviewMode && "flex-col")}>
+        <div className={cn(
+          "flex flex-1",
+          !isPreviewMode && "flex-col",
+          isDistractionFree && "max-w-4xl mx-auto px-8 py-4"
+        )}>
           {!isPreviewMode && (
             <>
               <MarkdownInput
                 value={markdown}
                 onChange={handleChange}
-                className="flex-1 p-2"
+                className={cn(
+                  "flex-1",
+                  isDistractionFree ? "border-0 p-6 text-lg leading-relaxed focus:ring-0" : "p-2"
+                )}
                 ref={markdownInputRef}
               />
             </>
@@ -692,7 +762,11 @@ export function MarkdownEditor({
             <>
               <MarkdownPreview
                 source={markdown}
-                className="flex-1 dark:border-gray-700 sm:border-l"
+                className={cn(
+                  "flex-1",
+                  !isDistractionFree && "dark:border-gray-700 sm:border-l",
+                  isDistractionFree && "prose prose-lg max-w-none p-6"
+                )}
               />
             </>
           )}

@@ -16,6 +16,9 @@ import {
   Link,
   List,
   ListOrdered,
+  Maximize,
+  Minimize,
+  Monitor,
   PanelLeftClose,
   PanelLeftOpen,
   Pencil,
@@ -24,8 +27,10 @@ import {
   Save,
   SaveAll,
   Smile,
+  Zap,
 } from "lucide-react"
 
+import { cn } from "@/lib/utils"
 import { getRandomPhotoAsMarkdown } from "@/lib/unsplash"
 import { Button } from "@/components/ui/button"
 import {
@@ -62,6 +67,11 @@ export interface MarkdownToolbarProps {
   currentFileName?: string | null
   isFileSaved?: boolean
   autoSaveEnabled?: boolean
+  // Distraction-free mode props
+  isDistractionFree?: boolean
+  isFullScreen?: boolean
+  onToggleDistractionFree?: () => void
+  onToggleFullScreen?: () => void
 }
 
 export function MarkdownToolbar({
@@ -76,6 +86,11 @@ export function MarkdownToolbar({
   currentFileName = null,
   isFileSaved = true,
   autoSaveEnabled = false,
+  // Distraction-free mode props
+  isDistractionFree = false,
+  isFullScreen = false,
+  onToggleDistractionFree,
+  onToggleFullScreen,
 }: MarkdownToolbarProps) {
   const [isEmojiPickerOpen, setIsEmojiPickerOpen] = React.useState(false)
   const [isTemplateSelectorOpen, setIsTemplateSelectorOpen] =
@@ -350,159 +365,225 @@ export function MarkdownToolbar({
     })
   }
 
+  // Distraction-free mode controls
+  const distractionFreeControls = [
+    {
+      name: "Distraction Free",
+      icon: isDistractionFree ? <Minimize className="h-4 w-4" /> : <Maximize className="h-4 w-4" />,
+      action: onToggleDistractionFree,
+      ariaLabel: isDistractionFree ? "Exit distraction-free mode" : "Enter distraction-free mode",
+      tooltip: isDistractionFree ? "Exit Distraction Free" : "Distraction Free Mode",
+      active: isDistractionFree,
+    },
+    {
+      name: "Full Screen",
+      icon: isFullScreen ? <Monitor className="h-4 w-4" /> : <Maximize className="h-4 w-4" />,
+      action: onToggleFullScreen,
+      ariaLabel: isFullScreen ? "Exit full screen" : "Enter full screen",
+      tooltip: isFullScreen ? "Exit Full Screen" : "Full Screen",
+      active: isFullScreen,
+    },
+  ].filter(control => control.action) // Only include controls that have handlers
+
   return (
-    <div className="flex items-center overflow-hidden whitespace-nowrap border-b p-2 shadow-sm">
-      {/* Left side: File operations and formatting tools */}
-      <div className="flex min-w-0 flex-shrink-0 flex-nowrap items-center gap-1">
-        <div className="mr-1 flex flex-nowrap items-center gap-1">
-          <TooltipProvider>
-            {fileOperations.map((item) => (
-              <Tooltip key={item.name}>
-                <TooltipTrigger asChild>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    onClick={item.action}
-                    aria-label={item.ariaLabel}
-                    className="h-8 w-8 flex-shrink-0 text-[hsl(var(--markdown-toolbar-icon))] hover:bg-secondary/70 hover:text-[hsl(var(--markdown-toolbar-icon-hover))]"
-                    data-testid={`file-${item.name.toLowerCase()}`}
-                  >
-                    {item.icon}
-                  </Button>
-                </TooltipTrigger>
-                <TooltipContent>
-                  <p>{item.tooltip}</p>
-                </TooltipContent>
-              </Tooltip>
-            ))}
-          </TooltipProvider>
-        </div>
-        <Separator orientation="vertical" className="mx-1 h-8 flex-shrink-0" />
-        <TooltipProvider>
-          {toolbarGroups.map((group, groupIndex) => (
-            <React.Fragment key={`group-${groupIndex}`}>
-              {groupIndex > 0 && (
-                <Separator
-                  orientation="vertical"
-                  className="mx-1 h-8 flex-shrink-0"
-                />
-              )}
-              {group.map((item) => (
-                <React.Fragment key={item.name}>
-                  {item.isPopover ? (
-                    <Popover
-                      open={isEmojiPickerOpen}
-                      onOpenChange={setIsEmojiPickerOpen}
-                    >
-                      <Tooltip>
-                        <TooltipTrigger asChild>
-                          <PopoverTrigger asChild>
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              aria-label={item.ariaLabel}
-                              disabled={isPreviewMode}
-                              className="h-8 w-8 flex-shrink-0 text-[hsl(var(--markdown-toolbar-icon))] hover:bg-secondary/70 hover:text-[hsl(var(--markdown-toolbar-icon-hover))] focus-visible:ring-2 focus-visible:ring-[hsl(var(--markdown-toolbar-active))]"
-                              data-testid={`toolbar-${item.name.toLowerCase().replace(/\s+/g, "-")}`}
-                            >
-                              {item.icon}
-                            </Button>
-                          </PopoverTrigger>
-                        </TooltipTrigger>
-                        <TooltipContent>
-                          <p>{item.name}</p>
-                        </TooltipContent>
-                      </Tooltip>
-                      <PopoverContent className="w-80 p-0" align="start">
-                        <EmojiPicker onEmojiSelect={handleEmojiSelect}>
-                          <EmojiPickerSearch placeholder="Search emojis..." />
-                          <EmojiPickerContent />
-                          <EmojiPickerFooter />
-                        </EmojiPicker>
-                      </PopoverContent>
-                    </Popover>
-                  ) : item.isCustomComponent && item.name === "Table" ? (
-                    <TableGenerator
-                      onInsertTable={onInsertAction}
-                      isDisabled={isPreviewMode}
-                    />
-                  ) : (
-                    <Tooltip>
+    <div className={cn(
+      "relative w-full bg-background transition-all duration-300",
+      !isDistractionFree && "border-b shadow-sm",
+      isDistractionFree && "absolute top-0 left-0 right-0 z-50 opacity-0 hover:opacity-100 bg-background/95 backdrop-blur-sm border-b border-border/50",
+      // On mobile, show with reduced opacity for accessibility
+      isDistractionFree && "sm:opacity-0 sm:hover:opacity-100 opacity-40 hover:opacity-100 active:opacity-100"
+    )}>
+      {/* Main toolbar container - horizontal scrollable layout */}
+      <div className="flex items-center gap-2 p-2 min-h-[3rem] overflow-x-auto scrollbar-thin scrollbar-track-transparent scrollbar-thumb-border/30 hover:scrollbar-thumb-border/50">
+
+        {/* Complete toolbar with all tools - shows based on mode */}
+        <div className="flex items-center gap-1 flex-nowrap min-w-max">
+
+          {/* File operations group */}
+          {!isDistractionFree && (
+            <>
+              <div className="flex items-center gap-1">
+                <TooltipProvider>
+                  {fileOperations.map((item) => (
+                    <Tooltip key={item.name}>
                       <TooltipTrigger asChild>
                         <Button
                           variant="ghost"
                           size="icon"
                           onClick={item.action}
                           aria-label={item.ariaLabel}
-                          disabled={isPreviewMode}
-                          className="h-8 w-8 flex-shrink-0 text-[hsl(var(--markdown-toolbar-icon))] hover:bg-secondary/70 hover:text-[hsl(var(--markdown-toolbar-icon-hover))] focus-visible:ring-2 focus-visible:ring-[hsl(var(--markdown-toolbar-active))]"
-                          data-testid={`toolbar-${item.name.toLowerCase().replace(/\s+/g, "-")}`}
+                          className="h-8 w-8 flex-shrink-0 text-[hsl(var(--markdown-toolbar-icon))] hover:bg-secondary/70 hover:text-[hsl(var(--markdown-toolbar-icon-hover))]"
+                          data-testid={`file-${item.name.toLowerCase()}`}
                         >
                           {item.icon}
                         </Button>
                       </TooltipTrigger>
                       <TooltipContent>
-                        <p>{item.name}</p>
+                        <p>{item.tooltip}</p>
                       </TooltipContent>
                     </Tooltip>
-                  )}
-                </React.Fragment>
-              ))}
-            </React.Fragment>
-          ))}
-        </TooltipProvider>
-      </div>
+                  ))}
+                </TooltipProvider>
+              </div>
+              <Separator orientation="vertical" className="mx-1 h-8 flex-shrink-0" />
+            </>
+          )}
 
-      {/* Center: Filename with autosave indicator */}
-      {currentFileName && (
-        <div className="mx-4 flex min-w-0 max-w-[40%] flex-shrink items-center overflow-visible text-sm font-medium">
-          <span className="truncate" title={currentFileName}>
-            {currentFileName}
-            {!isFileSaved ? " *" : ""}
-          </span>
-          {autoSaveEnabled && (
+          {/* Formatting tools group - show all in normal mode, hide in distraction-free */}
+          {!isDistractionFree && (
+            <div className="flex items-center gap-1">
+              <TooltipProvider>
+                {toolbarGroups.map((group, groupIndex) => (
+                  <React.Fragment key={`group-${groupIndex}`}>
+                    {groupIndex > 0 && (
+                      <Separator orientation="vertical" className="mx-1 h-8 flex-shrink-0" />
+                    )}
+                    {group.map((item) => (
+                      <React.Fragment key={item.name}>
+                        {item.isPopover ? (
+                          <Popover open={isEmojiPickerOpen} onOpenChange={setIsEmojiPickerOpen}>
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <PopoverTrigger asChild>
+                                  <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    aria-label={item.ariaLabel}
+                                    disabled={isPreviewMode}
+                                    className="h-8 w-8 flex-shrink-0 text-[hsl(var(--markdown-toolbar-icon))] hover:bg-secondary/70 hover:text-[hsl(var(--markdown-toolbar-icon-hover))]"
+                                    data-testid={`toolbar-${item.name.toLowerCase().replace(/\s+/g, "-")}`}
+                                  >
+                                    {item.icon}
+                                  </Button>
+                                </PopoverTrigger>
+                              </TooltipTrigger>
+                              <TooltipContent><p>{item.name}</p></TooltipContent>
+                            </Tooltip>
+                            <PopoverContent className="w-80 p-0" align="start">
+                              <EmojiPicker onEmojiSelect={handleEmojiSelect}>
+                                <EmojiPickerSearch placeholder="Search emojis..." />
+                                <EmojiPickerContent />
+                                <EmojiPickerFooter />
+                              </EmojiPicker>
+                            </PopoverContent>
+                          </Popover>
+                        ) : item.isCustomComponent && item.name === "Table" ? (
+                          <TableGenerator onInsertTable={onInsertAction} isDisabled={isPreviewMode} />
+                        ) : (
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                onClick={item.action}
+                                aria-label={item.ariaLabel}
+                                disabled={isPreviewMode}
+                                className="h-8 w-8 flex-shrink-0 text-[hsl(var(--markdown-toolbar-icon))] hover:bg-secondary/70 hover:text-[hsl(var(--markdown-toolbar-icon-hover))]"
+                                data-testid={`toolbar-${item.name.toLowerCase().replace(/\s+/g, "-")}`}
+                              >
+                                {item.icon}
+                              </Button>
+                            </TooltipTrigger>
+                            <TooltipContent><p>{item.name}</p></TooltipContent>
+                          </Tooltip>
+                        )}
+                      </React.Fragment>
+                    ))}
+                  </React.Fragment>
+                ))}
+              </TooltipProvider>
+            </div>
+          )}
+
+          {/* Separator before distraction-free controls */}
+          <Separator orientation="vertical" className="mx-1 h-8 flex-shrink-0" />
+
+          {/* Distraction-free controls group */}
+          <div className="flex items-center gap-1">
+            {distractionFreeControls.length > 0 && (
+              <TooltipProvider>
+                {distractionFreeControls.map((control) => (
+                  <Tooltip key={control.name}>
+                    <TooltipTrigger asChild>
+                      <Button
+                        variant={control.active ? "default" : "ghost"}
+                        size="icon"
+                        onClick={control.action}
+                        aria-label={control.ariaLabel}
+                        className={cn(
+                          "h-8 w-8 flex-shrink-0",
+                          control.active
+                            ? "bg-primary text-primary-foreground"
+                            : "text-[hsl(var(--markdown-toolbar-icon))] hover:bg-secondary/70"
+                        )}
+                        data-testid={`distraction-${control.name.toLowerCase().replace(/\s+/g, "-")}`}
+                      >
+                        {control.icon}
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      <p>{control.tooltip}</p>
+                    </TooltipContent>
+                  </Tooltip>
+                ))}
+              </TooltipProvider>
+            )}
+          </div>
+
+          {/* Separator before view controls */}
+          <Separator orientation="vertical" className="mx-1 h-8 flex-shrink-0" />
+
+          {/* View controls group */}
+          <div className="flex items-center gap-1">
             <TooltipProvider>
               <Tooltip>
                 <TooltipTrigger asChild>
-                  <div
-                    className="ml-2 flex h-full items-center"
-                    aria-label="Auto-save enabled"
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={onTogglePreview}
+                    aria-label={isPreviewMode ? "Edit mode" : "Preview mode"}
+                    className="h-8 w-8 flex-shrink-0 text-[hsl(var(--markdown-toolbar-icon))] hover:bg-secondary/70"
+                    data-testid="toggle-preview"
                   >
-                    <div className="h-2.5 w-2.5 flex-shrink-0 rounded-full bg-green-500"></div>
-                  </div>
+                    {isPreviewMode ? <Pencil className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                  </Button>
                 </TooltipTrigger>
                 <TooltipContent>
-                  <p>Auto-save enabled</p>
+                  <p>{isPreviewMode ? "Edit Mode" : "Preview Mode"}</p>
                 </TooltipContent>
               </Tooltip>
             </TooltipProvider>
+            <ModeToggle />
+          </div>
+
+          {/* Filename display - only on wide screens in normal mode */}
+          {currentFileName && !isDistractionFree && (
+            <>
+              <Separator orientation="vertical" className="mx-1 h-8 flex-shrink-0" />
+              <div className="hidden lg:flex items-center text-sm font-medium px-2">
+                <span className="truncate" title={currentFileName}>
+                  {currentFileName}
+                  {!isFileSaved ? " *" : ""}
+                </span>
+                {autoSaveEnabled && (
+                  <TooltipProvider>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <div className="ml-2 flex items-center" aria-label="Auto-save enabled">
+                          <div className="h-2.5 w-2.5 rounded-full bg-green-500"></div>
+                        </div>
+                      </TooltipTrigger>
+                      <TooltipContent>
+                        <p>Auto-save enabled</p>
+                      </TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
+                )}
+              </div>
+            </>
           )}
         </div>
-      )}
-
-      {/* Right side: View controls */}
-      <div className="ml-auto flex flex-shrink-0 flex-nowrap items-center gap-2">
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={onTogglePreview}
-          aria-label={isPreviewMode ? "Edit mode" : "Preview mode"}
-          className="border border-transparent text-[hsl(var(--markdown-toolbar-icon))] hover:border-secondary hover:text-[hsl(var(--markdown-toolbar-icon-hover))] focus-visible:ring-2 focus-visible:ring-[hsl(var(--markdown-toolbar-active))]"
-          data-testid="toggle-preview"
-        >
-          {isPreviewMode ? (
-            <>
-              <Pencil className="mr-2 h-4 w-4" />
-              <span className="hidden sm:inline">Edit</span>
-            </>
-          ) : (
-            <>
-              <Eye className="mr-2 h-4 w-4" />
-              <span className="hidden sm:inline">Preview</span>
-            </>
-          )}
-        </Button>
-        <ModeToggle />
       </div>
 
       {/* Template Selector Modal */}
