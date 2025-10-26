@@ -486,6 +486,61 @@ textarea.bg-gradient-to-br::after {
 }
 
 .dark .spotlight-overlay {
-  background: rgba(48, 25, 52, 0.7); 
+  background: rgba(48, 25, 52, 0.7);
 }
 */
+
+/* Mermaid Diagram Styling */
+.mermaid-diagram,
+.mermaid-svg-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 1.5rem;
+  margin: 1rem 0;
+  background: hsl(var(--card));
+  border: 1px solid hsl(var(--border));
+  border-radius: 0.5rem;
+  overflow-x: auto;
+}
+
+.mermaid-svg-container svg {
+  max-width: 100%;
+  height: auto;
+}
+
+/* Loading state for Mermaid */
+.mermaid-loading {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 2rem;
+  color: hsl(var(--muted-foreground));
+  font-style: italic;
+}
+
+/* Ensure Mermaid diagrams are visible in dark mode */
+.dark .mermaid-svg-container {
+  background: hsl(var(--card));
+}
+
+/* Style mermaid SVG elements for better readability */
+.mermaid-svg-container text {
+  fill: hsl(var(--foreground)) !important;
+}
+
+.mermaid-svg-container .node rect,
+.mermaid-svg-container .node circle,
+.mermaid-svg-container .node ellipse,
+.mermaid-svg-container .node polygon {
+  fill: hsl(var(--muted)) !important;
+  stroke: hsl(var(--border)) !important;
+}
+
+.mermaid-svg-container .edgePath .path {
+  stroke: hsl(var(--muted-foreground)) !important;
+}
+
+.mermaid-svg-container .arrowheadPath {
+  fill: hsl(var(--muted-foreground)) !important;
+}
