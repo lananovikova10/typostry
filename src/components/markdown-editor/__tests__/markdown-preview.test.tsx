@@ -6,11 +6,8 @@ import { replaceEmojis } from "@/lib/emoji"
 // Import the component after mocking
 import { MarkdownPreview } from "../markdown-preview"
 
-// Mock the dynamic import for mermaid
-jest.mock("next/dynamic", () => () => () => ({
-  render: jest.fn().mockResolvedValue({ svg: "<svg>Mermaid Diagram</svg>" }),
-  initialize: jest.fn(),
-}))
+// Mock the dynamic import
+jest.mock("next/dynamic", () => () => () => null)
 
 // Mock the MarkdownPreview component instead of trying to test it directly
 // This avoids issues with the remark module in tests
@@ -32,9 +29,6 @@ jest.mock("../markdown-preview", () => ({
     html = html.replace(
       /```(\w+)\n([\s\S]+?)```/gm,
       (match, language, code) => {
-        if (language === "mermaid") {
-          return `<div class="mermaid-diagram">${code}</div>`
-        }
         return `<pre><code class="language-${language}">${code}</code></pre>`
       }
     )
@@ -95,25 +89,4 @@ describe("MarkdownPreview", () => {
     expect(content.innerHTML).toContain("Multiple emojis: 😄❤️👍")
   })
 
-  it("renders Mermaid sequence diagrams correctly", async () => {
-    const markdown =
-      "```mermaid\nsequenceDiagram\nAlice->>John: Hello John, how are you?\nJohn-->>Alice: Great!\n```"
-    render(<MarkdownPreview source={markdown} />)
-
-    const content = screen.getByTestId("markdown-preview")
-    expect(content).toBeInTheDocument()
-    expect(content.innerHTML).toContain(
-      '<div class="mermaid-diagram">sequenceDiagram'
-    )
-  })
-
-  it("renders Mermaid flowcharts correctly", async () => {
-    const markdown =
-      "```mermaid\ngraph LR\nA[Square Rect] -- Link text --> B((Circle))\nA --> C(Round Rect)\n```"
-    render(<MarkdownPreview source={markdown} />)
-
-    const content = screen.getByTestId("markdown-preview")
-    expect(content).toBeInTheDocument()
-    expect(content.innerHTML).toContain('<div class="mermaid-diagram">graph LR')
-  })
 })

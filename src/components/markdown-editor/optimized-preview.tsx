@@ -30,7 +30,6 @@ export function OptimizedPreview({
   useVirtualScrolling = false,
   debounceMs = 300,
 }: OptimizedPreviewProps) {
-  const [mermaidInstance, setMermaidInstance] = useState<any>(null)
   const previewRef = useRef<HTMLDivElement>(null)
   const { theme, resolvedTheme } = useTheme()
   const { html, isProcessing, error, processMarkdown } = useMarkdownWorker()
@@ -46,84 +45,7 @@ export function OptimizedPreview({
     processMarkdown(processedSource, debounceMs)
   }, [source, debounceMs, processMarkdown])
 
-  // Initialize mermaid
-  useEffect(() => {
-    if (!isBrowser) return
 
-    const initMermaid = async () => {
-      try {
-        const mermaidModule = await import("mermaid")
-        const mermaid = mermaidModule.default
-
-        mermaid.initialize({
-          startOnLoad: false,
-          theme: resolvedTheme === "dark" ? "dark" : "default",
-          securityLevel: "loose",
-          fontFamily: "inherit",
-        })
-
-        setMermaidInstance(mermaid)
-      } catch (error) {
-        console.error("Failed to initialize mermaid:", error)
-      }
-    }
-
-    initMermaid()
-  }, [resolvedTheme])
-
-  // Render Mermaid diagrams
-  const renderMermaidDiagram = useCallback(
-    async (code: string, codeBlock: Element) => {
-      console.log('🎭 [OptimizedPreview] renderMermaidDiagram called')
-      console.log('  - Code:', code.substring(0, 50) + '...')
-      console.log('  - mermaidInstance:', !!mermaidInstance)
-
-      if (!isBrowser) {
-        console.log('  ⚠️ Not in browser, skipping')
-        return
-      }
-
-      if (!mermaidInstance) {
-        console.log('  ⚠️ Mermaid not initialized, skipping')
-        return
-      }
-
-      const pre = codeBlock.parentElement
-      console.log('  - Parent element:', pre?.tagName)
-
-      if (!pre) {
-        console.error('  ❌ No parent element found!')
-        return
-      }
-
-      const diagramId = `mermaid-diagram-${Math.random().toString(36).substring(2, 11)}`
-      const container = document.createElement("div")
-      container.id = diagramId
-      container.className = "mermaid-diagram"
-      container.style.width = "100%"
-      container.style.overflow = "auto"
-      container.style.marginBottom = "1rem"
-      container.textContent = code
-
-      pre.replaceWith(container)
-
-      try {
-        const result = await mermaidInstance.render(diagramId, code)
-        const svgContainer = document.createElement("div")
-        svgContainer.className = "mermaid-svg-container"
-        svgContainer.style.width = "100%"
-        svgContainer.style.overflow = "auto"
-        svgContainer.style.marginBottom = "1rem"
-        svgContainer.innerHTML = result.svg
-        container.replaceWith(svgContainer)
-      } catch (error) {
-        console.error("Error rendering Mermaid diagram:", error)
-        container.textContent = `Error rendering diagram: ${(error as Error).message}`
-        container.style.color = "red"
-      }
-    },
-    [mermaidInstance]
-  )
 
   // Execute JavaScript code
   const executeJavaScript = useCallback(
@@ -204,37 +126,11 @@ export function OptimizedPreview({
   const processCodeBlocks = useCallback(() => {
     if (!isBrowser || !previewRef.current) return
 
-    console.log('🔍 [OptimizedPreview] processCodeBlocks called')
-    console.log('  - mermaidInstance:', !!mermaidInstance)
-    console.log('  - previewRef.current:', !!previewRef.current)
-
-    // Process Mermaid diagrams first if mermaidInstance is ready
-    if (mermaidInstance) {
-      const mermaidBlocks = previewRef.current.querySelectorAll(
-        "pre > code.language-mermaid"
-      )
-      console.log('🎨 [OptimizedPreview] Found Mermaid blocks:', mermaidBlocks.length)
-
-      mermaidBlocks.forEach((block, index) => {
-        console.log(`  - Processing Mermaid block ${index + 1}`)
-        console.log('  - Code length:', block.textContent?.length)
-        console.log('  - Parent element:', block.parentElement?.tagName)
-
-        try {
-          renderMermaidDiagram(block.textContent || "", block as Element)
-          console.log(`  ✅ Rendered Mermaid block ${index + 1}`)
-        } catch (error) {
-          console.error(`  ❌ Error rendering Mermaid block ${index + 1}:`, error)
-        }
-      })
-    } else {
-      console.log('⏳ [OptimizedPreview] Mermaid not ready yet, skipping diagram rendering')
-    }
 
     const codeBlockTheme =
       resolvedTheme === "dark" ? "github-dark" : "github-light"
 
-    // Process all code blocks (excluding mermaid which is already handled)
+    // Process all code blocks
     const codeBlocks = previewRef.current.querySelectorAll("pre > code")
 
     codeBlocks.forEach((codeBlock) => {
@@ -248,10 +144,6 @@ export function OptimizedPreview({
         ? languageClass.replace("language-", "")
         : "text"
 
-      // Skip mermaid blocks - they're already handled above
-      if (language === "mermaid") {
-        return
-      }
 
       pre.classList.add("code-block-processed")
 
@@ -329,16 +221,16 @@ export function OptimizedPreview({
       codeBlockContainer.appendChild(codeBlockWrapper)
       pre.replaceWith(codeBlockContainer)
     })
-  }, [resolvedTheme, executeJavaScript, mermaidInstance, renderMermaidDiagram])
+  }, [resolvedTheme, executeJavaScript])
 
-  // Process code blocks after HTML is ready AND Mermaid is initialized
+  // Process code blocks after HTML is ready
   useEffect(() => {
-    if (!isBrowser || !html || !mermaidInstance) return
+    if (!isBrowser || !html) return
 
     setTimeout(() => {
       processCodeBlocks()
     }, 0)
-  }, [html, mermaidInstance, processCodeBlocks])
+  }, [html, processCodeBlocks])
 
   // Highlight code with Shiki
   useEffect(() => {
