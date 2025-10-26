@@ -8,6 +8,7 @@ import {
   FileCode,
   FileText,
   FolderOpen,
+  Focus,
   Heading1,
   Heading2,
   Image as ImageIcon,
@@ -27,6 +28,7 @@ import {
   Save,
   SaveAll,
   Smile,
+  Target,
   Zap,
 } from "lucide-react"
 
@@ -369,7 +371,7 @@ export function MarkdownToolbar({
   const distractionFreeControls = [
     {
       name: "Distraction Free",
-      icon: isDistractionFree ? <Minimize className="h-4 w-4" /> : <Maximize className="h-4 w-4" />,
+      icon: isDistractionFree ? <Target className="h-4 w-4" /> : <Focus className="h-4 w-4" />,
       action: onToggleDistractionFree,
       ariaLabel: isDistractionFree ? "Exit distraction-free mode" : "Enter distraction-free mode",
       tooltip: isDistractionFree ? "Exit Distraction Free" : "Distraction Free Mode",
@@ -377,7 +379,7 @@ export function MarkdownToolbar({
     },
     {
       name: "Full Screen",
-      icon: isFullScreen ? <Monitor className="h-4 w-4" /> : <Maximize className="h-4 w-4" />,
+      icon: isFullScreen ? <Minimize className="h-4 w-4" /> : <Maximize className="h-4 w-4" />,
       action: onToggleFullScreen,
       ariaLabel: isFullScreen ? "Exit full screen" : "Enter full screen",
       tooltip: isFullScreen ? "Exit Full Screen" : "Full Screen",
