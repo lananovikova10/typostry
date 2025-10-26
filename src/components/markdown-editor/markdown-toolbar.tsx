@@ -455,7 +455,7 @@ export function MarkdownToolbar({
 
       {/* Center: Filename with autosave indicator */}
       {currentFileName && (
-        <div className="mx-4 flex min-w-0 max-w-[40%] flex-shrink items-center overflow-hidden text-sm font-medium">
+        <div className="mx-4 flex min-w-0 max-w-[40%] flex-shrink items-center overflow-visible text-sm font-medium">
           <span className="truncate" title={currentFileName}>
             {currentFileName}
             {!isFileSaved ? " *" : ""}
@@ -465,9 +465,11 @@ export function MarkdownToolbar({
               <Tooltip>
                 <TooltipTrigger asChild>
                   <div
-                    className="ml-1 h-3 w-3 flex-shrink-0 rounded-full bg-green-500"
+                    className="ml-2 flex h-full items-center"
                     aria-label="Auto-save enabled"
-                  ></div>
+                  >
+                    <div className="h-2.5 w-2.5 flex-shrink-0 rounded-full bg-green-500"></div>
+                  </div>
                 </TooltipTrigger>
                 <TooltipContent>
                   <p>Auto-save enabled</p>
