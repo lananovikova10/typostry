@@ -74,10 +74,27 @@ export function OptimizedPreview({
   // Render Mermaid diagrams
   const renderMermaidDiagram = useCallback(
     async (code: string, codeBlock: Element) => {
-      if (!isBrowser || !mermaidInstance) return
+      console.log('🎭 [OptimizedPreview] renderMermaidDiagram called')
+      console.log('  - Code:', code.substring(0, 50) + '...')
+      console.log('  - mermaidInstance:', !!mermaidInstance)
+
+      if (!isBrowser) {
+        console.log('  ⚠️ Not in browser, skipping')
+        return
+      }
+
+      if (!mermaidInstance) {
+        console.log('  ⚠️ Mermaid not initialized, skipping')
+        return
+      }
 
       const pre = codeBlock.parentElement
-      if (!pre) return
+      console.log('  - Parent element:', pre?.tagName)
+
+      if (!pre) {
+        console.error('  ❌ No parent element found!')
+        return
+      }
 
       const diagramId = `mermaid-diagram-${Math.random().toString(36).substring(2, 11)}`
       const container = document.createElement("div")
@@ -187,27 +204,42 @@ export function OptimizedPreview({
   const processCodeBlocks = useCallback(() => {
     if (!isBrowser || !previewRef.current) return
 
+    console.log('🔍 [OptimizedPreview] processCodeBlocks called')
+    console.log('  - mermaidInstance:', !!mermaidInstance)
+    console.log('  - previewRef.current:', !!previewRef.current)
+
+    // Process Mermaid diagrams first if mermaidInstance is ready
+    if (mermaidInstance) {
+      const mermaidBlocks = previewRef.current.querySelectorAll(
+        "pre > code.language-mermaid"
+      )
+      console.log('🎨 [OptimizedPreview] Found Mermaid blocks:', mermaidBlocks.length)
+
+      mermaidBlocks.forEach((block, index) => {
+        console.log(`  - Processing Mermaid block ${index + 1}`)
+        console.log('  - Code length:', block.textContent?.length)
+        console.log('  - Parent element:', block.parentElement?.tagName)
+
+        try {
+          renderMermaidDiagram(block.textContent || "", block as Element)
+          console.log(`  ✅ Rendered Mermaid block ${index + 1}`)
+        } catch (error) {
+          console.error(`  ❌ Error rendering Mermaid block ${index + 1}:`, error)
+        }
+      })
+    } else {
+      console.log('⏳ [OptimizedPreview] Mermaid not ready yet, skipping diagram rendering')
+    }
+
     const codeBlockTheme =
       resolvedTheme === "dark" ? "github-dark" : "github-light"
 
-    // Process Mermaid diagrams
-    if (mermaidInstance) {
-      const mermaidBlocks = previewRef.current.querySelectorAll(
-        "pre.mermaid-pre > code.language-mermaid"
-      )
-      mermaidBlocks.forEach((block) => {
-        renderMermaidDiagram(block.textContent || "", block as Element)
-      })
-    }
-
-    // Process other code blocks
+    // Process all code blocks (excluding mermaid which is already handled)
     const codeBlocks = previewRef.current.querySelectorAll("pre > code")
 
     codeBlocks.forEach((codeBlock) => {
       const pre = codeBlock.parentElement
       if (!pre || pre.querySelector(".code-block-processed")) return
-
-      pre.classList.add("code-block-processed")
 
       const languageClass = Array.from(codeBlock.classList).find((cls) =>
         cls.startsWith("language-")
@@ -215,6 +247,13 @@ export function OptimizedPreview({
       const language = languageClass
         ? languageClass.replace("language-", "")
         : "text"
+
+      // Skip mermaid blocks - they're already handled above
+      if (language === "mermaid") {
+        return
+      }
+
+      pre.classList.add("code-block-processed")
 
       const code = codeBlock.textContent || ""
 
@@ -230,14 +269,7 @@ export function OptimizedPreview({
       codeContent.className =
         "w-full overflow-x-auto text-[13px] [&>pre]:px-4 [&>pre]:py-4"
 
-      if (language === "mermaid") {
-        codeContent.innerHTML = `<pre class="mermaid-pre"><code class="language-${language}">${code}</code></pre>`
-        const mermaidCodeElement = codeContent.querySelector("code")
-        if (mermaidCodeElement && mermaidInstance) {
-          renderMermaidDiagram(code, mermaidCodeElement)
-        }
-        return
-      } else if (language === "js" || language === "javascript") {
+      if (language === "js" || language === "javascript") {
         codeContent.innerHTML = `<pre><code class="language-${language}">${code}</code></pre>`
 
         const buttonContainer = document.createElement("div")
@@ -299,14 +331,14 @@ export function OptimizedPreview({
     })
   }, [resolvedTheme, executeJavaScript, mermaidInstance, renderMermaidDiagram])
 
-  // Process code blocks after HTML is ready
+  // Process code blocks after HTML is ready AND Mermaid is initialized
   useEffect(() => {
-    if (!isBrowser || !html) return
+    if (!isBrowser || !html || !mermaidInstance) return
 
     setTimeout(() => {
       processCodeBlocks()
     }, 0)
-  }, [html, processCodeBlocks])
+  }, [html, mermaidInstance, processCodeBlocks])
 
   // Highlight code with Shiki
   useEffect(() => {

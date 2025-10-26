@@ -46,10 +46,12 @@ export function MarkdownPreview({ source, className }: MarkdownPreviewProps) {
           theme: resolvedTheme === "dark" ? "dark" : "default",
           securityLevel: "loose", // needed for client-side rendering
           fontFamily: "inherit",
+          logLevel: "error", // Reduce console noise
         })
 
         // Set the mermaid instance for later use
         setMermaidInstance(mermaid)
+        console.log("Mermaid initialized successfully")
       } catch (error) {
         console.error("Failed to initialize mermaid:", error)
       }
@@ -59,16 +61,29 @@ export function MarkdownPreview({ source, className }: MarkdownPreviewProps) {
   }, [resolvedTheme]) // Function to render Mermaid diagrams
   const renderMermaidDiagram = useCallback(
     async (code: string, codeBlock: Element) => {
-      if (!isBrowser) return // Skip on server-side
+      console.log('🎭 renderMermaidDiagram called')
+      console.log('  - Code:', code.substring(0, 50) + '...')
+      console.log('  - mermaidInstance:', !!mermaidInstance)
+
+      if (!isBrowser) {
+        console.log('  ⚠️ Not in browser, skipping')
+        return // Skip on server-side
+      }
 
       if (!mermaidInstance) {
+        console.log('  ⚠️ Mermaid not initialized, skipping')
         console.warn("Mermaid instance not initialized")
         return
       }
 
       // Find parent element
       const pre = codeBlock.parentElement
-      if (!pre) return
+      console.log('  - Parent element:', pre?.tagName)
+
+      if (!pre) {
+        console.error('  ❌ No parent element found!')
+        return
+      }
 
       // Create a unique ID for the diagram
       const diagramId = `mermaid-diagram-${Math.random().toString(36).substring(2, 11)}`
@@ -204,29 +219,43 @@ export function MarkdownPreview({ source, className }: MarkdownPreviewProps) {
     if (!isBrowser) return // Skip on server-side
     if (!previewRef.current) return
 
+    console.log('🔍 processCodeBlocks called')
+    console.log('  - mermaidInstance:', !!mermaidInstance)
+    console.log('  - previewRef.current:', !!previewRef.current)
+
+    // Process Mermaid diagrams first if mermaidInstance is ready
+    if (mermaidInstance) {
+      const mermaidBlocks = previewRef.current.querySelectorAll(
+        "pre > code.language-mermaid"
+      )
+      console.log('🎨 Found Mermaid blocks:', mermaidBlocks.length)
+
+      mermaidBlocks.forEach((block, index) => {
+        console.log(`  - Processing Mermaid block ${index + 1}`)
+        console.log('  - Code length:', block.textContent?.length)
+        console.log('  - Parent element:', block.parentElement?.tagName)
+
+        try {
+          renderMermaidDiagram(block.textContent || "", block as Element)
+          console.log(`  ✅ Rendered Mermaid block ${index + 1}`)
+        } catch (error) {
+          console.error(`  ❌ Error rendering Mermaid block ${index + 1}:`, error)
+        }
+      })
+    } else {
+      console.log('⏳ Mermaid not ready yet, skipping diagram rendering')
+    }
+
     // Determine the theme to use for code blocks
     const codeBlockTheme =
       resolvedTheme === "dark" ? "github-dark" : "github-light"
 
-    // Process any mermaid diagrams if mermaidInstance is available
-    if (mermaidInstance) {
-      const mermaidBlocks = previewRef.current.querySelectorAll(
-        "pre.mermaid-pre > code.language-mermaid"
-      )
-      mermaidBlocks.forEach((block) => {
-        renderMermaidDiagram(block.textContent || "", block as Element)
-      })
-    }
-
-    // Find all pre > code elements
+    // Find all pre > code elements (excluding mermaid which is already handled)
     const codeBlocks = previewRef.current.querySelectorAll("pre > code")
 
     codeBlocks.forEach((codeBlock) => {
       const pre = codeBlock.parentElement
       if (!pre || pre.querySelector(".code-block-processed")) return // Skip if already processed
-
-      // Mark as processed
-      pre.classList.add("code-block-processed")
 
       // Get the language from the class (language-xxx)
       const languageClass = Array.from(codeBlock.classList).find((cls) =>
@@ -235,6 +264,14 @@ export function MarkdownPreview({ source, className }: MarkdownPreviewProps) {
       const language = languageClass
         ? languageClass.replace("language-", "")
         : "text"
+
+      // Skip mermaid blocks - they're already handled above
+      if (language === "mermaid") {
+        return
+      }
+
+      // Mark as processed
+      pre.classList.add("code-block-processed")
 
       // Get the code content
       const code = codeBlock.textContent || ""
@@ -254,22 +291,8 @@ export function MarkdownPreview({ source, className }: MarkdownPreviewProps) {
       codeContent.className =
         "w-full overflow-x-auto text-[13px] [&>pre]:px-4 [&>pre]:py-4"
 
-      // For Mermaid diagrams
-      if (language === "mermaid") {
-        // We don't need the code block wrapper for Mermaid
-        codeContent.innerHTML = `<pre class="mermaid-pre"><code class="language-${language}">${code}</code></pre>`
-
-        // Process the Mermaid diagram
-        const mermaidCodeElement = codeContent.querySelector("code")
-        if (mermaidCodeElement && mermaidInstance) {
-          renderMermaidDiagram(code, mermaidCodeElement)
-        }
-
-        // Skip the rest of the processing for Mermaid
-        return
-      }
       // For JavaScript code, make sure we keep the pre > code structure for executability
-      else if (language === "js" || language === "javascript") {
+      if (language === "js" || language === "javascript") {
         codeContent.innerHTML = `<pre><code class="language-${language}">${code}</code></pre>`
 
         // Create button container with absolute positioning
@@ -400,17 +423,16 @@ export function MarkdownPreview({ source, className }: MarkdownPreviewProps) {
 
   // We've already initialized Mermaid in the first useEffect, so this is redundant
 
-  // Process code blocks after the HTML has been rendered
+  // Process code blocks after the HTML has been rendered AND Mermaid is ready
   useEffect(() => {
     if (!isBrowser) return // Skip on server-side
+    if (!html || !mermaidInstance) return // Wait for both HTML and Mermaid
 
-    if (html) {
-      // Use setTimeout to ensure the DOM has been updated
-      setTimeout(() => {
-        processCodeBlocks()
-      }, 0)
-    }
-  }, [html, processCodeBlocks])
+    // Use setTimeout to ensure the DOM has been updated
+    setTimeout(() => {
+      processCodeBlocks()
+    }, 0)
+  }, [html, mermaidInstance, processCodeBlocks])
 
   // React-based code block rendering for non-JS blocks after hydration
   useEffect(() => {
