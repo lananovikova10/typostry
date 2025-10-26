@@ -3,9 +3,13 @@
 import React, { useCallback, useEffect, useRef, useState } from "react"
 import dynamic from "next/dynamic"
 import { useTheme } from "next-themes"
-import { remark } from "remark"
+import { unified } from "unified"
+import remarkParse from "remark-parse"
 import remarkGfm from "remark-gfm"
-import remarkHtml from "remark-html"
+import remarkMath from "remark-math"
+import remarkRehype from "remark-rehype"
+import rehypeKatex from "rehype-katex"
+import rehypeStringify from "rehype-stringify"
 import { codeToHtml } from "shiki"
 
 import { replaceEmojis } from "@/lib/emoji"
@@ -356,10 +360,14 @@ export function MarkdownPreview({ source, className }: MarkdownPreviewProps) {
         // Replace emoji shortcodes with actual emoji characters
         const processedSource = replaceEmojis(source)
 
-        // Process markdown content
-        const result = await remark()
+        // Process markdown content with math support
+        const result = await unified()
+          .use(remarkParse)
           .use(remarkGfm)
-          .use(remarkHtml)
+          .use(remarkMath)
+          .use(remarkRehype)
+          .use(rehypeKatex)
+          .use(rehypeStringify)
           .process(processedSource)
 
         let htmlContent = result.toString()
