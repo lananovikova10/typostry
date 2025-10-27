@@ -9,6 +9,7 @@ import { cn } from "@/lib/utils"
 import { getServerSideTheme, getThemeScript } from "@/lib/theme-utils"
 import { DotPattern } from "@/components/ui/dot-pattern"
 import { ThemeProvider } from "@/components/theme-provider"
+import { Footer } from "@/components/footer"
 
 export const metadata: Metadata = {
   title: {
@@ -67,6 +68,7 @@ export default async function RootLayout({ children }: RootLayoutProps) {
             />
             <div className="relative flex min-h-screen flex-col">
               <div className="flex-1">{children}</div>
+              <Footer />
             </div>
           </ThemeProvider>
         </body>
