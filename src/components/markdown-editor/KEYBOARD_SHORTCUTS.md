@@ -14,6 +14,10 @@ This document outlines the keyboard shortcuts available in the Markdown Editor.
 | Shortcut                                 | Description           |
 | ---------------------------------------- | --------------------- |
 | `CTRL/CMD + S`                           | Save the current file |
+| `CTRL/CMD + B`                           | Insert bold text      |
+| `CTRL/CMD + I`                           | Insert italic text    |
+| `CTRL/CMD + K`                           | Insert link markup    |
+| `CTRL/CMD + SHIFT + C`                   | Insert code block     |
 | `CTRL/CMD + [`                           | Insert link markup    |
 | `CTRL/CMD + ]`                           | Insert image markup   |
 | `CTRL/CMD + \`                           | Insert table markup   |
