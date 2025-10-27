@@ -217,6 +217,38 @@ export function MarkdownEditor({
             handleSaveFile()
             break
 
+          case "b": // Bold: 'CTRL/CMD + B'
+            event.preventDefault()
+            if (!isPreviewMode) {
+              handleInsertAction("**Bold text**")
+            }
+            break
+
+          case "i": // Italic: 'CTRL/CMD + I'
+            event.preventDefault()
+            if (!isPreviewMode) {
+              handleInsertAction("*Italic text*")
+            }
+            break
+
+          case "k": // Link: 'CTRL/CMD + K'
+            event.preventDefault()
+            if (!isPreviewMode) {
+              handleInsertAction("[Link text](https://example.com)")
+            }
+            break
+
+          case "c": // Code block: 'CTRL/CMD + SHIFT + C'
+            if (event.shiftKey) {
+              event.preventDefault()
+              if (!isPreviewMode) {
+                handleInsertAction(
+                  "\n```\nconst example = 'code block';\n```\n"
+                )
+              }
+            }
+            break
+
           case "[": // Anchor: 'CTRL/CMD + ['
             event.preventDefault()
             if (!isPreviewMode) {
