@@ -162,92 +162,82 @@
   }
 
   .acid {
-    --editor-gradient-start: 270 100% 8%;
-    --editor-gradient-end: 270 100% 8%;
+    --editor-gradient-start: 280 90% 12%;
+    --editor-gradient-end: 280 90% 12%;
 
-    --background: 270 100% 5%;
-    --foreground: 84 100% 70%;
+    --background: 280 90% 10%;
+    --foreground: 84 100% 65%;
 
-    --muted: 270 80% 15%;
-    --muted-foreground: 280 60% 60%;
+    --muted: 280 80% 15%;
+    --muted-foreground: 300 100% 75%;
 
-    --popover: 270 100% 8%;
-    --popover-foreground: 84 100% 70%;
+    --popover: 280 95% 10%;
+    --popover-foreground: 84 100% 65%;
 
-    --card: 270 100% 8%;
-    --card-foreground: 84 100% 70%;
+    --card: 280 90% 12%;
+    --card-foreground: 84 100% 65%;
 
-    --border: 330 100% 50%;
-    --input: 330 100% 50%;
+    --border: 300 100% 55%;
+    --input: 300 100% 55%;
 
-    --primary: 84 100% 50%;
-    --primary-foreground: 270 100% 10%;
+    --primary: 84 100% 65%;
+    --primary-foreground: 280 100% 10%;
 
-    --secondary: 330 100% 50%;
-    --secondary-foreground: 270 100% 10%;
+    --secondary: 300 100% 65%;
+    --secondary-foreground: 280 100% 10%;
 
-    --accent: 195 100% 50%;
-    --accent-foreground: 270 100% 10%;
+    --accent: 180 100% 55%;
+    --accent-foreground: 280 100% 10%;
 
     --destructive: 0 100% 60%;
-    --destructive-foreground: 270 100% 10%;
+    --destructive-foreground: 0 0% 100%;
 
-    --success: 84 100% 50%;
-    --success-foreground: 270 100% 10%;
+    --success: 84 100% 65%;
+    --success-foreground: 280 100% 10%;
 
-    --warning-bg: 54 100% 50%;
-    --warning-text: 270 100% 10%;
+    --warning-bg: 60 100% 55%;
+    --warning-text: 280 100% 10%;
 
-    --ring: 84 100% 50%;
+    --ring: 84 100% 65%;
 
     --grammar-error-underline-error: #ff00ff;
     --grammar-error-underline-warning: #ffff00;
     --grammar-error-underline-info: #00ffff;
 
     /* Custom Colors for Markdown Editor - Acid Mode */
-    --markdown-toolbar-bg: 270 100% 8%;
-    --markdown-toolbar-border: 330 100% 50%;
-    --markdown-toolbar-text: 84 100% 70%;
-    --markdown-toolbar-icon: 195 100% 60%;
-    --markdown-toolbar-icon-active: 84 100% 60%;
-    --markdown-toolbar-icon-bg: 270 80% 15%;
-    --markdown-toolbar-icon-bg-hover: 330 80% 30%;
+    --markdown-toolbar-bg: 280 90% 10%;
+    --markdown-toolbar-border: 300 100% 55%;
+    --markdown-toolbar-text: 84 100% 65%;
+    --markdown-toolbar-icon: 180 100% 55%;
+    --markdown-toolbar-icon-active: 84 100% 75%;
+    --markdown-toolbar-icon-bg: 280 80% 18%;
+    --markdown-toolbar-icon-bg-hover: 300 90% 30%;
 
-    --markdown-input-bg: 270 100% 8%;
-    --markdown-input-border: 330 100% 50%;
-    --markdown-input-text: 84 100% 60%;
-    --markdown-input-placeholder: 84 100% 40%;
+    --markdown-input-bg: 280 90% 10%;
+    --markdown-input-border: 300 100% 55%;
+    --markdown-input-text: 84 100% 65%;
+    --markdown-input-placeholder: 300 100% 60%;
 
-    --markdown-preview-bg: 270 100% 8%;
-    --markdown-preview-text: 84 100% 70%;
-    --markdown-preview-heading: 330 100% 30%;
-    --markdown-preview-link: 195 100% 35%;
-    --markdown-preview-code-bg: 270 80% 90%;
-    --markdown-preview-code-text: 54 100% 25%;
-    --markdown-preview-blockquote: 280 60% 30%;
-    --markdown-preview-hr: 330 100% 50%;
-    --markdown-preview-table-border: 330 100% 50%;
+    --markdown-preview-bg: 280 90% 10%;
+    --markdown-preview-text: 84 100% 65%;
+    --markdown-preview-heading: 300 100% 70%;
+    --markdown-preview-link: 180 100% 60%;
+    --markdown-preview-code-bg: 280 80% 18%;
+    --markdown-preview-code-text: 60 100% 65%;
+    --markdown-preview-blockquote: 180 100% 60%;
+    --markdown-preview-hr: 300 100% 55%;
+    --markdown-preview-table-border: 300 100% 55%;
 
-    --markdown-sidebar-bg: 270 100% 8%;
-    --markdown-sidebar-text: 280 60% 60%;
-    --markdown-sidebar-heading: 84 100% 70%;
-    --markdown-sidebar-icon: 195 100% 60%;
-    --markdown-sidebar-border: 330 100% 50%;
-    --markdown-sidebar-link: 195 100% 60%;
+    --markdown-sidebar-bg: 280 90% 10%;
+    --markdown-sidebar-text: 300 100% 70%;
+    --markdown-sidebar-heading: 84 100% 65%;
+    --markdown-sidebar-icon: 180 100% 55%;
+    --markdown-sidebar-border: 300 100% 55%;
+    --markdown-sidebar-link: 180 100% 65%;
   }
 }
 
 @layer base {
-  :root {
-    --editor-gradient-start: 210 40% 98%;
-    --editor-gradient-end: 222.2 30% 40%;
-  }
-
-  .dark {
-    --editor-gradient-start: 217.2 32.6% 17.5%;
-    --editor-gradient-end: 222.2 84% 4.9%;
-  }
-
   * {
     @apply border-border;
   }
