@@ -773,34 +773,34 @@ export function MarkdownEditor({
 
         {/* Editor or Preview */}
         <div className={cn(
-          "flex flex-1",
-          !isPreviewMode && "flex-col",
+          "flex flex-1 flex-col",
           isDistractionFree && "max-w-4xl mx-auto px-8 py-4"
         )}>
           {!isPreviewMode && (
-            <>
-              <MarkdownInput
-                value={markdown}
-                onChange={handleChange}
-                className={cn(
-                  "flex-1",
-                  isDistractionFree ? "border-0 p-6 text-lg leading-relaxed focus:ring-0" : "p-2"
-                )}
-                ref={markdownInputRef}
-              />
-            </>
+            <MarkdownInput
+              value={markdown}
+              onChange={handleChange}
+              className={cn(
+                "flex-1",
+                isDistractionFree ? "border-0 p-6 text-lg leading-relaxed focus:ring-0" : "p-2"
+              )}
+              ref={markdownInputRef}
+            />
           )}
           {isPreviewMode && (
-            <>
-              <MarkdownPreview
-                source={markdown}
-                className={cn(
-                  "flex-1",
-                  !isDistractionFree && "dark:border-gray-700 sm:border-l",
-                  isDistractionFree && "prose prose-lg max-w-none p-6"
-                )}
-              />
-            </>
+            <MarkdownPreview
+              source={markdown}
+              className={cn(
+                "flex-1",
+                !isDistractionFree && "dark:border-gray-700 sm:border-l",
+                isDistractionFree && "prose prose-lg max-w-none p-6"
+              )}
+            />
+          )}
+
+          {/* Reading Stats - hide in distraction-free mode */}
+          {!isDistractionFree && (
+            <ReadingStats content={markdown} className="border-t" />
           )}
         </div>
       </div>
