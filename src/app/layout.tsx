@@ -6,6 +6,7 @@ import { Metadata } from "next"
 import { siteConfig } from "@/config/site"
 import { fontSans } from "@/lib/fonts"
 import { cn } from "@/lib/utils"
+import { getServerSideTheme, getThemeScript } from "@/lib/theme-utils"
 import { DotPattern } from "@/components/ui/dot-pattern"
 import { ThemeProvider } from "@/components/theme-provider"
 
@@ -24,16 +25,25 @@ interface RootLayoutProps {
   children: React.ReactNode
 }
 
-export default function RootLayout({ children }: RootLayoutProps) {
+export default async function RootLayout({ children }: RootLayoutProps) {
+  const serverTheme = await getServerSideTheme()
+
   return (
     <>
       <html lang="en" suppressHydrationWarning>
-        <head />
+        <head>
+          <script
+            dangerouslySetInnerHTML={{
+              __html: getThemeScript(serverTheme),
+            }}
+          />
+        </head>
         <body
           className={cn(
             "relative min-h-screen bg-background font-sans antialiased",
             fontSans.variable
           )}
+          suppressHydrationWarning
         >
           <ThemeProvider
             attribute="class"
@@ -53,6 +63,7 @@ export default function RootLayout({ children }: RootLayoutProps) {
               cx={1}
               cy={1}
               cr={1}
+              suppressHydrationWarning
             />
             <div className="relative flex min-h-screen flex-col">
               <div className="flex-1">{children}</div>
