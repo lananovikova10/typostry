@@ -1,7 +1,7 @@
 "use client"
 
 import * as React from "react"
-import { useTheme } from "next-themes"
+import { useThemeSafe, useIsTheme } from "@/hooks/use-theme-safe"
 
 import { Button } from "@/components/ui/button"
 import {
@@ -13,39 +13,24 @@ import {
 import { Icons } from "@/components/icons"
 
 export function ModeToggle() {
-  const { theme, setTheme } = useTheme()
-  const [mounted, setMounted] = React.useState(false)
+  const { setTheme, mounted } = useThemeSafe()
+  const { isLight, isDark, isHighContrast, isAcid, currentTheme } = useIsTheme()
 
-  // Update mounted state after component mounts to avoid hydration mismatch
-  React.useEffect(() => {
-    setMounted(true)
-  }, [])
-
-  // Check if the current theme is a high-contrast variant
-  const isHighContrast =
-    mounted &&
-    (theme === "high-contrast-light" || theme === "high-contrast-dark")
-
-  // Check if the current theme is acid
-  const isAcid = mounted && theme === "acid"
+  // Don't render anything until mounted to prevent hydration mismatch
+  if (!mounted) {
+    return (
+      <Button variant="outline" size="icon" suppressHydrationWarning>
+        <Icons.sun className="h-[1.2rem] w-[1.2rem]" />
+        <span className="sr-only">Loading theme...</span>
+      </Button>
+    )
+  }
 
   // Determine which icon to show based on theme combinations
-  const showSun =
-    mounted &&
-    (theme === "light" ||
-      theme === "high-contrast-light" ||
-      (theme === "system" &&
-        !window.matchMedia("(prefers-color-scheme: dark)").matches))
-  const showMoon =
-    mounted &&
-    (theme === "dark" ||
-      theme === "high-contrast-dark" ||
-      (theme === "system" &&
-        window.matchMedia("(prefers-color-scheme: dark)").matches))
-  const showContrast =
-    mounted &&
-    (theme === "high-contrast-light" || theme === "high-contrast-dark")
-  const showZap = mounted && theme === "acid"
+  const showSun = isLight && !isHighContrast && !isAcid
+  const showMoon = isDark && !isHighContrast && !isAcid
+  const showContrast = isHighContrast
+  const showZap = isAcid
 
   return (
     <DropdownMenu>
@@ -54,6 +39,7 @@ export function ModeToggle() {
           variant="outline"
           size="icon"
           className="relative flex items-center justify-center"
+          suppressHydrationWarning
         >
           {/* Sun icon for light themes */}
           <Icons.sun
@@ -87,7 +73,7 @@ export function ModeToggle() {
         </DropdownMenuItem>
         <DropdownMenuItem
           onClick={() =>
-            theme?.includes("dark")
+            currentTheme?.includes("dark")
               ? setTheme("high-contrast-dark")
               : setTheme("high-contrast-light")
           }
