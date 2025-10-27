@@ -237,10 +237,10 @@ class GrammarCheckManager {
     // Rest of the original implementation...
     const requestBody: LanguageToolRequest = {
       text: limitedText,
-      language: language, // Use the specified language instead of "auto"
+      language: language,
       disabledRules: disabledRules.length > 0 ? disabledRules.join(",") : undefined,
       motherTongue: "en",
-      preferredVariants: language,
+      // preferredVariants can only be used with language: 'auto'
       clientId: "typostry",
       level: "default",
     }
