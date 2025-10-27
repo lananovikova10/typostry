@@ -8,6 +8,15 @@ import {
   TemplateContent,
   TemplateFile,
 } from "./schema"
+import { RateLimiter } from "../rate-limiter"
+
+// Rate limiter: allow 10 requests per minute
+const gitlabRateLimiter = new RateLimiter({
+  maxRequests: 10,
+  windowMs: 60 * 1000, // 1 minute
+  errorMessage:
+    "Too many GitLab API requests. Please wait a moment before trying again.",
+})
 
 // Cache for storing fetched templates to avoid repeated API calls
 const templateCache = new Map<string, TemplateFile[]>()
@@ -80,11 +89,14 @@ export const fetchTemplateFiles = async (): Promise<TemplateFile[]> => {
     const url =
       "https://gitlab.com/api/v4/projects/tgdp%2Ftemplates/repository/tree?ref=v1.3.0&recursive=true&per_page=1000"
 
-    const response = await fetch(url, {
-      headers: {
-        Accept: "application/json",
-        "Content-Type": "application/json",
-      },
+    // Apply rate limiting
+    const response = await gitlabRateLimiter.execute(async () => {
+      return await fetch(url, {
+        headers: {
+          Accept: "application/json",
+          "Content-Type": "application/json",
+        },
+      })
     })
 
     if (!response.ok) {
@@ -138,10 +150,13 @@ export const fetchTemplateContent = async (
     const encodedPath = encodeURIComponent(filePath)
     const url = `https://gitlab.com/api/v4/projects/tgdp%2Ftemplates/repository/files/${encodedPath}/raw?ref=v1.3.0`
 
-    const response = await fetch(url, {
-      headers: {
-        Accept: "text/plain",
-      },
+    // Apply rate limiting
+    const response = await gitlabRateLimiter.execute(async () => {
+      return await fetch(url, {
+        headers: {
+          Accept: "text/plain",
+        },
+      })
     })
 
     if (!response.ok) {

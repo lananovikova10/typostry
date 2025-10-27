@@ -9,9 +9,18 @@ import {
   UnsplashRandomPhotoParams,
   UnsplashRandomPhotoResponse,
 } from "./types"
+import { RateLimiter } from "../rate-limiter"
 
 // Unsplash API base URL
 const UNSPLASH_API_URL = "https://api.unsplash.com"
+
+// Rate limiter: allow 50 requests per hour (Unsplash free tier limit)
+const unsplashRateLimiter = new RateLimiter({
+  maxRequests: 50,
+  windowMs: 60 * 60 * 1000, // 1 hour
+  errorMessage:
+    "Too many Unsplash API requests. Please wait before requesting more images.",
+})
 
 // Get the API key from environment variables
 // Use the client-side key for browser environments, fallback to server-side
@@ -47,13 +56,15 @@ export async function getRandomPhoto(
       })
     }
 
-    // Make the API request
-    const response = await fetch(url.toString(), {
-      method: "GET",
-      headers: {
-        Authorization: `Client-ID ${UNSPLASH_ACCESS_KEY}`,
-        "Accept-Version": "v1",
-      },
+    // Apply rate limiting and make the API request
+    const response = await unsplashRateLimiter.execute(async () => {
+      return await fetch(url.toString(), {
+        method: "GET",
+        headers: {
+          Authorization: `Client-ID ${UNSPLASH_ACCESS_KEY}`,
+          "Accept-Version": "v1",
+        },
+      })
     })
 
     // Check if the request was successful
