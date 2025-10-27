@@ -3,7 +3,7 @@ import { SiteConfig } from "@/types/site"
 
 export const siteConfig: SiteConfig = {
   name: "typostry",
-  author: "redpangilinan",
+  author: "lananovikova10",
   description:
     "Next.js markdown editor component with real-time preview and theme support.",
   keywords: [
@@ -16,10 +16,10 @@ export const siteConfig: SiteConfig = {
   ],
   url: {
     base: env.NEXT_PUBLIC_APP_URL,
-    author: "https://rdev.pro",
+    author: "https://github.com/lananovikova10",
   },
   links: {
-    github: "https://github.com/redpangilinan/next-entree",
+    github: "https://github.com/lananovikova10/typostry",
   },
   ogImage: `${env.NEXT_PUBLIC_APP_URL}/og.jpg`,
 }
