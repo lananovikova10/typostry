@@ -14,18 +14,34 @@ import { replaceEmojis } from "@/lib/emoji"
 import { cn } from "@/lib/utils"
 import { useCodeExecution } from "@/hooks/useCodeExecution"
 import { useCodeBlocks } from "@/hooks/useCodeBlocks"
+import { useDebouncedPreview } from "@/hooks/useDebouncedPreview"
 
 const isBrowser = typeof window !== "undefined"
 
 export interface MarkdownPreviewProps {
   source: string
   className?: string
+  /** Debounce delay in milliseconds (default: 200ms) */
+  debounceMs?: number
+  /** Enable immediate local echo for better perceived performance */
+  enableLocalEcho?: boolean
 }
 
-export function MarkdownPreview({ source, className }: MarkdownPreviewProps) {
+export function MarkdownPreview({
+  source,
+  className,
+  debounceMs = 200,
+  enableLocalEcho = true,
+}: MarkdownPreviewProps) {
   const [html, setHtml] = useState("")
   const previewRef = useRef<HTMLDivElement>(null)
   const { theme, resolvedTheme } = useTheme()
+
+  // Intelligent debouncing with local echo
+  const { debouncedValue, isDebouncing, localEchoValue } = useDebouncedPreview(
+    source,
+    { debounceMs, enableLocalEcho }
+  )
 
   // Use extracted hooks for code execution and processing
   const { executeJavaScript } = useCodeExecution()
@@ -38,7 +54,7 @@ export function MarkdownPreview({ source, className }: MarkdownPreviewProps) {
     const parseMarkdown = async () => {
       try {
         // Replace emoji shortcodes with actual emoji characters
-        const processedSource = replaceEmojis(source)
+        const processedSource = replaceEmojis(debouncedValue)
 
         // Process markdown content with math support
         const result = await unified()
@@ -76,7 +92,7 @@ export function MarkdownPreview({ source, className }: MarkdownPreviewProps) {
     }
 
     parseMarkdown()
-  }, [source])
+  }, [debouncedValue])
 
   // Process code blocks after the HTML has been rendered
   useEffect(() => {
