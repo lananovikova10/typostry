@@ -563,7 +563,7 @@ export const MarkdownInput = forwardRef<
 
       {/* Loading indicator for grammar checking */}
       {isGrammarCheckLoading && (
-        <div className="absolute bottom-2 right-2 flex items-center text-xs text-muted-foreground">
+        <div className="absolute -bottom-6 right-2 flex items-center text-xs text-muted-foreground">
           <svg
             className="mr-1 h-3 w-3 animate-spin"
             xmlns="http://www.w3.org/2000/svg"
