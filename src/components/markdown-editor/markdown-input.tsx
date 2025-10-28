@@ -70,6 +70,8 @@ export const MarkdownInput = forwardRef<
   } | null>(null)
   // Add a state to track scroll position for re-rendering
   const [scrollPosition, setScrollPosition] = useState({ top: 0, left: 0 })
+  // Add state for drag-and-drop visual feedback
+  const [isDragOver, setIsDragOver] = useState(false)
 
   // Store the last processed text to avoid unnecessary processing
   const lastProcessedText = useRef<string>("")
@@ -344,6 +346,132 @@ export const MarkdownInput = forwardRef<
     }, 0)
   }
 
+  // Handle drag-and-drop events for local images
+  const handleDragEnter = (e: React.DragEvent) => {
+    e.preventDefault()
+    e.stopPropagation()
+    console.log("Drag enter", e.dataTransfer.types)
+    if (e.dataTransfer.types.includes("Files")) {
+      setIsDragOver(true)
+    }
+  }
+
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault()
+    e.stopPropagation()
+    console.log("Drag over")
+    if (e.dataTransfer.types.includes("Files")) {
+      e.dataTransfer.dropEffect = "copy"
+      setIsDragOver(true)
+    }
+  }
+
+  const handleDragLeave = (e: React.DragEvent) => {
+    e.preventDefault()
+    e.stopPropagation()
+    // Only set isDragOver to false if we're leaving the container
+    const rect = editorRef.current?.getBoundingClientRect()
+    if (rect) {
+      const isOutside =
+        e.clientX < rect.left ||
+        e.clientX >= rect.right ||
+        e.clientY < rect.top ||
+        e.clientY >= rect.bottom
+      if (isOutside) {
+        setIsDragOver(false)
+      }
+    }
+  }
+
+  const handleDrop = async (e: React.DragEvent) => {
+    e.preventDefault()
+    e.stopPropagation()
+    setIsDragOver(false)
+
+    console.log("Drop event", e.dataTransfer.files)
+    const files = Array.from(e.dataTransfer.files)
+    console.log("Files:", files)
+    const imageFiles = files.filter((file) =>
+      file.type.startsWith("image/")
+    )
+    console.log("Image files:", imageFiles)
+
+    if (imageFiles.length === 0) {
+      console.log("No image files found")
+      return
+    }
+
+    const textarea = textareaRef.current
+    if (!textarea) return
+
+    // Save current scroll position
+    const currentScrollTop = textarea.scrollTop
+    const currentScrollLeft = textarea.scrollLeft
+
+    // Get cursor position at drop location or use current cursor position
+    const cursorPosition = textarea.selectionStart
+
+    // Process each image file
+    const imageMarkdowns: string[] = []
+    for (const file of imageFiles) {
+      try {
+        // Upload image to server
+        const imageUrl = await uploadImage(file)
+
+        // Create markdown image syntax with the server URL
+        const altText = file.name.replace(/\.[^/.]+$/, "") // Remove extension
+        const markdown = `![${altText}](${imageUrl})`
+        imageMarkdowns.push(markdown)
+      } catch (error) {
+        console.error("Error uploading image:", error)
+      }
+    }
+
+    if (imageMarkdowns.length > 0) {
+      // Join multiple images with newlines
+      const imagesText = imageMarkdowns.join("\n\n")
+
+      // Insert at cursor position
+      const newValue =
+        value.substring(0, cursorPosition) +
+        "\n" +
+        imagesText +
+        "\n" +
+        value.substring(cursorPosition)
+
+      onChange(newValue)
+
+      // Restore focus and cursor position
+      setTimeout(() => {
+        if (textarea) {
+          textarea.focus()
+          const newPosition = cursorPosition + imagesText.length + 2
+          textarea.setSelectionRange(newPosition, newPosition)
+          textarea.scrollTop = currentScrollTop
+          textarea.scrollLeft = currentScrollLeft
+        }
+      }, 0)
+    }
+  }
+
+  // Helper function to upload image to server
+  const uploadImage = async (file: File): Promise<string> => {
+    const formData = new FormData()
+    formData.append("file", file)
+
+    const response = await fetch("/api/upload", {
+      method: "POST",
+      body: formData,
+    })
+
+    if (!response.ok) {
+      throw new Error("Failed to upload image")
+    }
+
+    const data = await response.json()
+    return data.url
+  }
+
   // Render grammar errors
   const renderGrammarErrors = () => {
     if (!grammarCheckEnabled || !grammarErrors.length) {
@@ -399,13 +527,29 @@ export const MarkdownInput = forwardRef<
   }
 
   return (
-    <div className={cn("relative w-full", className)} ref={editorRef}>
+    <div
+      className={cn("relative w-full", className)}
+      ref={editorRef}
+      onDragEnter={handleDragEnter}
+      onDragOver={handleDragOver}
+      onDragLeave={handleDragLeave}
+      onDrop={handleDrop}
+    >
       <textarea
         ref={textareaRef}
         value={value}
         onChange={(e) => onChange(e.target.value)}
-        className="h-auto w-full resize-none rounded-md border border-solid border-[hsl(var(--markdown-input-border))] bg-gradient-to-br from-[hsl(var(--editor-gradient-start))] to-[hsl(var(--editor-gradient-end))] px-6 py-4 font-mono text-sm leading-relaxed tracking-wide text-[hsl(var(--markdown-input-text))] shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-opacity-50"
-        placeholder="Write your markdown here..."
+        onDragEnter={handleDragEnter}
+        onDragOver={handleDragOver}
+        onDragLeave={handleDragLeave}
+        onDrop={handleDrop}
+        className={cn(
+          "h-auto w-full resize-none rounded-md border border-solid bg-gradient-to-br px-6 py-4 font-mono text-sm leading-relaxed tracking-wide shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-opacity-50 transition-all",
+          isDragOver
+            ? "border-2 border-dashed border-primary bg-primary/5 ring-2 ring-primary ring-opacity-50"
+            : "border-[hsl(var(--markdown-input-border))] from-[hsl(var(--editor-gradient-start))] to-[hsl(var(--editor-gradient-end))] text-[hsl(var(--markdown-input-text))]"
+        )}
+        placeholder="Write your markdown here... (or drag & drop images)"
         aria-label="Markdown editor"
         spellCheck="false"
         data-testid="markdown-input"
