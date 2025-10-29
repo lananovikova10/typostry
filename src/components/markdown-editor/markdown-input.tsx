@@ -23,6 +23,7 @@ import {
 import { cn } from "@/lib/utils"
 
 import { GrammarContextMenu, GrammarTooltip } from "./grammar-tooltip"
+import { MarkdownAutocomplete, AutocompleteItem } from "./markdown-autocomplete"
 
 export interface MarkdownInputProps {
   value: string
@@ -72,6 +73,8 @@ export const MarkdownInput = forwardRef<
   const [scrollPosition, setScrollPosition] = useState({ top: 0, left: 0 })
   // Add state for drag-and-drop visual feedback
   const [isDragOver, setIsDragOver] = useState(false)
+  // Add state for cursor position to track autocomplete
+  const [cursorPosition, setCursorPosition] = useState(0)
 
   // Store the last processed text to avoid unnecessary processing
   const lastProcessedText = useRef<string>("")
@@ -130,18 +133,31 @@ export const MarkdownInput = forwardRef<
     }
   }
 
-  // Sync overlay scroll with textarea
+  // Sync overlay scroll with textarea and track cursor position
   useEffect(() => {
     const textarea = textareaRef.current
     if (!textarea) return
+
     const handleScroll = () => {
       setScrollPosition({
         top: textarea.scrollTop,
         left: textarea.scrollLeft,
       })
     }
+
+    const handleSelectionChange = () => {
+      setCursorPosition(textarea.selectionStart)
+    }
+
     textarea.addEventListener("scroll", handleScroll)
-    return () => textarea.removeEventListener("scroll", handleScroll)
+    textarea.addEventListener("keyup", handleSelectionChange)
+    textarea.addEventListener("click", handleSelectionChange)
+
+    return () => {
+      textarea.removeEventListener("scroll", handleScroll)
+      textarea.removeEventListener("keyup", handleSelectionChange)
+      textarea.removeEventListener("click", handleSelectionChange)
+    }
   }, [])
 
   // Memoize the stripped text and mapping for performance
@@ -340,6 +356,65 @@ export const MarkdownInput = forwardRef<
     // Restore scroll position after state update
     setTimeout(() => {
       if (textareaRef.current) {
+        textareaRef.current.scrollTop = currentScrollTop
+        textareaRef.current.scrollLeft = currentScrollLeft
+      }
+    }, 0)
+  }
+
+  // Handle autocomplete selection
+  const handleAutocompleteSelect = (
+    item: AutocompleteItem,
+    replaceStart: number,
+    replaceEnd: number
+  ) => {
+    if (!textareaRef.current) return
+
+    // Save current scroll position
+    const currentScrollTop = textareaRef.current.scrollTop
+    const currentScrollLeft = textareaRef.current.scrollLeft
+
+    // Replace text at the specified range
+    let insertValue = item.value
+    let newCursorPosition = replaceStart + insertValue.length
+
+    // Special handling for certain syntax
+    if (insertValue === "****") {
+      // Bold - place cursor between asterisks
+      newCursorPosition = replaceStart + 2
+    } else if (insertValue === "**") {
+      // Italic - place cursor between asterisks
+      newCursorPosition = replaceStart + 1
+    } else if (insertValue === "~~~~") {
+      // Strikethrough - place cursor between tildes
+      newCursorPosition = replaceStart + 2
+    } else if (insertValue === "``") {
+      // Code - place cursor between backticks
+      newCursorPosition = replaceStart + 1
+    } else if (insertValue === "[]()") {
+      // Link - place cursor in brackets
+      newCursorPosition = replaceStart + 1
+    } else if (insertValue === "![]()") {
+      // Image - place cursor in brackets
+      newCursorPosition = replaceStart + 2
+    } else if (insertValue.includes("\n")) {
+      // Multi-line content like code blocks - place cursor appropriately
+      const firstNewlineIndex = insertValue.indexOf("\n")
+      newCursorPosition = replaceStart + firstNewlineIndex + 1
+    }
+
+    const newValue =
+      value.substring(0, replaceStart) +
+      insertValue +
+      value.substring(replaceEnd)
+
+    onChange(newValue)
+
+    // Restore focus and cursor position
+    setTimeout(() => {
+      if (textareaRef.current) {
+        textareaRef.current.focus()
+        textareaRef.current.setSelectionRange(newCursorPosition, newCursorPosition)
         textareaRef.current.scrollTop = currentScrollTop
         textareaRef.current.scrollLeft = currentScrollLeft
       }
@@ -731,6 +806,14 @@ export const MarkdownInput = forwardRef<
           Checking grammar...
         </div>
       )}
+
+      {/* Autocomplete dropdown */}
+      <MarkdownAutocomplete
+        textarea={textareaRef.current}
+        value={value}
+        cursorPosition={cursorPosition}
+        onSelect={handleAutocompleteSelect}
+      />
     </div>
   )
 })
