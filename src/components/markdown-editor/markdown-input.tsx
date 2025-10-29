@@ -21,6 +21,7 @@ import {
   stripMarkdownForGrammarCheck,
 } from "@/lib/grammar-check"
 import { cn } from "@/lib/utils"
+import { useMultiCursor } from "@/hooks/use-multi-cursor"
 
 import { GrammarContextMenu, GrammarTooltip } from "./grammar-tooltip"
 import { MarkdownAutocomplete, AutocompleteItem } from "./markdown-autocomplete"
@@ -78,6 +79,23 @@ export const MarkdownInput = forwardRef<
 
   // Store the last processed text to avoid unnecessary processing
   const lastProcessedText = useRef<string>("")
+
+  // Multi-cursor support
+  const {
+    isMultiCursorActive,
+    cursorPositions,
+    handleClick: handleMultiCursorClick,
+    handleSelectNext,
+    handleInput: handleMultiCursorInput,
+    handleBackspaceKey: handleMultiCursorBackspace,
+    handleEscape: handleMultiCursorEscape,
+  } = useMultiCursor({
+    textareaRef,
+    mirrorDivRef,
+    value,
+    onChange,
+    enabled: true,
+  })
 
   useImperativeHandle(ref, () => ({
     getTextarea: () => textareaRef.current,
@@ -153,12 +171,85 @@ export const MarkdownInput = forwardRef<
     textarea.addEventListener("keyup", handleSelectionChange)
     textarea.addEventListener("click", handleSelectionChange)
 
+    // Add multi-cursor click handler
+    const handleClickEvent = (e: MouseEvent) => {
+      handleMultiCursorClick(e)
+    }
+    textarea.addEventListener("click", handleClickEvent as EventListener)
+
     return () => {
       textarea.removeEventListener("scroll", handleScroll)
       textarea.removeEventListener("keyup", handleSelectionChange)
       textarea.removeEventListener("click", handleSelectionChange)
+      textarea.removeEventListener("click", handleClickEvent as EventListener)
     }
-  }, [])
+  }, [handleMultiCursorClick])
+
+  // Handle keyboard shortcuts for multi-cursor
+  useEffect(() => {
+    const textarea = textareaRef.current
+    if (!textarea) return
+
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // Ctrl/Cmd+D: Select next occurrence
+      if ((e.ctrlKey || e.metaKey) && e.key === "d") {
+        e.preventDefault()
+        handleSelectNext()
+        return
+      }
+
+      // Escape: Exit multi-cursor mode
+      if (e.key === "Escape") {
+        if (handleMultiCursorEscape()) {
+          e.preventDefault()
+          return
+        }
+      }
+
+      // Handle typing in multi-cursor mode
+      if (isMultiCursorActive) {
+        // Backspace
+        if (e.key === "Backspace") {
+          e.preventDefault()
+          handleMultiCursorBackspace()
+          return
+        }
+
+        // Regular character input
+        if (e.key.length === 1 && !e.ctrlKey && !e.metaKey && !e.altKey) {
+          e.preventDefault()
+          handleMultiCursorInput(e.key)
+          return
+        }
+
+        // Enter key
+        if (e.key === "Enter") {
+          e.preventDefault()
+          handleMultiCursorInput("\n")
+          return
+        }
+
+        // Tab key
+        if (e.key === "Tab") {
+          e.preventDefault()
+          handleMultiCursorInput("  ") // Insert 2 spaces
+          return
+        }
+      }
+    }
+
+    textarea.addEventListener("keydown", handleKeyDown)
+
+    return () => {
+      textarea.removeEventListener("keydown", handleKeyDown)
+    }
+  }, [
+    isMultiCursorActive,
+    handleSelectNext,
+    handleMultiCursorInput,
+    handleMultiCursorBackspace,
+    handleMultiCursorEscape,
+  ])
 
   // Memoize the stripped text and mapping for performance
   const { stripped, mapping } = useMemo(() => {
@@ -547,6 +638,29 @@ export const MarkdownInput = forwardRef<
     return data.url
   }
 
+  // Render multi-cursors
+  const renderMultiCursors = () => {
+    if (!isMultiCursorActive || cursorPositions.length === 0) {
+      return null
+    }
+
+    console.log('Rendering cursors at positions:', cursorPositions)
+
+    return cursorPositions.map((pos, index) => (
+      <div
+        key={`cursor-${index}`}
+        className="absolute w-0.5 bg-blue-500 animate-pulse pointer-events-none"
+        style={{
+          left: pos.left,
+          top: pos.top,
+          height: pos.height,
+          zIndex: 20,
+        }}
+        data-testid={`multi-cursor-${index}`}
+      />
+    ))
+  }
+
   // Render grammar errors
   const renderGrammarErrors = () => {
     if (!grammarCheckEnabled || !grammarErrors.length) {
@@ -680,6 +794,7 @@ export const MarkdownInput = forwardRef<
         }}
       >
         {renderGrammarErrors()}
+        {renderMultiCursors()}
       </div>
 
       {/* Tooltip for hovered grammar error */}
