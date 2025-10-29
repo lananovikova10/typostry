@@ -50,6 +50,7 @@
     "shiki": "^3.4.2",
     "tailwind-merge": "^2.3.0",
     "tailwindcss-animate": "^1.0.7",
+    "unified": "^11.0.5",
     "zod": "^3.23.4"
   },
   "devDependencies": {
