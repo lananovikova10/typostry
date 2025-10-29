@@ -1,7 +1,8 @@
 "use client"
 
 import React, { useEffect, useRef, useState } from "react"
-import { VariableSizeList as List } from "react-window"
+// @ts-ignore - react-window types are incomplete
+import { VariableSizeList } from "react-window"
 import { useTheme } from "next-themes"
 
 import { cn } from "@/lib/utils"
@@ -26,7 +27,7 @@ export function VirtualizedPreview({
   htmlContent,
   className,
 }: VirtualizedPreviewProps) {
-  const listRef = useRef<List>(null)
+  const listRef = useRef<any>(null)
   const containerRef = useRef<HTMLDivElement>(null)
   const [blocks, setBlocks] = useState<ContentBlock[]>([])
   const [containerHeight, setContainerHeight] = useState(600)
@@ -139,7 +140,7 @@ export function VirtualizedPreview({
       )}
       data-testid="virtualized-markdown-preview"
     >
-      <List
+      <VariableSizeList
         ref={listRef}
         height={containerHeight}
         itemCount={blocks.length}
@@ -148,7 +149,7 @@ export function VirtualizedPreview({
         className="scrollbar-thin"
       >
         {Row}
-      </List>
+      </VariableSizeList>
     </div>
   )
 }
