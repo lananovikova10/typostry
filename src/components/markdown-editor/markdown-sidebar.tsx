@@ -16,6 +16,7 @@ export interface MarkdownSidebarProps {
   onHeadingClick: (id: string) => void
   isCollapsed: boolean
   className?: string
+  activeHeadingId?: string
 }
 
 export function MarkdownSidebar({
@@ -23,6 +24,7 @@ export function MarkdownSidebar({
   onHeadingClick,
   isCollapsed,
   className,
+  activeHeadingId,
 }: MarkdownSidebarProps) {
   const [headings, setHeadings] = useState<HeadingItem[]>([])
   const [expandedItems, setExpandedItems] = useState<Record<string, boolean>>(
@@ -106,12 +108,15 @@ export function MarkdownSidebar({
       const isExpanded = expandedItems[i] === true
       const hasChildHeadings = hasChildren(i)
 
+      const isActive = activeHeadingId === heading.id
+
       const headingItem = (
         <div key={`${heading.id}-${i}`} className="mb-1">
           <div
             className={cn(
               "flex cursor-pointer items-center rounded-md px-2 py-1 text-sm hover:bg-secondary/50",
-              "transition-colors duration-200"
+              "transition-colors duration-200",
+              isActive && "bg-primary/10 font-medium text-primary"
             )}
             onClick={() => onHeadingClick(heading.id)}
           >

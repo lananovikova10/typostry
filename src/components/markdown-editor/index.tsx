@@ -52,6 +52,9 @@ export function MarkdownEditor({
   const [isDistractionFree, setIsDistractionFree] = useState(false)
   const [isFullScreen, setIsFullScreen] = useState(false)
 
+  // Active heading tracking for outline
+  const [activeHeadingId, setActiveHeadingId] = useState<string>("")
+
   // Undo history management
   const [undoStack, setUndoStack] = useState<string[]>([initialValue])
   const [redoStack, setRedoStack] = useState<string[]>([])
@@ -155,6 +158,45 @@ export function MarkdownEditor({
       document.removeEventListener('fullscreenchange', handleFullscreenChange)
     }
   }, [isFullScreen])
+
+  // Track active heading for outline position indicator
+  useEffect(() => {
+    if (!isPreviewMode) return
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        // Find the heading that's most visible at the top of the viewport
+        const visibleHeadings = entries.filter((entry) => entry.isIntersecting)
+
+        if (visibleHeadings.length > 0) {
+          // Sort by position in viewport (topmost first)
+          visibleHeadings.sort((a, b) => {
+            return a.boundingClientRect.top - b.boundingClientRect.top
+          })
+
+          const topHeading = visibleHeadings[0]
+          if (topHeading.target.id) {
+            setActiveHeadingId(topHeading.target.id)
+          }
+        }
+      },
+      {
+        rootMargin: "-10% 0px -80% 0px", // Trigger when heading is near the top
+        threshold: [0, 0.25, 0.5, 0.75, 1],
+      }
+    )
+
+    // Observe all headings in the preview
+    const headings = document.querySelectorAll(
+      '[data-testid="markdown-preview"] h1[id], [data-testid="markdown-preview"] h2[id], [data-testid="markdown-preview"] h3[id], [data-testid="markdown-preview"] h4[id], [data-testid="markdown-preview"] h5[id], [data-testid="markdown-preview"] h6[id]'
+    )
+
+    headings.forEach((heading) => observer.observe(heading))
+
+    return () => {
+      headings.forEach((heading) => observer.unobserve(heading))
+    }
+  }, [isPreviewMode, markdown])
 
   // Keyboard shortcuts handler
   useEffect(() => {
@@ -758,6 +800,7 @@ export function MarkdownEditor({
             content={markdown}
             onHeadingClick={handleHeadingClick}
             isCollapsed={isSidebarCollapsed}
+            activeHeadingId={activeHeadingId}
             className="hidden sm:block" // Hide on mobile
           />
         )}
