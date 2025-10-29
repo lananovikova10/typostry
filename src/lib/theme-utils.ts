@@ -16,7 +16,7 @@ export const THEME_COOKIE_NAME = "typostry-theme"
  */
 export async function getServerSideTheme(): Promise<Theme> {
   try {
-    const cookieStore = cookies()
+    const cookieStore = await cookies()
     const themeCookie = cookieStore.get(THEME_COOKIE_NAME)
 
     if (themeCookie?.value && isValidTheme(themeCookie.value)) {
