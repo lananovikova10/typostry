@@ -30,6 +30,7 @@ import {
   Smile,
   Target,
   Zap,
+  ListTodo,
 } from "lucide-react"
 
 import { cn } from "@/lib/utils"
@@ -74,6 +75,8 @@ export interface MarkdownToolbarProps {
   isFullScreen?: boolean
   onToggleDistractionFree?: () => void
   onToggleFullScreen?: () => void
+  // Todo popup props
+  onToggleTodo?: () => void
 }
 
 export function MarkdownToolbar({
@@ -93,6 +96,8 @@ export function MarkdownToolbar({
   isFullScreen = false,
   onToggleDistractionFree,
   onToggleFullScreen,
+  // Todo popup props
+  onToggleTodo,
 }: MarkdownToolbarProps) {
   const [isEmojiPickerOpen, setIsEmojiPickerOpen] = React.useState(false)
   const [isTemplateSelectorOpen, setIsTemplateSelectorOpen] =
@@ -555,6 +560,25 @@ export function MarkdownToolbar({
                   <p>{isPreviewMode ? "Edit Mode" : "Preview Mode"}</p>
                 </TooltipContent>
               </Tooltip>
+              {onToggleTodo && (
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={onToggleTodo}
+                      aria-label="Toggle todo list"
+                      className="h-8 w-8 flex-shrink-0 text-[hsl(var(--markdown-toolbar-icon))] hover:bg-secondary/70"
+                      data-testid="toggle-todo"
+                    >
+                      <ListTodo className="h-4 w-4" />
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p>Todo List</p>
+                  </TooltipContent>
+                </Tooltip>
+              )}
             </TooltipProvider>
             <ModeToggle />
           </div>

@@ -17,6 +17,7 @@ import { MarkdownSidebar } from "./markdown-sidebar"
 import { MarkdownToolbar } from "./markdown-toolbar"
 import { OutlineTrigger } from "./outline-trigger"
 import { ReadingStats } from "./reading-stats"
+import { DraggableTodoPopup } from "@/components/ui/draggable-todo-popup"
 
 export interface MarkdownEditorProps {
   initialValue?: string
@@ -54,6 +55,9 @@ export function MarkdownEditor({
 
   // Active heading tracking for outline
   const [activeHeadingId, setActiveHeadingId] = useState<string>("")
+
+  // Todo popup state
+  const [isTodoOpen, setIsTodoOpen] = useState(false)
 
   // Undo history management
   const [undoStack, setUndoStack] = useState<string[]>([initialValue])
@@ -791,6 +795,8 @@ export function MarkdownEditor({
         isFullScreen={isFullScreen}
         onToggleDistractionFree={() => setIsDistractionFree(!isDistractionFree)}
         onToggleFullScreen={() => setIsFullScreen(!isFullScreen)}
+        // Todo popup props
+        onToggleTodo={() => setIsTodoOpen(!isTodoOpen)}
       />
 
       <div className="relative flex flex-1 flex-col sm:flex-row">
@@ -858,6 +864,9 @@ export function MarkdownEditor({
         data-testid="file-input"
       />
     </div>
+
+      {/* Todo Popup */}
+      <DraggableTodoPopup isOpen={isTodoOpen} onClose={() => setIsTodoOpen(false)} />
     </div>
   )
 }
