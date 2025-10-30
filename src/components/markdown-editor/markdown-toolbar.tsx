@@ -31,11 +31,14 @@ import {
   Target,
   Zap,
   ListTodo,
+  Sparkles,
 } from "lucide-react"
 
 import { cn } from "@/lib/utils"
 import { getRandomPhotoAsMarkdown } from "@/lib/unsplash"
+import { summarizeText } from "@/lib/huggingface"
 import { Button } from "@/components/ui/button"
+import { SummaryPopup } from "@/components/ui/summary-popup"
 import {
   EmojiPicker,
   EmojiPickerContent,
@@ -102,6 +105,55 @@ export function MarkdownToolbar({
   const [isEmojiPickerOpen, setIsEmojiPickerOpen] = React.useState(false)
   const [isTemplateSelectorOpen, setIsTemplateSelectorOpen] =
     React.useState(false)
+  const [isSummarizing, setIsSummarizing] = React.useState(false)
+  const [summaryText, setSummaryText] = React.useState("")
+  const [isSummaryPopupOpen, setIsSummaryPopupOpen] = React.useState(false)
+
+  // Handle summarization of selected text
+  const handleSummarize = async () => {
+    const textarea = document.querySelector(
+      'textarea[data-testid="markdown-input"]'
+    ) as HTMLTextAreaElement
+
+    if (!textarea) {
+      alert("Unable to access editor")
+      return
+    }
+
+    const selectedText = textarea.value.substring(
+      textarea.selectionStart,
+      textarea.selectionEnd
+    )
+
+    if (!selectedText || selectedText.trim().length === 0) {
+      alert("Please select text to summarize")
+      return
+    }
+
+    setIsSummarizing(true)
+    try {
+      const summary = await summarizeText(selectedText)
+      setSummaryText(summary)
+      setIsSummaryPopupOpen(true)
+    } catch (error) {
+      console.error("Summarization error:", error)
+      alert(
+        error instanceof Error
+          ? `Failed to summarize: ${error.message}`
+          : "Failed to summarize text. Please try again."
+      )
+    } finally {
+      setIsSummarizing(false)
+    }
+  }
+
+  // Handle inserting summary at caret position
+  const handleInsertSummary = () => {
+    if (!summaryText) return
+
+    const summaryBlock = `\n\n**Summary:**\n${summaryText}\n\n`
+    onInsertAction(summaryBlock)
+  }
 
   // Handle emoji selection from the emoji picker
   const handleEmojiSelect = (emoji: any) => {
@@ -325,6 +377,13 @@ export function MarkdownToolbar({
         action: () => setIsTemplateSelectorOpen(true),
         ariaLabel: "Insert template",
       },
+      {
+        name: "Summarize",
+        icon: <Sparkles className="h-4 w-4" />,
+        action: handleSummarize,
+        ariaLabel: "Summarize selected text",
+        isAsync: true,
+      },
     ],
   ]
 
@@ -484,11 +543,15 @@ export function MarkdownToolbar({
                                 size="icon"
                                 onClick={item.action}
                                 aria-label={item.ariaLabel}
-                                disabled={isPreviewMode}
+                                disabled={isPreviewMode || (item.name === "Summarize" && isSummarizing)}
                                 className="h-8 w-8 flex-shrink-0 text-[hsl(var(--markdown-toolbar-icon))] hover:bg-secondary/70 hover:text-[hsl(var(--markdown-toolbar-icon-hover))]"
                                 data-testid={`toolbar-${item.name.toLowerCase().replace(/\s+/g, "-")}`}
                               >
-                                {item.icon}
+                                {item.name === "Summarize" && isSummarizing ? (
+                                  <div className="h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent" />
+                                ) : (
+                                  item.icon
+                                )}
                               </Button>
                             </TooltipTrigger>
                             <TooltipContent><p>{item.name}</p></TooltipContent>
@@ -617,6 +680,14 @@ export function MarkdownToolbar({
         isOpen={isTemplateSelectorOpen}
         onClose={() => setIsTemplateSelectorOpen(false)}
         onSelectTemplate={onInsertAction}
+      />
+
+      {/* Summary Popup */}
+      <SummaryPopup
+        isOpen={isSummaryPopupOpen}
+        onClose={() => setIsSummaryPopupOpen(false)}
+        summary={summaryText}
+        onInsert={handleInsertSummary}
       />
     </div>
   )
