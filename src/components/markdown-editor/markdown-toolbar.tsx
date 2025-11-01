@@ -36,9 +36,15 @@ import {
 
 import { cn } from "@/lib/utils"
 import { getRandomPhotoAsMarkdown } from "@/lib/unsplash"
-import { summarizeText } from "@/lib/huggingface"
+import { summarizeText, rephraseText } from "@/lib/huggingface"
 import { Button } from "@/components/ui/button"
 import { SummaryPopup } from "@/components/ui/summary-popup"
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
 import {
   EmojiPicker,
   EmojiPickerContent,
@@ -105,19 +111,43 @@ export function MarkdownToolbar({
   const [isEmojiPickerOpen, setIsEmojiPickerOpen] = React.useState(false)
   const [isTemplateSelectorOpen, setIsTemplateSelectorOpen] =
     React.useState(false)
-  const [isSummarizing, setIsSummarizing] = React.useState(false)
-  const [summaryText, setSummaryText] = React.useState("")
-  const [isSummaryPopupOpen, setIsSummaryPopupOpen] = React.useState(false)
+  const [isAIProcessing, setIsAIProcessing] = React.useState(false)
+  const [aiResultText, setAiResultText] = React.useState("")
+  const [aiResultTitle, setAiResultTitle] = React.useState("")
+  const [isAIPopupOpen, setIsAIPopupOpen] = React.useState(false)
+  const [savedSelection, setSavedSelection] = React.useState<string | null>(null)
 
-  // Handle summarization of selected text
-  const handleSummarize = async () => {
+  // Save the current selection when AI dropdown is opened
+  const handleAIDropdownOpen = (open: boolean) => {
+    if (open) {
+      const textarea = document.querySelector(
+        'textarea[data-testid="markdown-input"]'
+      ) as HTMLTextAreaElement
+
+      if (textarea) {
+        const selectedText = textarea.value.substring(
+          textarea.selectionStart,
+          textarea.selectionEnd
+        )
+        setSavedSelection(selectedText)
+      }
+    }
+  }
+
+  // Get selected text from textarea or use saved selection
+  const getSelectedText = () => {
+    // If we have a saved selection, use it
+    if (savedSelection && savedSelection.trim().length > 0) {
+      return savedSelection
+    }
+
     const textarea = document.querySelector(
       'textarea[data-testid="markdown-input"]'
     ) as HTMLTextAreaElement
 
     if (!textarea) {
       alert("Unable to access editor")
-      return
+      return null
     }
 
     const selectedText = textarea.value.substring(
@@ -126,15 +156,24 @@ export function MarkdownToolbar({
     )
 
     if (!selectedText || selectedText.trim().length === 0) {
-      alert("Please select text to summarize")
-      return
+      alert("Please select text first")
+      return null
     }
 
-    setIsSummarizing(true)
+    return selectedText
+  }
+
+  // Handle summarization of selected text
+  const handleSummarize = async () => {
+    const selectedText = getSelectedText()
+    if (!selectedText) return
+
+    setIsAIProcessing(true)
     try {
       const summary = await summarizeText(selectedText)
-      setSummaryText(summary)
-      setIsSummaryPopupOpen(true)
+      setAiResultText(summary)
+      setAiResultTitle("Summary")
+      setIsAIPopupOpen(true)
     } catch (error) {
       console.error("Summarization error:", error)
       alert(
@@ -143,16 +182,48 @@ export function MarkdownToolbar({
           : "Failed to summarize text. Please try again."
       )
     } finally {
-      setIsSummarizing(false)
+      setIsAIProcessing(false)
+      setSavedSelection(null) // Clear saved selection after processing
     }
   }
 
-  // Handle inserting summary at caret position
-  const handleInsertSummary = () => {
-    if (!summaryText) return
+  // Handle rephrasing of selected text
+  const handleRephrase = async () => {
+    const selectedText = getSelectedText()
+    if (!selectedText) return
 
-    const summaryBlock = `\n\n**Summary:**\n${summaryText}\n\n`
-    onInsertAction(summaryBlock)
+    setIsAIProcessing(true)
+    try {
+      const rephrased = await rephraseText(selectedText)
+      setAiResultText(rephrased)
+      setAiResultTitle("Rephrased")
+      setIsAIPopupOpen(true)
+    } catch (error) {
+      console.error("Rephrasing error:", error)
+      const errorMessage = error instanceof Error ? error.message : "Unknown error"
+
+      // Show user-friendly message
+      if (errorMessage.includes("Model is loading")) {
+        alert(
+          `The paraphrasing model is currently loading on Hugging Face servers. ${errorMessage}\n\nThis is normal for models that haven't been used recently. Please try again in a moment.`
+        )
+      } else {
+        alert(
+          `Failed to rephrase: ${errorMessage}\n\nThis might be a temporary issue with the Hugging Face API. Please try again.`
+        )
+      }
+    } finally {
+      setIsAIProcessing(false)
+      setSavedSelection(null) // Clear saved selection after processing
+    }
+  }
+
+  // Handle inserting AI result at caret position
+  const handleInsertAIResult = () => {
+    if (!aiResultText) return
+
+    const resultBlock = `\n\n**${aiResultTitle}:**\n${aiResultText}\n\n`
+    onInsertAction(resultBlock)
   }
 
   // Handle emoji selection from the emoji picker
@@ -378,11 +449,10 @@ export function MarkdownToolbar({
         ariaLabel: "Insert template",
       },
       {
-        name: "Summarize",
+        name: "AI Actions",
         icon: <Sparkles className="h-4 w-4" />,
-        action: handleSummarize,
-        ariaLabel: "Summarize selected text",
-        isAsync: true,
+        ariaLabel: "AI actions (Summarize/Rephrase)",
+        isDropdown: true,
       },
     ],
   ]
@@ -417,19 +487,21 @@ export function MarkdownToolbar({
         isFileSystemAPISupported && currentFileName
           ? `Save to ${currentFileName}${!isFileSaved ? " *" : ""}`
           : "Save file",
+      isDropdown: isFileSystemAPISupported && onSaveFileAs, // Show dropdown when Save As is available
+      dropdownOptions: isFileSystemAPISupported && onSaveFileAs ? [
+        {
+          label: "Save",
+          action: onSaveFile,
+          icon: <Save className="h-3 w-3 mr-2" />,
+        },
+        {
+          label: "Save As",
+          action: onSaveFileAs,
+          icon: <SaveAll className="h-3 w-3 mr-2" />,
+        },
+      ] : undefined,
     },
   ]
-
-  // Add Save As option when File System API is supported
-  if (isFileSystemAPISupported && onSaveFileAs) {
-    fileOperations.push({
-      name: "SaveAs",
-      icon: <SaveAll className="h-4 w-4" />,
-      action: onSaveFileAs,
-      ariaLabel: "Save file as",
-      tooltip: "Save As",
-    })
-  }
 
   // Distraction-free mode controls
   const distractionFreeControls = [
@@ -471,23 +543,60 @@ export function MarkdownToolbar({
               <div className="flex items-center gap-1">
                 <TooltipProvider>
                   {fileOperations.map((item) => (
-                    <Tooltip key={item.name}>
-                      <TooltipTrigger asChild>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          onClick={item.action}
-                          aria-label={item.ariaLabel}
-                          className="h-8 w-8 flex-shrink-0 text-[hsl(var(--markdown-toolbar-icon))] hover:bg-secondary/70 hover:text-[hsl(var(--markdown-toolbar-icon-hover))]"
-                          data-testid={`file-${item.name.toLowerCase()}`}
-                        >
-                          {item.icon}
-                        </Button>
-                      </TooltipTrigger>
-                      <TooltipContent>
-                        <p>{item.tooltip}</p>
-                      </TooltipContent>
-                    </Tooltip>
+                    <React.Fragment key={item.name}>
+                      {item.isDropdown ? (
+                        <DropdownMenu>
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <DropdownMenuTrigger asChild>
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  aria-label={item.ariaLabel}
+                                  className="h-8 w-8 flex-shrink-0 text-[hsl(var(--markdown-toolbar-icon))] hover:bg-secondary/70 hover:text-[hsl(var(--markdown-toolbar-icon-hover))]"
+                                  data-testid={`file-${item.name.toLowerCase()}`}
+                                >
+                                  {item.icon}
+                                </Button>
+                              </DropdownMenuTrigger>
+                            </TooltipTrigger>
+                            <TooltipContent>
+                              <p>{item.tooltip}</p>
+                            </TooltipContent>
+                          </Tooltip>
+                          <DropdownMenuContent align="start">
+                            {item.dropdownOptions?.map((option) => (
+                              <DropdownMenuItem
+                                key={option.label}
+                                onClick={option.action}
+                                className="cursor-pointer"
+                              >
+                                {option.icon}
+                                {option.label}
+                              </DropdownMenuItem>
+                            ))}
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                      ) : (
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              onClick={item.action}
+                              aria-label={item.ariaLabel}
+                              className="h-8 w-8 flex-shrink-0 text-[hsl(var(--markdown-toolbar-icon))] hover:bg-secondary/70 hover:text-[hsl(var(--markdown-toolbar-icon-hover))]"
+                              data-testid={`file-${item.name.toLowerCase()}`}
+                            >
+                              {item.icon}
+                            </Button>
+                          </TooltipTrigger>
+                          <TooltipContent>
+                            <p>{item.tooltip}</p>
+                          </TooltipContent>
+                        </Tooltip>
+                      )}
+                    </React.Fragment>
                   ))}
                 </TooltipProvider>
               </div>
@@ -535,6 +644,38 @@ export function MarkdownToolbar({
                           </Popover>
                         ) : item.isCustomComponent && item.name === "Table" ? (
                           <TableGenerator onInsertTable={onInsertAction} isDisabled={isPreviewMode} />
+                        ) : item.isDropdown && item.name === "AI Actions" ? (
+                          <DropdownMenu onOpenChange={handleAIDropdownOpen}>
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <DropdownMenuTrigger asChild>
+                                  <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    aria-label={item.ariaLabel}
+                                    disabled={isPreviewMode || isAIProcessing}
+                                    className="h-8 w-8 flex-shrink-0 text-[hsl(var(--markdown-toolbar-icon))] hover:bg-secondary/70 hover:text-[hsl(var(--markdown-toolbar-icon-hover))]"
+                                    data-testid="toolbar-ai-actions"
+                                  >
+                                    {isAIProcessing ? (
+                                      <div className="h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent" />
+                                    ) : (
+                                      item.icon
+                                    )}
+                                  </Button>
+                                </DropdownMenuTrigger>
+                              </TooltipTrigger>
+                              <TooltipContent><p>AI Actions</p></TooltipContent>
+                            </Tooltip>
+                            <DropdownMenuContent align="start">
+                              <DropdownMenuItem onClick={handleSummarize} disabled={isAIProcessing}>
+                                Summarize
+                              </DropdownMenuItem>
+                              <DropdownMenuItem onClick={handleRephrase} disabled={isAIProcessing}>
+                                Rephrase
+                              </DropdownMenuItem>
+                            </DropdownMenuContent>
+                          </DropdownMenu>
                         ) : (
                           <Tooltip>
                             <TooltipTrigger asChild>
@@ -543,15 +684,11 @@ export function MarkdownToolbar({
                                 size="icon"
                                 onClick={item.action}
                                 aria-label={item.ariaLabel}
-                                disabled={isPreviewMode || (item.name === "Summarize" && isSummarizing)}
+                                disabled={isPreviewMode}
                                 className="h-8 w-8 flex-shrink-0 text-[hsl(var(--markdown-toolbar-icon))] hover:bg-secondary/70 hover:text-[hsl(var(--markdown-toolbar-icon-hover))]"
                                 data-testid={`toolbar-${item.name.toLowerCase().replace(/\s+/g, "-")}`}
                               >
-                                {item.name === "Summarize" && isSummarizing ? (
-                                  <div className="h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent" />
-                                ) : (
-                                  item.icon
-                                )}
+                                {item.icon}
                               </Button>
                             </TooltipTrigger>
                             <TooltipContent><p>{item.name}</p></TooltipContent>
@@ -682,12 +819,13 @@ export function MarkdownToolbar({
         onSelectTemplate={onInsertAction}
       />
 
-      {/* Summary Popup */}
+      {/* AI Result Popup */}
       <SummaryPopup
-        isOpen={isSummaryPopupOpen}
-        onClose={() => setIsSummaryPopupOpen(false)}
-        summary={summaryText}
-        onInsert={handleInsertSummary}
+        isOpen={isAIPopupOpen}
+        onClose={() => setIsAIPopupOpen(false)}
+        summary={aiResultText}
+        onInsert={handleInsertAIResult}
+        title={aiResultTitle}
       />
     </div>
   )

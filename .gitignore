@@ -37,3 +37,5 @@ next-env.d.ts
 
 # uploaded images
 /public/uploads
+
+CLAUDE.md

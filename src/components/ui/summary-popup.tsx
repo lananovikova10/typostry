@@ -17,6 +17,7 @@ export interface SummaryPopupProps {
   onClose: () => void
   summary: string
   onInsert: () => void
+  title?: string
 }
 
 export function SummaryPopup({
@@ -24,6 +25,7 @@ export function SummaryPopup({
   onClose,
   summary,
   onInsert,
+  title = "Summary",
 }: SummaryPopupProps) {
   const [copied, setCopied] = React.useState(false)
 
@@ -46,9 +48,9 @@ export function SummaryPopup({
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="sm:max-w-[600px]">
         <DialogHeader>
-          <DialogTitle>Summary</DialogTitle>
+          <DialogTitle>{title}</DialogTitle>
           <DialogDescription>
-            AI-generated summary of the selected text
+            AI-generated {title.toLowerCase()} of the selected text
           </DialogDescription>
         </DialogHeader>
 
