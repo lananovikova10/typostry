@@ -6,11 +6,14 @@ import {
   Code,
   Eye,
   FileCode,
+  FileDown,
   FileText,
   FolderOpen,
   Focus,
   Heading1,
   Heading2,
+  Heading3,
+  Heading,
   Image as ImageIcon,
   ImagePlus,
   Italic,
@@ -75,6 +78,7 @@ export interface MarkdownToolbarProps {
   onSaveFile: () => void
   onSaveFileAs?: () => void
   onOpenFile: () => void
+  onExportToPDF?: () => void
   isFileSystemAPISupported?: boolean
   currentFileName?: string | null
   isFileSaved?: boolean
@@ -96,6 +100,7 @@ export function MarkdownToolbar({
   onSaveFile,
   onSaveFileAs,
   onOpenFile,
+  onExportToPDF,
   isFileSystemAPISupported = false,
   currentFileName = null,
   isFileSaved = true,
@@ -260,16 +265,15 @@ export function MarkdownToolbar({
     // Headings group
     [
       {
-        name: "Heading 1",
-        icon: <Heading1 className="h-4 w-4" />,
-        action: () => onInsertAction("# Heading 1"),
-        ariaLabel: "Insert heading 1",
-      },
-      {
-        name: "Heading 2",
-        icon: <Heading2 className="h-4 w-4" />,
-        action: () => onInsertAction("## Heading 2"),
-        ariaLabel: "Insert heading 2",
+        name: "Headings",
+        icon: <Heading className="h-4 w-4" />,
+        ariaLabel: "Insert heading",
+        isDropdown: true,
+        headingLevels: [
+          { level: 1, icon: <Heading1 className="h-3 w-3 mr-2" />, label: "Heading 1", markdown: "# Heading 1" },
+          { level: 2, icon: <Heading2 className="h-3 w-3 mr-2" />, label: "Heading 2", markdown: "## Heading 2" },
+          { level: 3, icon: <Heading3 className="h-3 w-3 mr-2" />, label: "Heading 3", markdown: "### Heading 3" },
+        ],
       },
     ],
     // Content elements group
@@ -501,6 +505,13 @@ export function MarkdownToolbar({
         },
       ] : undefined,
     },
+    ...(onExportToPDF ? [{
+      name: "Export to PDF",
+      icon: <FileDown className="h-4 w-4" />,
+      action: onExportToPDF,
+      ariaLabel: "Export document as PDF",
+      tooltip: "Export to PDF",
+    }] : []),
   ]
 
   // Distraction-free mode controls
@@ -644,6 +655,38 @@ export function MarkdownToolbar({
                           </Popover>
                         ) : item.isCustomComponent && item.name === "Table" ? (
                           <TableGenerator onInsertTable={onInsertAction} isDisabled={isPreviewMode} />
+                        ) : item.isDropdown && item.name === "Headings" ? (
+                          <DropdownMenu>
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <DropdownMenuTrigger asChild>
+                                  <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    aria-label={item.ariaLabel}
+                                    disabled={isPreviewMode}
+                                    className="h-8 w-8 flex-shrink-0 text-[hsl(var(--markdown-toolbar-icon))] hover:bg-secondary/70 hover:text-[hsl(var(--markdown-toolbar-icon-hover))]"
+                                    data-testid="toolbar-headings"
+                                  >
+                                    {item.icon}
+                                  </Button>
+                                </DropdownMenuTrigger>
+                              </TooltipTrigger>
+                              <TooltipContent><p>Headings</p></TooltipContent>
+                            </Tooltip>
+                            <DropdownMenuContent align="start">
+                              {item.headingLevels?.map((heading) => (
+                                <DropdownMenuItem
+                                  key={heading.level}
+                                  onClick={() => onInsertAction(heading.markdown)}
+                                  className="cursor-pointer"
+                                >
+                                  {heading.icon}
+                                  {heading.label}
+                                </DropdownMenuItem>
+                              ))}
+                            </DropdownMenuContent>
+                          </DropdownMenu>
                         ) : item.isDropdown && item.name === "AI Actions" ? (
                           <DropdownMenu onOpenChange={handleAIDropdownOpen}>
                             <Tooltip>

@@ -1,11 +1,12 @@
 "use client"
 
-import React, { useEffect, useRef, useState } from "react"
+import React, { useEffect, useRef, useState, useCallback } from "react"
 // @ts-ignore - react-window types are incomplete
 import { VariableSizeList } from "react-window"
 import { useTheme } from "next-themes"
 
 import { cn } from "@/lib/utils"
+import { measurementCache } from "@/lib/measurement-cache"
 
 export interface VirtualizedPreviewProps {
   htmlContent: string
@@ -17,6 +18,7 @@ interface ContentBlock {
   content: string
   height: number
   type: "text" | "code" | "heading" | "list" | "table"
+  signature: string // Block signature for measurement cache
 }
 
 /**
@@ -32,6 +34,8 @@ export function VirtualizedPreview({
   const [blocks, setBlocks] = useState<ContentBlock[]>([])
   const [containerHeight, setContainerHeight] = useState(600)
   const { resolvedTheme } = useTheme()
+  const measuredHeightsRef = useRef<Map<number, number>>(new Map())
+  const resizeObserverRef = useRef<ResizeObserver | null>(null)
 
   // Parse HTML into content blocks for virtual rendering
   useEffect(() => {
@@ -70,15 +74,25 @@ export function VirtualizedPreview({
         estimatedHeight = Math.max(30, lines * 24)
       }
 
+      const content = el.outerHTML
+      const signature = measurementCache.generateSignature(content, type)
+
+      // Check if we have a cached measurement for this signature
+      const cachedHeight = measurementCache.get(signature)
+      const height = cachedHeight !== null ? cachedHeight : estimatedHeight
+
       return {
         id: `block-${index}`,
-        content: el.outerHTML,
-        height: estimatedHeight,
+        content,
+        height,
         type,
+        signature,
       }
     })
 
     setBlocks(parsedBlocks)
+    // Reset measured heights when content changes
+    measuredHeightsRef.current.clear()
   }, [htmlContent])
 
   // Update container height on resize
@@ -94,18 +108,80 @@ export function VirtualizedPreview({
     return () => window.removeEventListener("resize", updateHeight)
   }, [])
 
+  // Callback to update measured height
+  const updateMeasuredHeight = useCallback(
+    (index: number, height: number) => {
+      const block = blocks[index]
+      if (!block) return
+
+      const currentHeight = measuredHeightsRef.current.get(index)
+
+      // Only update if height has changed significantly (> 5px difference)
+      if (currentHeight === undefined || Math.abs(currentHeight - height) > 5) {
+        measuredHeightsRef.current.set(index, height)
+
+        // Update cache with the measured height
+        measurementCache.set(block.signature, height)
+
+        // Update the block height
+        setBlocks((prevBlocks) => {
+          const newBlocks = [...prevBlocks]
+          if (newBlocks[index]) {
+            newBlocks[index] = { ...newBlocks[index], height }
+          }
+          return newBlocks
+        })
+
+        // Reset the item size in the virtual list
+        if (listRef.current) {
+          listRef.current.resetAfterIndex(index)
+        }
+      }
+    },
+    [blocks]
+  )
+
   // Get item size for virtual list
   const getItemSize = (index: number) => {
-    return blocks[index]?.height || 50
+    // Use measured height if available, otherwise use block's height
+    const measuredHeight = measuredHeightsRef.current.get(index)
+    return measuredHeight !== undefined ? measuredHeight : blocks[index]?.height || 50
   }
 
-  // Row renderer for virtual list
+  // Row renderer for virtual list with measurement
   const Row = ({ index, style }: { index: number; style: React.CSSProperties }) => {
     const block = blocks[index]
+    const rowRef = useRef<HTMLDivElement>(null)
+
+    // Measure actual height using ResizeObserver
+    useEffect(() => {
+      if (!rowRef.current || !block) return
+
+      const observer = new ResizeObserver((entries) => {
+        for (const entry of entries) {
+          const height = entry.contentRect.height
+          if (height > 0) {
+            updateMeasuredHeight(index, height)
+          }
+        }
+      })
+
+      observer.observe(rowRef.current)
+
+      // Also measure immediately on mount
+      const currentHeight = rowRef.current.getBoundingClientRect().height
+      if (currentHeight > 0) {
+        updateMeasuredHeight(index, currentHeight)
+      }
+
+      return () => observer.disconnect()
+    }, [index, block])
+
     if (!block) return null
 
     return (
       <div
+        ref={rowRef}
         style={style}
         className={cn("px-6 py-2")}
         dangerouslySetInnerHTML={{ __html: block.content }}

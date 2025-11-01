@@ -8,8 +8,10 @@ import remarkParse from "remark-parse"
 import remarkGfm from "remark-gfm"
 import remarkMath from "remark-math"
 import remarkRehype from "remark-rehype"
+import rehypeSanitize from "rehype-sanitize"
 import rehypeKatex from "rehype-katex"
 import rehypeStringify from "rehype-stringify"
+import { markdownSanitizeSchema } from "../lib/sanitize-schema"
 
 export interface MarkdownWorkerMessage {
   id: string
@@ -42,12 +44,13 @@ self.addEventListener("message", async (event: MessageEvent<MarkdownWorkerMessag
     currentJobId = id
 
     try {
-      // Process markdown content with math support
+      // Process markdown content with math support and sanitization
       const result = await unified()
         .use(remarkParse)
         .use(remarkGfm)
         .use(remarkMath)
         .use(remarkRehype)
+        .use(rehypeSanitize, markdownSanitizeSchema)
         .use(rehypeKatex)
         .use(rehypeStringify)
         .process(content)

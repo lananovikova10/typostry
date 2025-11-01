@@ -7,10 +7,12 @@ import remarkParse from "remark-parse"
 import remarkGfm from "remark-gfm"
 import remarkMath from "remark-math"
 import remarkRehype from "remark-rehype"
+import rehypeSanitize from "rehype-sanitize"
 import rehypeKatex from "rehype-katex"
 import rehypeStringify from "rehype-stringify"
 
 import { replaceEmojis } from "@/lib/emoji"
+import { markdownSanitizeSchema } from "@/lib/sanitize-schema"
 import { cn } from "@/lib/utils"
 import { useCodeExecution } from "@/hooks/useCodeExecution"
 import { useCodeBlocks } from "@/hooks/useCodeBlocks"
@@ -56,12 +58,13 @@ export function MarkdownPreview({
         // Replace emoji shortcodes with actual emoji characters
         const processedSource = replaceEmojis(debouncedValue)
 
-        // Process markdown content with math support
+        // Process markdown content with math support and sanitization
         const result = await unified()
           .use(remarkParse)
           .use(remarkGfm)
           .use(remarkMath)
           .use(remarkRehype)
+          .use(rehypeSanitize, markdownSanitizeSchema)
           .use(rehypeKatex)
           .use(rehypeStringify)
           .process(processedSource)

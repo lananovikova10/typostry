@@ -10,6 +10,17 @@ import {
   hasRecoverableContent,
   getTimeSinceLastSave,
 } from "@/lib/auto-save"
+import { exportToPDF } from "@/lib/pdf-export"
+import { unified } from "unified"
+import remarkParse from "remark-parse"
+import remarkGfm from "remark-gfm"
+import remarkMath from "remark-math"
+import remarkRehype from "remark-rehype"
+import rehypeSanitize from "rehype-sanitize"
+import rehypeKatex from "rehype-katex"
+import rehypeStringify from "rehype-stringify"
+import { replaceEmojis } from "@/lib/emoji"
+import { markdownSanitizeSchema } from "@/lib/sanitize-schema"
 
 import { MarkdownInput, MarkdownInputHandle } from "./markdown-input"
 import { MarkdownPreview } from "./markdown-preview"
@@ -616,6 +627,59 @@ export function MarkdownEditor({
     URL.revokeObjectURL(url)
   }
 
+  // Export to PDF functionality
+  const handleExportToPDF = async () => {
+    try {
+      const renderHTML = async (markdown: string): Promise<string> => {
+        // Replace emoji shortcodes with actual emoji characters
+        const processedSource = replaceEmojis(markdown)
+
+        // Process markdown content with math support and sanitization
+        const result = await unified()
+          .use(remarkParse)
+          .use(remarkGfm)
+          .use(remarkMath)
+          .use(remarkRehype)
+          .use(rehypeSanitize, markdownSanitizeSchema)
+          .use(rehypeKatex)
+          .use(rehypeStringify)
+          .process(processedSource)
+
+        let htmlContent = result.toString()
+
+        // Add IDs to headings for navigation
+        htmlContent = htmlContent.replace(
+          /<(h[1-6])>(.*?)<\/h[1-6]>/g,
+          (match, tag, content) => {
+            const id = content
+              .toLowerCase()
+              .replace(/<\/?[^>]+(>|$)/g, "") // Remove HTML tags inside heading
+              .replace(/[^\w\s-]/g, "") // Remove special chars
+              .replace(/\s+/g, "-") // Replace spaces with hyphens
+              .replace(/--+/g, "-") // Replace multiple hyphens with single hyphen
+
+            return `<${tag} id="${id}">${content}</${tag}>`
+          }
+        )
+
+        return htmlContent
+      }
+
+      const fileName = currentFileName
+        ? currentFileName.replace(/\.md$/, ".pdf")
+        : "document.pdf"
+
+      await exportToPDF({
+        fileName,
+        markdown,
+        renderHTML,
+      })
+    } catch (error) {
+      console.error("Error exporting to PDF:", error)
+      alert("Failed to export PDF. Please try again.")
+    }
+  }
+
   const handleOpenFile = async () => {
     if (isFileSystemAPISupported) {
       try {
@@ -786,6 +850,7 @@ export function MarkdownEditor({
         onSaveFile={handleSaveFile}
         onSaveFileAs={handleSaveFileAs}
         onOpenFile={handleOpenFile}
+        onExportToPDF={handleExportToPDF}
         isFileSystemAPISupported={isFileSystemAPISupported}
         currentFileName={currentFileName}
         isFileSaved={isFileSaved}
