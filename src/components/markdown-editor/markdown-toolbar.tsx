@@ -90,6 +90,13 @@ export interface MarkdownToolbarProps {
   onToggleFullScreen?: () => void
   // Todo popup props
   onToggleTodo?: () => void
+  // Text completion props
+  textCompletionEnabled?: boolean
+  textCompletionLanguage?: 'en' | 'de'
+  textCompletionProfile?: 'Always' | 'Moderate'
+  onToggleTextCompletion?: () => void
+  onChangeTextCompletionLanguage?: (language: 'en' | 'de') => void
+  onChangeTextCompletionProfile?: (profile: 'Always' | 'Moderate') => void
 }
 
 export function MarkdownToolbar({
@@ -112,6 +119,13 @@ export function MarkdownToolbar({
   onToggleFullScreen,
   // Todo popup props
   onToggleTodo,
+  // Text completion props
+  textCompletionEnabled = true,
+  textCompletionLanguage = 'en',
+  textCompletionProfile = 'Moderate',
+  onToggleTextCompletion,
+  onChangeTextCompletionLanguage,
+  onChangeTextCompletionProfile,
 }: MarkdownToolbarProps) {
   const [isEmojiPickerOpen, setIsEmojiPickerOpen] = React.useState(false)
   const [isTemplateSelectorOpen, setIsTemplateSelectorOpen] =
@@ -626,7 +640,7 @@ export function MarkdownToolbar({
                     )}
                     {group.map((item) => (
                       <React.Fragment key={item.name}>
-                        {item.isPopover ? (
+                        {'isPopover' in item && item.isPopover ? (
                           <Popover open={isEmojiPickerOpen} onOpenChange={setIsEmojiPickerOpen}>
                             <Tooltip>
                               <TooltipTrigger asChild>
@@ -653,9 +667,9 @@ export function MarkdownToolbar({
                               </EmojiPicker>
                             </PopoverContent>
                           </Popover>
-                        ) : item.isCustomComponent && item.name === "Table" ? (
+                        ) : 'isCustomComponent' in item && item.isCustomComponent && item.name === "Table" ? (
                           <TableGenerator onInsertTable={onInsertAction} isDisabled={isPreviewMode} />
-                        ) : item.isDropdown && item.name === "Headings" ? (
+                        ) : 'isDropdown' in item && item.isDropdown && item.name === "Headings" ? (
                           <DropdownMenu>
                             <Tooltip>
                               <TooltipTrigger asChild>
@@ -675,7 +689,7 @@ export function MarkdownToolbar({
                               <TooltipContent><p>Headings</p></TooltipContent>
                             </Tooltip>
                             <DropdownMenuContent align="start">
-                              {item.headingLevels?.map((heading) => (
+                              {'headingLevels' in item && item.headingLevels?.map((heading) => (
                                 <DropdownMenuItem
                                   key={heading.level}
                                   onClick={() => onInsertAction(heading.markdown)}
@@ -687,7 +701,7 @@ export function MarkdownToolbar({
                               ))}
                             </DropdownMenuContent>
                           </DropdownMenu>
-                        ) : item.isDropdown && item.name === "AI Actions" ? (
+                        ) : 'isDropdown' in item && item.isDropdown && item.name === "AI Actions" ? (
                           <DropdownMenu onOpenChange={handleAIDropdownOpen}>
                             <Tooltip>
                               <TooltipTrigger asChild>
@@ -719,7 +733,7 @@ export function MarkdownToolbar({
                               </DropdownMenuItem>
                             </DropdownMenuContent>
                           </DropdownMenu>
-                        ) : (
+                        ) : 'action' in item ? (
                           <Tooltip>
                             <TooltipTrigger asChild>
                               <Button
@@ -736,7 +750,7 @@ export function MarkdownToolbar({
                             </TooltipTrigger>
                             <TooltipContent><p>{item.name}</p></TooltipContent>
                           </Tooltip>
-                        )}
+                        ) : null}
                       </React.Fragment>
                     ))}
                   </React.Fragment>
@@ -823,6 +837,37 @@ export function MarkdownToolbar({
                 </Tooltip>
               )}
             </TooltipProvider>
+
+            {/* Text Completion Toggle */}
+            {onToggleTextCompletion && (
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={onToggleTextCompletion}
+                      aria-label="Toggle Text Completion"
+                      className={cn(
+                        "h-8 w-8 flex-shrink-0",
+                        textCompletionEnabled
+                          ? "text-primary bg-primary/10"
+                          : "text-muted-foreground"
+                      )}
+                    >
+                      <Sparkles className="h-4 w-4" />
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p>Text Completion {textCompletionEnabled ? '(ON)' : '(OFF)'}</p>
+                    <p className="text-xs text-muted-foreground">
+                      Language: {textCompletionLanguage.toUpperCase()} | Profile: {textCompletionProfile}
+                    </p>
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
+            )}
+
             <ModeToggle />
           </div>
 

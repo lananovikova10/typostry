@@ -25,6 +25,8 @@ import { useMultiCursor } from "@/hooks/use-multi-cursor"
 
 import { GrammarContextMenu, GrammarTooltip } from "./grammar-tooltip"
 import { MarkdownAutocomplete, AutocompleteItem } from "./markdown-autocomplete"
+import { CompletionSuggestions, InlineCompletion } from "./completion-suggestions"
+import { useTextCompletion } from "@/hooks/use-text-completion"
 
 export interface MarkdownInputProps {
   value: string
@@ -35,6 +37,9 @@ export interface MarkdownInputProps {
   grammarCheckDebounceTime?: number
   showGrammarButton?: boolean
   autoGrammarCheck?: boolean
+  textCompletionEnabled?: boolean
+  textCompletionLanguage?: 'en' | 'de'
+  textCompletionProfile?: 'Always' | 'Moderate'
 }
 
 export interface MarkdownInputHandle {
@@ -56,6 +61,9 @@ export const MarkdownInput = forwardRef<
     grammarCheckDebounceTime = 3000, // Increased to 3 seconds to reduce API call frequency
     showGrammarButton = true,
     autoGrammarCheck = false, // Default to manual checking to avoid rate limiting
+    textCompletionEnabled = true,
+    textCompletionLanguage = 'en',
+    textCompletionProfile = 'Moderate',
   },
   ref
 ) {
@@ -95,6 +103,27 @@ export const MarkdownInput = forwardRef<
     value,
     onChange,
     enabled: true,
+  })
+
+  // Text completion support
+  const {
+    completions,
+    selectedIndex,
+    showSuggestions,
+    suggestionPosition,
+    acceptCompletion,
+    dismissCompletions,
+    selectNextCompletion,
+    selectPrevCompletion,
+    setSelectedIndex,
+  } = useTextCompletion({
+    enabled: textCompletionEnabled,
+    language: textCompletionLanguage,
+    profile: textCompletionProfile,
+    debounceTime: 500,
+    textareaRef,
+    value,
+    onChange,
   })
 
   useImperativeHandle(ref, () => ({
@@ -191,6 +220,44 @@ export const MarkdownInput = forwardRef<
     if (!textarea) return
 
     const handleKeyDown = (e: KeyboardEvent) => {
+      // Handle text completion keyboard shortcuts
+      if (showSuggestions) {
+        // Tab: Accept completion
+        if (e.key === "Tab") {
+          e.preventDefault()
+          acceptCompletion()
+          return
+        }
+
+        // Escape: Dismiss completions
+        if (e.key === "Escape") {
+          e.preventDefault()
+          dismissCompletions()
+          return
+        }
+
+        // Arrow Down: Select next completion
+        if (e.key === "ArrowDown") {
+          e.preventDefault()
+          selectNextCompletion()
+          return
+        }
+
+        // Arrow Up: Select previous completion
+        if (e.key === "ArrowUp") {
+          e.preventDefault()
+          selectPrevCompletion()
+          return
+        }
+
+        // Enter: Accept completion (alternative to Tab)
+        if (e.key === "Enter" && !e.shiftKey) {
+          e.preventDefault()
+          acceptCompletion()
+          return
+        }
+      }
+
       // Ctrl/Cmd+D: Select next occurrence
       if ((e.ctrlKey || e.metaKey) && e.key === "d") {
         e.preventDefault()
@@ -249,6 +316,11 @@ export const MarkdownInput = forwardRef<
     handleMultiCursorInput,
     handleMultiCursorBackspace,
     handleMultiCursorEscape,
+    showSuggestions,
+    acceptCompletion,
+    dismissCompletions,
+    selectNextCompletion,
+    selectPrevCompletion,
   ])
 
   // Memoize the stripped text and mapping for performance
@@ -724,26 +796,40 @@ export const MarkdownInput = forwardRef<
       onDragLeave={handleDragLeave}
       onDrop={handleDrop}
     >
-      <textarea
-        ref={textareaRef}
-        value={value}
-        onChange={(e) => onChange(e.target.value)}
-        onDragEnter={handleDragEnter}
-        onDragOver={handleDragOver}
-        onDragLeave={handleDragLeave}
-        onDrop={handleDrop}
+      {/* Wrapper for textarea + ghost text overlay with gradient background */}
+      <div
         className={cn(
-          "h-auto w-full resize-none rounded-md border border-solid bg-gradient-to-br px-6 py-4 font-mono text-sm leading-relaxed tracking-wide shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-opacity-50 transition-all",
+          "relative rounded-md border border-solid bg-gradient-to-br shadow-md transition-all",
           isDragOver
             ? "border-2 border-dashed border-primary bg-primary/5 ring-2 ring-primary ring-opacity-50"
-            : "border-[hsl(var(--markdown-input-border))] from-[hsl(var(--editor-gradient-start))] to-[hsl(var(--editor-gradient-end))] text-[hsl(var(--markdown-input-text))]"
+            : "border-[hsl(var(--markdown-input-border))] from-[hsl(var(--editor-gradient-start))] to-[hsl(var(--editor-gradient-end))]"
         )}
-        placeholder="Write your markdown here... (or drag & drop images)"
-        aria-label="Markdown editor"
-        spellCheck="false"
-        data-testid="markdown-input"
-        rows={Math.max(3, value.split("\n").length)}
-      />
+      >
+        <textarea
+          ref={textareaRef}
+          value={value}
+          onChange={(e) => onChange(e.target.value)}
+          onDragEnter={handleDragEnter}
+          onDragOver={handleDragOver}
+          onDragLeave={handleDragLeave}
+          onDrop={handleDrop}
+          className="relative z-20 h-auto w-full resize-none bg-transparent px-6 py-4 font-mono text-sm leading-relaxed tracking-wide text-[hsl(var(--markdown-input-text))] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-opacity-50 transition-all"
+          placeholder="Write your markdown here... (or drag & drop images)"
+          aria-label="Markdown editor"
+          spellCheck="false"
+          data-testid="markdown-input"
+          rows={Math.max(3, value.split("\n").length)}
+        />
+
+        {/* Inline ghost text overlay */}
+        {showSuggestions && completions.length > 0 && (
+          <InlineCompletion
+            completion={completions[selectedIndex]}
+            textareaRef={textareaRef}
+            value={value}
+          />
+        )}
+      </div>
 
       {/* Hidden mirror div for highlight calculations */}
       <div
@@ -929,6 +1015,17 @@ export const MarkdownInput = forwardRef<
         cursorPosition={cursorPosition}
         onSelect={handleAutocompleteSelect}
       />
+
+      {/* Text completion suggestions dropdown */}
+      {showSuggestions && completions.length > 0 && (
+        <CompletionSuggestions
+          suggestions={completions}
+          selectedIndex={selectedIndex}
+          position={suggestionPosition}
+          onSelect={acceptCompletion}
+          onDismiss={dismissCompletions}
+        />
+      )}
     </div>
   )
 })

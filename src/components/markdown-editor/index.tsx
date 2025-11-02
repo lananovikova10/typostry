@@ -75,6 +75,11 @@ export function MarkdownEditor({
   const [redoStack, setRedoStack] = useState<string[]>([])
   const [isUndoRedoOperation, setIsUndoRedoOperation] = useState(false)
 
+  // Text completion settings
+  const [textCompletionEnabled, setTextCompletionEnabled] = useState(true)
+  const [textCompletionLanguage, setTextCompletionLanguage] = useState<'en' | 'de'>('en')
+  const [textCompletionProfile, setTextCompletionProfile] = useState<'Always' | 'Moderate'>('Moderate')
+
   const fileInputRef = useRef<HTMLInputElement>(null)
   const markdownInputRef = useRef<MarkdownInputHandle>(null)
   const editorRef = useRef<HTMLDivElement>(null)
@@ -862,6 +867,13 @@ export function MarkdownEditor({
         onToggleFullScreen={() => setIsFullScreen(!isFullScreen)}
         // Todo popup props
         onToggleTodo={() => setIsTodoOpen(!isTodoOpen)}
+        // Text completion props
+        textCompletionEnabled={textCompletionEnabled}
+        textCompletionLanguage={textCompletionLanguage}
+        textCompletionProfile={textCompletionProfile}
+        onToggleTextCompletion={() => setTextCompletionEnabled(!textCompletionEnabled)}
+        onChangeTextCompletionLanguage={setTextCompletionLanguage}
+        onChangeTextCompletionProfile={setTextCompletionProfile}
       />
 
       <div className="relative flex flex-1 flex-col sm:flex-row">
@@ -899,6 +911,9 @@ export function MarkdownEditor({
                 isDistractionFree ? "border-0 p-6 text-lg leading-relaxed focus:ring-0" : "p-2"
               )}
               ref={markdownInputRef}
+              textCompletionEnabled={textCompletionEnabled}
+              textCompletionLanguage={textCompletionLanguage}
+              textCompletionProfile={textCompletionProfile}
             />
           )}
           {isPreviewMode && (
