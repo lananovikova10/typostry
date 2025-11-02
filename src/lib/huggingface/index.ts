@@ -4,8 +4,8 @@
  * Uses sshleifer/distilbart-cnn-12-6 for paraphrasing (using summarization with longer output)
  */
 
-const HF_SUMMARIZATION_URL = "https://api-inference.huggingface.co/models/facebook/bart-large-cnn"
-const HF_PARAPHRASE_URL = "https://api-inference.huggingface.co/models/sshleifer/distilbart-cnn-12-6"
+const HF_SUMMARIZATION_URL = "https://router.huggingface.co/hf-inference/models/facebook/bart-large-cnn"
+const HF_PARAPHRASE_URL = "https://router.huggingface.co/hf-inference/models/sshleifer/distilbart-cnn-12-6"
 
 export interface SummarizationOptions {
   maxLength?: number
