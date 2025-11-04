@@ -57,6 +57,9 @@
     --grammar-error-underline-warning: #ff8c00;
     --grammar-error-underline-info: #00d4ff;
 
+    /* Text completion ghost text */
+    --completion-ghost-text: rgba(156, 163, 175, 0.6);
+
     /* Custom Colors for Markdown Editor */
     --markdown-toolbar-bg: 210 40% 98%;
     --markdown-toolbar-border: 214.3 31.8% 91.4%;
@@ -128,6 +131,9 @@
     --grammar-error-underline-error: #ff66b3;
     --grammar-error-underline-warning: #ffaa33;
     --grammar-error-underline-info: #33ddff;
+
+    /* Text completion ghost text */
+    --completion-ghost-text: rgba(209, 213, 219, 0.5);
 
     /* Custom Colors for Markdown Editor - Dark Mode */
     --markdown-toolbar-bg: 222.2 47.4% 11.2%;
@@ -203,6 +209,9 @@
     --grammar-error-underline-error: #ff00ff;
     --grammar-error-underline-warning: #ffff00;
     --grammar-error-underline-info: #00ffff;
+
+    /* Text completion ghost text */
+    --completion-ghost-text: rgba(255, 0, 255, 0.4);
 
     /* Custom Colors for Markdown Editor - Acid Mode */
     --markdown-toolbar-bg: 280 90% 10%;

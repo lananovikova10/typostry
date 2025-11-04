@@ -79,7 +79,7 @@ export const CompletionSuggestions: React.FC<CompletionSuggestionsProps> = ({
 
 /**
  * Component to display inline completion preview (ghost text)
- * This creates an overlay that shows the completion text in grey
+ * This creates an overlay that shows the completion text in grey at cursor position
  */
 interface InlineCompletionProps {
   completion: string;
@@ -97,6 +97,11 @@ export const InlineCompletion: React.FC<InlineCompletionProps> = ({
   }
 
   const textarea = textareaRef.current;
+  const cursorPosition = textarea.selectionStart;
+
+  // Split text at cursor position
+  const textBeforeCursor = value.substring(0, cursorPosition);
+  const textAfterCursor = value.substring(cursorPosition);
 
   return (
     <div
@@ -111,10 +116,20 @@ export const InlineCompletion: React.FC<InlineCompletionProps> = ({
         wordWrap: 'break-word',
       }}
     >
-      {/* Invisible text matching the actual content */}
-      <span className="invisible">{value}</span>
+      {/* Invisible text before cursor */}
+      <span style={{ opacity: 0, pointerEvents: 'none' }}>{textBeforeCursor}</span>
       {/* Visible ghost text for the completion */}
-      <span className="text-gray-400 dark:text-gray-500">{completion}</span>
+      <span
+        style={{
+          color: 'var(--completion-ghost-text, rgba(156, 163, 175, 0.7))',
+          fontStyle: 'italic',
+          pointerEvents: 'none'
+        }}
+      >
+        {completion}
+      </span>
+      {/* Invisible text after cursor (if any) */}
+      <span style={{ opacity: 0, pointerEvents: 'none' }}>{textAfterCursor}</span>
     </div>
   );
 };
