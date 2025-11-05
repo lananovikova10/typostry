@@ -1,6 +1,6 @@
 "use client"
 
-import React, { useEffect, useRef, useState } from "react"
+import React, { useEffect, useMemo, useRef, useState } from "react"
 import { useTheme } from "next-themes"
 import { unified } from "unified"
 import remarkParse from "remark-parse"
@@ -29,7 +29,7 @@ export interface MarkdownPreviewProps {
   enableLocalEcho?: boolean
 }
 
-export function MarkdownPreview({
+export const MarkdownPreview = React.memo(function MarkdownPreview({
   source,
   className,
   debounceMs = 200,
@@ -133,4 +133,4 @@ export function MarkdownPreview({
       data-testid="markdown-preview"
     />
   )
-}
+})

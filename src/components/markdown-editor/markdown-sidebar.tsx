@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import React, { useEffect, useMemo, useState } from "react"
 import { ChevronDown, ChevronRight, Hash } from "lucide-react"
 
 import { cn } from "@/lib/utils"
@@ -19,7 +19,7 @@ export interface MarkdownSidebarProps {
   activeHeadingId?: string
 }
 
-export function MarkdownSidebar({
+export const MarkdownSidebar = React.memo(function MarkdownSidebar({
   content,
   onHeadingClick,
   isCollapsed,
@@ -186,4 +186,4 @@ export function MarkdownSidebar({
       </div>
     </div>
   )
-}
+})

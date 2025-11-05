@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useRef, useState } from "react"
+import { useCallback, useEffect, useMemo, useRef, useState } from "react"
 
 import { cn } from "@/lib/utils"
 import {
@@ -367,7 +367,7 @@ export function MarkdownEditor({
     }
   }, [isPreviewMode, markdown, undoStack, redoStack, isFullScreen, isDistractionFree]) // Re-register when relevant state changes
 
-  const handleUndo = () => {
+  const handleUndo = useCallback(() => {
     if (undoStack.length <= 1) return // Keep at least the initial state
 
     setIsUndoRedoOperation(true)
@@ -388,9 +388,9 @@ export function MarkdownEditor({
 
     // Clear undo/redo flag after state updates
     setTimeout(() => setIsUndoRedoOperation(false), 0)
-  }
+  }, [undoStack, redoStack, onChange])
 
-  const handleRedo = () => {
+  const handleRedo = useCallback(() => {
     if (redoStack.length === 0) return
 
     setIsUndoRedoOperation(true)
@@ -409,9 +409,9 @@ export function MarkdownEditor({
 
     // Clear undo/redo flag after state updates
     setTimeout(() => setIsUndoRedoOperation(false), 0)
-  }
+  }, [redoStack, undoStack, onChange])
 
-  const handleChange = (value: string) => {
+  const handleChange = useCallback((value: string) => {
     setMarkdown(value)
     setIsFileSaved(false)
     onChange?.(value)
@@ -419,10 +419,10 @@ export function MarkdownEditor({
     // Only add to undo stack if this is not an undo/redo operation
     if (!isUndoRedoOperation) {
       // Add new state to undo stack and clear redo stack
-      setUndoStack([...undoStack, value])
+      setUndoStack((prev) => [...prev, value])
       setRedoStack([])
     }
-  }
+  }, [onChange, isUndoRedoOperation])
 
   /**
    * Inserts text at the cursor position in the editor
@@ -512,7 +512,7 @@ export function MarkdownEditor({
     return insertedText
   }
 
-  const handleRecoverContent = () => {
+  const handleRecoverContent = useCallback(() => {
     if (recoveredContent) {
       setMarkdown(recoveredContent)
       setUndoStack([recoveredContent])
@@ -521,14 +521,14 @@ export function MarkdownEditor({
       setIsFileSaved(false)
     }
     setShowRecoveryBanner(false)
-  }
+  }, [recoveredContent, onChange])
 
-  const handleDismissRecovery = () => {
+  const handleDismissRecovery = useCallback(() => {
     setShowRecoveryBanner(false)
     clearLocalStorage()
-  }
+  }, [])
 
-  const handleNewFile = async () => {
+  const handleNewFile = useCallback(async () => {
     if (
       !isFileSaved &&
       !window.confirm(
@@ -553,10 +553,10 @@ export function MarkdownEditor({
     clearLocalStorage()
 
     onChange?.("")
-  }
+  }, [onChange])
 
   // Save to the currently open file using File System Access API
-  const handleSaveFile = async () => {
+  const handleSaveFile = useCallback(async () => {
     // If we already have a file handle, use it to save directly
     if (isFileSystemAPISupported && fileHandle) {
       try {
@@ -575,10 +575,10 @@ export function MarkdownEditor({
 
     // If no file handle or not supported, use Save As functionality
     await handleSaveFileAs()
-  }
+  }, [isFileSystemAPISupported, fileHandle, markdown])
 
   // Save As functionality using File System Access API
-  const handleSaveFileAs = async () => {
+  const handleSaveFileAs = useCallback(async () => {
     if (isFileSystemAPISupported) {
       try {
         const options = {
@@ -614,10 +614,10 @@ export function MarkdownEditor({
     } else {
       fallbackSaveFile()
     }
-  }
+  }, [isFileSystemAPISupported, currentFileName, markdown])
 
   // Fallback method for browsers that don't support File System Access API
-  const fallbackSaveFile = () => {
+  const fallbackSaveFile = useCallback(() => {
     const blob = new Blob([markdown], { type: "text/markdown" })
     const url = URL.createObjectURL(blob)
     const link = document.createElement("a")
@@ -630,10 +630,10 @@ export function MarkdownEditor({
     // Clean up
     document.body.removeChild(link)
     URL.revokeObjectURL(url)
-  }
+  }, [markdown, currentFileName])
 
   // Export to PDF functionality
-  const handleExportToPDF = async () => {
+  const handleExportToPDF = useCallback(async () => {
     try {
       const renderHTML = async (markdown: string): Promise<string> => {
         // Replace emoji shortcodes with actual emoji characters
@@ -683,9 +683,9 @@ export function MarkdownEditor({
       console.error("Error exporting to PDF:", error)
       alert("Failed to export PDF. Please try again.")
     }
-  }
+  }, [markdown, currentFileName])
 
-  const handleOpenFile = async () => {
+  const handleOpenFile = useCallback(async () => {
     if (isFileSystemAPISupported) {
       try {
         const options = {
@@ -731,9 +731,9 @@ export function MarkdownEditor({
         fileInputRef.current.click()
       }
     }
-  }
+  }, [isFileSystemAPISupported, onChange])
 
-  const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileSelect = useCallback((event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0]
     if (!file) return
 
@@ -760,10 +760,10 @@ export function MarkdownEditor({
     if (fileInputRef.current) {
       fileInputRef.current.value = ""
     }
-  }
+  }, [onChange])
 
   // Navigate to a heading in the document
-  const handleHeadingClick = (headingId: string) => {
+  const handleHeadingClick = useCallback((headingId: string) => {
     if (!headingId) return
 
     // Find element by ID and scroll to it
@@ -797,7 +797,7 @@ export function MarkdownEditor({
         textarea.scrollTop = scrollPosition - 100 // Scroll a bit above the heading
       }
     }
-  }
+  }, [markdown])
 
   return (
     <div className={cn(

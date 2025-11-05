@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import React, { useEffect, useMemo, useState } from "react"
 import { useTheme } from "next-themes"
 
 import { calculateReadingStats } from "@/lib/reading-stats"
@@ -11,7 +11,7 @@ export interface ReadingStatsProps {
   className?: string
 }
 
-export function ReadingStats({ content, className }: ReadingStatsProps) {
+export const ReadingStats = React.memo(function ReadingStats({ content, className }: ReadingStatsProps) {
   const [stats, setStats] = useState({
     readingTime: 0,
     wordCount: 0,
@@ -41,4 +41,4 @@ export function ReadingStats({ content, className }: ReadingStatsProps) {
       Characters: {stats.characterCount}
     </div>
   )
-}
+})
