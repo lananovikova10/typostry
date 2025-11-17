@@ -41,9 +41,9 @@ export function useIsTheme() {
   const { theme, resolvedTheme, mounted } = useThemeSafe()
 
   return {
-    isLight: mounted && (theme === "light" || theme === "high-contrast-light" || (theme === "system" && resolvedTheme === "light")),
+    isLight: mounted && (theme === "light" || theme === "high-contrast-light" || theme === "high-contrast-blue" || theme === "high-contrast-amber" || (theme === "system" && resolvedTheme === "light")),
     isDark: mounted && (theme === "dark" || theme === "high-contrast-dark" || (theme === "system" && resolvedTheme === "dark")),
-    isHighContrast: mounted && (theme === "high-contrast-light" || theme === "high-contrast-dark"),
+    isHighContrast: mounted && (theme === "high-contrast-light" || theme === "high-contrast-dark" || theme === "high-contrast-blue" || theme === "high-contrast-amber"),
     isAcid: mounted && theme === "acid",
     isSystem: mounted && theme === "system",
     currentTheme: mounted ? theme : undefined,

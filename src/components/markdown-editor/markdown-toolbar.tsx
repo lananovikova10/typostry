@@ -39,7 +39,7 @@ import {
 
 import { cn } from "@/lib/utils"
 import { getRandomPhotoAsMarkdown } from "@/lib/unsplash"
-import { summarizeText, rephraseText } from "@/lib/huggingface"
+import { summarizeText } from "@/lib/huggingface"
 import { Button } from "@/components/ui/button"
 import { SummaryPopup } from "@/components/ui/summary-popup"
 import {
@@ -206,36 +206,6 @@ export function MarkdownToolbar({
     }
   }
 
-  // Handle rephrasing of selected text
-  const handleRephrase = async () => {
-    const selectedText = getSelectedText()
-    if (!selectedText) return
-
-    setIsAIProcessing(true)
-    try {
-      const rephrased = await rephraseText(selectedText)
-      setAiResultText(rephrased)
-      setAiResultTitle("Rephrased")
-      setIsAIPopupOpen(true)
-    } catch (error) {
-      console.error("Rephrasing error:", error)
-      const errorMessage = error instanceof Error ? error.message : "Unknown error"
-
-      // Show user-friendly message
-      if (errorMessage.includes("Model is loading")) {
-        alert(
-          `The paraphrasing model is currently loading on Hugging Face servers. ${errorMessage}\n\nThis is normal for models that haven't been used recently. Please try again in a moment.`
-        )
-      } else {
-        alert(
-          `Failed to rephrase: ${errorMessage}\n\nThis might be a temporary issue with the Hugging Face API. Please try again.`
-        )
-      }
-    } finally {
-      setIsAIProcessing(false)
-      setSavedSelection(null) // Clear saved selection after processing
-    }
-  }
 
   // Handle inserting AI result at caret position
   const handleInsertAIResult = () => {
@@ -469,7 +439,7 @@ export function MarkdownToolbar({
       {
         name: "AI Actions",
         icon: <Sparkles className="h-4 w-4" />,
-        ariaLabel: "AI actions (Summarize/Rephrase)",
+        ariaLabel: "AI actions (Summarize)",
         isDropdown: true,
       },
     ],
@@ -727,9 +697,6 @@ export function MarkdownToolbar({
                             <DropdownMenuContent align="start">
                               <DropdownMenuItem onClick={handleSummarize} disabled={isAIProcessing}>
                                 Summarize
-                              </DropdownMenuItem>
-                              <DropdownMenuItem onClick={handleRephrase} disabled={isAIProcessing}>
-                                Rephrase
                               </DropdownMenuItem>
                             </DropdownMenuContent>
                           </DropdownMenu>

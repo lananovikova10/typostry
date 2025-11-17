@@ -66,25 +66,28 @@ export function ModeToggle() {
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end">
         <DropdownMenuItem onClick={() => setTheme("light")}>
-          Light
+          Light {currentTheme === "light" && "✓"}
         </DropdownMenuItem>
         <DropdownMenuItem onClick={() => setTheme("dark")}>
-          Dark
+          Dark {currentTheme === "dark" && "✓"}
         </DropdownMenuItem>
-        <DropdownMenuItem
-          onClick={() =>
-            currentTheme?.includes("dark")
-              ? setTheme("high-contrast-dark")
-              : setTheme("high-contrast-light")
-          }
-        >
-          High Contrast {isHighContrast && "✓"}
+        <DropdownMenuItem onClick={() => setTheme("high-contrast-light")}>
+          High Contrast Light {currentTheme === "high-contrast-light" && "✓"}
+        </DropdownMenuItem>
+        <DropdownMenuItem onClick={() => setTheme("high-contrast-dark")}>
+          High Contrast Dark {currentTheme === "high-contrast-dark" && "✓"}
+        </DropdownMenuItem>
+        <DropdownMenuItem onClick={() => setTheme("high-contrast-blue")}>
+          High Contrast Blue {currentTheme === "high-contrast-blue" && "✓"}
+        </DropdownMenuItem>
+        <DropdownMenuItem onClick={() => setTheme("high-contrast-amber")}>
+          High Contrast Amber {currentTheme === "high-contrast-amber" && "✓"}
         </DropdownMenuItem>
         <DropdownMenuItem onClick={() => setTheme("acid")}>
           Acid {isAcid && "✓"}
         </DropdownMenuItem>
         <DropdownMenuItem onClick={() => setTheme("system")}>
-          System
+          System {currentTheme === "system" && "✓"}
         </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>

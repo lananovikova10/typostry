@@ -17,6 +17,7 @@ A Next.js markdown editor with real-time preview, grammar checking, theme suppor
 - Mermaid diagram support for visualizations
 - Keyboard shortcuts for common operations
 - Template selection from GitLab repositories
+- **AI-powered text tools**: Summarize selected text using Hugging Face models
 
 ### Templates from GitLab
 - Integration with GitLab repositories to fetch markdown templates
@@ -69,6 +70,9 @@ A Next.js markdown editor with real-time preview, grammar checking, theme suppor
   - Fallback endpoint: https://languagetool.org/api/v2/check
 - **GitLab API**: Used for fetching templates
   - Requires a GitLab repository URL and access token
+- **Hugging Face Inference API**: Used for AI-powered text summarization
+  - Model: facebook/bart-large-cnn
+  - Requires a free Hugging Face API token
 - **File System Access API**: Modern browser API for file system operations
 
 ## Usage
@@ -100,6 +104,10 @@ NEXT_PUBLIC_UNSPLASH_ACCESS_KEY=your_unsplash_access_key
 # Optional: GitLab API configuration for templates
 NEXT_PUBLIC_GITLAB_REPO_URL=https://gitlab.com/your-repo-path
 NEXT_PUBLIC_GITLAB_TOKEN=your_gitlab_access_token
+
+# Optional: Hugging Face API key for AI summarization feature
+# Get your free token at: https://huggingface.co/settings/tokens
+NEXT_PUBLIC_HF_API_KEY=your_huggingface_api_key
 ```
 
 Note: Environment variables prefixed with `NEXT_PUBLIC_` will be included in the client-side JavaScript bundle. Only use this prefix for non-sensitive values or public API keys that are restricted by domain.

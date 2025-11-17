@@ -26,6 +26,8 @@ export function ThemeProvider({ children, ...props }: ThemeProviderProps) {
         "system",
         "high-contrast-light",
         "high-contrast-dark",
+        "high-contrast-blue",
+        "high-contrast-amber",
         "acid",
       ]}
       storageKey="typostry-theme"

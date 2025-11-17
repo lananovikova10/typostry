@@ -167,6 +167,318 @@
     --markdown-sidebar-link: 217.2 91.2% 59.8%;
   }
 
+  .high-contrast-light {
+    --editor-gradient-start: 0 0% 100%;
+    --editor-gradient-end: 0 0% 100%;
+
+    --background: 0 0% 100%;
+    --foreground: 0 0% 0%;
+
+    --muted: 0 0% 95%;
+    --muted-foreground: 0 0% 20%;
+
+    --popover: 0 0% 100%;
+    --popover-foreground: 0 0% 0%;
+
+    --card: 0 0% 100%;
+    --card-foreground: 0 0% 0%;
+
+    --border: 0 0% 0%;
+    --input: 0 0% 0%;
+
+    --primary: 0 0% 0%;
+    --primary-foreground: 0 0% 100%;
+
+    --secondary: 0 0% 90%;
+    --secondary-foreground: 0 0% 0%;
+
+    --accent: 0 0% 85%;
+    --accent-foreground: 0 0% 0%;
+
+    --destructive: 0 80% 35%;
+    --destructive-foreground: 0 0% 100%;
+
+    --success: 142 70% 30%;
+    --success-foreground: 0 0% 100%;
+
+    --warning-bg: 43 95% 40%;
+    --warning-text: 0 0% 0%;
+
+    --ring: 0 0% 0%;
+
+    --grammar-error-underline-error: #cc0000;
+    --grammar-error-underline-warning: #cc6600;
+    --grammar-error-underline-info: #0066cc;
+
+    /* Text completion ghost text */
+    --completion-ghost-text: rgba(0, 0, 0, 0.4);
+
+    /* Custom Colors for Markdown Editor - High Contrast Light */
+    --markdown-toolbar-bg: 0 0% 100%;
+    --markdown-toolbar-border: 0 0% 0%;
+    --markdown-toolbar-text: 0 0% 0%;
+    --markdown-toolbar-icon: 0 0% 20%;
+    --markdown-toolbar-icon-active: 0 0% 0%;
+    --markdown-toolbar-icon-bg: 0 0% 95%;
+    --markdown-toolbar-icon-bg-hover: 0 0% 85%;
+
+    --markdown-input-bg: 0 0% 100%;
+    --markdown-input-border: 0 0% 0%;
+    --markdown-input-text: 0 0% 0%;
+    --markdown-input-placeholder: 0 0% 30%;
+
+    --markdown-preview-bg: 0 0% 100%;
+    --markdown-preview-text: 0 0% 0%;
+    --markdown-preview-heading: 0 0% 0%;
+    --markdown-preview-link: 220 100% 30%;
+    --markdown-preview-code-bg: 0 0% 95%;
+    --markdown-preview-code-text: 0 0% 0%;
+    --markdown-preview-blockquote: 0 0% 20%;
+    --markdown-preview-hr: 0 0% 0%;
+    --markdown-preview-table-border: 0 0% 0%;
+
+    --markdown-sidebar-bg: 0 0% 100%;
+    --markdown-sidebar-text: 0 0% 20%;
+    --markdown-sidebar-heading: 0 0% 0%;
+    --markdown-sidebar-icon: 0 0% 20%;
+    --markdown-sidebar-border: 0 0% 0%;
+    --markdown-sidebar-link: 220 100% 30%;
+  }
+
+  .high-contrast-dark {
+    --editor-gradient-start: 0 0% 0%;
+    --editor-gradient-end: 0 0% 0%;
+
+    --background: 0 0% 0%;
+    --foreground: 0 0% 100%;
+
+    --muted: 0 0% 15%;
+    --muted-foreground: 0 0% 85%;
+
+    --popover: 0 0% 0%;
+    --popover-foreground: 0 0% 100%;
+
+    --card: 0 0% 0%;
+    --card-foreground: 0 0% 100%;
+
+    --border: 0 0% 100%;
+    --input: 0 0% 100%;
+
+    --primary: 0 0% 100%;
+    --primary-foreground: 0 0% 0%;
+
+    --secondary: 0 0% 20%;
+    --secondary-foreground: 0 0% 100%;
+
+    --accent: 0 0% 25%;
+    --accent-foreground: 0 0% 100%;
+
+    --destructive: 0 85% 55%;
+    --destructive-foreground: 0 0% 0%;
+
+    --success: 142 75% 55%;
+    --success-foreground: 0 0% 0%;
+
+    --warning-bg: 43 95% 55%;
+    --warning-text: 0 0% 0%;
+
+    --ring: 0 0% 100%;
+
+    --grammar-error-underline-error: #ff4444;
+    --grammar-error-underline-warning: #ffaa44;
+    --grammar-error-underline-info: #44aaff;
+
+    /* Text completion ghost text */
+    --completion-ghost-text: rgba(255, 255, 255, 0.4);
+
+    /* Custom Colors for Markdown Editor - High Contrast Dark */
+    --markdown-toolbar-bg: 0 0% 0%;
+    --markdown-toolbar-border: 0 0% 100%;
+    --markdown-toolbar-text: 0 0% 100%;
+    --markdown-toolbar-icon: 0 0% 85%;
+    --markdown-toolbar-icon-active: 0 0% 100%;
+    --markdown-toolbar-icon-bg: 0 0% 15%;
+    --markdown-toolbar-icon-bg-hover: 0 0% 25%;
+
+    --markdown-input-bg: 0 0% 0%;
+    --markdown-input-border: 0 0% 100%;
+    --markdown-input-text: 0 0% 100%;
+    --markdown-input-placeholder: 0 0% 70%;
+
+    --markdown-preview-bg: 0 0% 0%;
+    --markdown-preview-text: 0 0% 100%;
+    --markdown-preview-heading: 0 0% 100%;
+    --markdown-preview-link: 200 100% 70%;
+    --markdown-preview-code-bg: 0 0% 15%;
+    --markdown-preview-code-text: 0 0% 100%;
+    --markdown-preview-blockquote: 0 0% 85%;
+    --markdown-preview-hr: 0 0% 100%;
+    --markdown-preview-table-border: 0 0% 100%;
+
+    --markdown-sidebar-bg: 0 0% 0%;
+    --markdown-sidebar-text: 0 0% 85%;
+    --markdown-sidebar-heading: 0 0% 100%;
+    --markdown-sidebar-icon: 0 0% 85%;
+    --markdown-sidebar-border: 0 0% 100%;
+    --markdown-sidebar-link: 200 100% 70%;
+  }
+
+  .high-contrast-blue {
+    --editor-gradient-start: 220 100% 95%;
+    --editor-gradient-end: 220 100% 95%;
+
+    --background: 220 100% 95%;
+    --foreground: 220 100% 15%;
+
+    --muted: 220 60% 88%;
+    --muted-foreground: 220 80% 25%;
+
+    --popover: 220 100% 95%;
+    --popover-foreground: 220 100% 15%;
+
+    --card: 220 100% 95%;
+    --card-foreground: 220 100% 15%;
+
+    --border: 220 100% 20%;
+    --input: 220 100% 20%;
+
+    --primary: 220 100% 20%;
+    --primary-foreground: 220 100% 95%;
+
+    --secondary: 220 60% 85%;
+    --secondary-foreground: 220 100% 15%;
+
+    --accent: 220 70% 80%;
+    --accent-foreground: 220 100% 15%;
+
+    --destructive: 0 80% 35%;
+    --destructive-foreground: 0 0% 100%;
+
+    --success: 142 70% 30%;
+    --success-foreground: 0 0% 100%;
+
+    --warning-bg: 43 95% 40%;
+    --warning-text: 220 100% 15%;
+
+    --ring: 220 100% 20%;
+
+    --grammar-error-underline-error: #cc0000;
+    --grammar-error-underline-warning: #cc6600;
+    --grammar-error-underline-info: #0066cc;
+
+    /* Text completion ghost text */
+    --completion-ghost-text: rgba(0, 40, 100, 0.3);
+
+    /* Custom Colors for Markdown Editor - High Contrast Blue */
+    --markdown-toolbar-bg: 220 100% 95%;
+    --markdown-toolbar-border: 220 100% 20%;
+    --markdown-toolbar-text: 220 100% 15%;
+    --markdown-toolbar-icon: 220 80% 30%;
+    --markdown-toolbar-icon-active: 220 100% 15%;
+    --markdown-toolbar-icon-bg: 220 60% 88%;
+    --markdown-toolbar-icon-bg-hover: 220 70% 80%;
+
+    --markdown-input-bg: 220 100% 95%;
+    --markdown-input-border: 220 100% 20%;
+    --markdown-input-text: 220 100% 15%;
+    --markdown-input-placeholder: 220 60% 35%;
+
+    --markdown-preview-bg: 220 100% 95%;
+    --markdown-preview-text: 220 100% 15%;
+    --markdown-preview-heading: 220 100% 15%;
+    --markdown-preview-link: 220 100% 25%;
+    --markdown-preview-code-bg: 220 60% 88%;
+    --markdown-preview-code-text: 220 100% 15%;
+    --markdown-preview-blockquote: 220 80% 25%;
+    --markdown-preview-hr: 220 100% 20%;
+    --markdown-preview-table-border: 220 100% 20%;
+
+    --markdown-sidebar-bg: 220 100% 95%;
+    --markdown-sidebar-text: 220 80% 25%;
+    --markdown-sidebar-heading: 220 100% 15%;
+    --markdown-sidebar-icon: 220 80% 30%;
+    --markdown-sidebar-border: 220 100% 20%;
+    --markdown-sidebar-link: 220 100% 25%;
+  }
+
+  .high-contrast-amber {
+    --editor-gradient-start: 45 100% 95%;
+    --editor-gradient-end: 45 100% 95%;
+
+    --background: 45 100% 95%;
+    --foreground: 30 100% 15%;
+
+    --muted: 45 60% 88%;
+    --muted-foreground: 30 80% 25%;
+
+    --popover: 45 100% 95%;
+    --popover-foreground: 30 100% 15%;
+
+    --card: 45 100% 95%;
+    --card-foreground: 30 100% 15%;
+
+    --border: 30 100% 20%;
+    --input: 30 100% 20%;
+
+    --primary: 30 100% 20%;
+    --primary-foreground: 45 100% 95%;
+
+    --secondary: 45 60% 85%;
+    --secondary-foreground: 30 100% 15%;
+
+    --accent: 45 70% 80%;
+    --accent-foreground: 30 100% 15%;
+
+    --destructive: 0 80% 35%;
+    --destructive-foreground: 0 0% 100%;
+
+    --success: 142 70% 30%;
+    --success-foreground: 0 0% 100%;
+
+    --warning-bg: 43 95% 40%;
+    --warning-text: 30 100% 15%;
+
+    --ring: 30 100% 20%;
+
+    --grammar-error-underline-error: #cc0000;
+    --grammar-error-underline-warning: #cc6600;
+    --grammar-error-underline-info: #0066cc;
+
+    /* Text completion ghost text */
+    --completion-ghost-text: rgba(100, 60, 0, 0.3);
+
+    /* Custom Colors for Markdown Editor - High Contrast Amber */
+    --markdown-toolbar-bg: 45 100% 95%;
+    --markdown-toolbar-border: 30 100% 20%;
+    --markdown-toolbar-text: 30 100% 15%;
+    --markdown-toolbar-icon: 30 80% 30%;
+    --markdown-toolbar-icon-active: 30 100% 15%;
+    --markdown-toolbar-icon-bg: 45 60% 88%;
+    --markdown-toolbar-icon-bg-hover: 45 70% 80%;
+
+    --markdown-input-bg: 45 100% 95%;
+    --markdown-input-border: 30 100% 20%;
+    --markdown-input-text: 30 100% 15%;
+    --markdown-input-placeholder: 30 60% 35%;
+
+    --markdown-preview-bg: 45 100% 95%;
+    --markdown-preview-text: 30 100% 15%;
+    --markdown-preview-heading: 30 100% 15%;
+    --markdown-preview-link: 220 100% 30%;
+    --markdown-preview-code-bg: 45 60% 88%;
+    --markdown-preview-code-text: 30 100% 15%;
+    --markdown-preview-blockquote: 30 80% 25%;
+    --markdown-preview-hr: 30 100% 20%;
+    --markdown-preview-table-border: 30 100% 20%;
+
+    --markdown-sidebar-bg: 45 100% 95%;
+    --markdown-sidebar-text: 30 80% 25%;
+    --markdown-sidebar-heading: 30 100% 15%;
+    --markdown-sidebar-icon: 30 80% 30%;
+    --markdown-sidebar-border: 30 100% 20%;
+    --markdown-sidebar-link: 220 100% 30%;
+  }
+
   .acid {
     --editor-gradient-start: 280 90% 12%;
     --editor-gradient-end: 280 90% 12%;

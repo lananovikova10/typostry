@@ -9,10 +9,10 @@ export default function Home() {
       <div className="mx-auto max-w-4xl">
         <div className="mb-8 flex flex-col items-start gap-4 text-left">
           <div className="flex items-center gap-3">
-            <Icons.logo className="h-10 w-10" />
+            <Icons.logo className="h-10 w-10 flex-shrink-0" />
             <SparklesText
               text={siteConfig.name}
-              className="text-3xl font-semibold sm:text-4xl md:text-5xl"
+              className="text-3xl font-semibold sm:text-4xl md:text-5xl leading-none"
               sparklesCount={12}
               colors={{ first: "#9E7AFF", second: "#FE8BBB" }}
             />
