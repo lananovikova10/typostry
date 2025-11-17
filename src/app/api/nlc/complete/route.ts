@@ -60,7 +60,7 @@ export async function POST(request: NextRequest) {
     const trimmedContext = context.trimEnd();
 
     // Use v3 endpoint which is confirmed working in grazie-playground
-    const apiUrl = 'https://api.jetbrains.ai/user/v5/trf/nlc/complete/v3';
+    const apiUrl = 'https://api.jetbrains.ai/application/v5/trf/nlc/complete/v3';
 
     // v3 API format (confirmed from grazie-playground):
     // Request: { context: string, lang: "en"|"de" }
