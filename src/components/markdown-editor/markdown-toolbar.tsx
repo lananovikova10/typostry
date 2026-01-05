@@ -22,6 +22,7 @@ import {
   ListOrdered,
   Maximize,
   Minimize,
+  Minus,
   Monitor,
   PanelLeftClose,
   PanelLeftOpen,
@@ -417,6 +418,12 @@ export function MarkdownToolbar({
         icon: <Quote className="h-4 w-4" />,
         action: () => onInsertAction("\n> Blockquote text\n"),
         ariaLabel: "Insert blockquote",
+      },
+      {
+        name: "Divider",
+        icon: <Minus className="h-4 w-4" />,
+        action: () => onInsertAction("\n---\n"),
+        ariaLabel: "Insert horizontal divider",
       },
       {
         name: "Emoji",
