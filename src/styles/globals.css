@@ -4,6 +4,47 @@
 
 @import "./outline-trigger.css";
 
+/* Xenia Font Family */
+@font-face {
+  font-family: 'Xenia';
+  src: url('/fonts/xenia/xenia-light.ttf') format('truetype');
+  font-weight: 300;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Xenia';
+  src: url('/fonts/xenia/xenia-regular.ttf') format('truetype');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Xenia';
+  src: url('/fonts/xenia/xenia-medium.ttf') format('truetype');
+  font-weight: 500;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Xenia';
+  src: url('/fonts/xenia/xenia-semibold.ttf') format('truetype');
+  font-weight: 600;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Xenia';
+  src: url('/fonts/xenia/xenia-bold.ttf') format('truetype');
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+}
+
 @layer base {
   :root {
     --editor-gradient-start: 210 40% 98%;

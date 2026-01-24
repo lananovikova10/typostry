@@ -12,7 +12,8 @@
     "test": "jest",
     "test:watch": "jest --watch",
     "cypress": "cypress open",
-    "cypress:run": "cypress run"
+    "cypress:run": "cypress run",
+    "setup:fonts": "bash scripts/download-xenia-font.sh"
   },
   "dependencies": {
     "@radix-ui/react-dialog": "^1.1.14",

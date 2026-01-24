@@ -133,7 +133,7 @@ function applyPDFStyles(container: HTMLElement): void {
     el.style.marginBottom = '1em'
     el.style.overflow = 'auto'
     el.style.fontSize = '10pt'
-    el.style.fontFamily = 'Monaco, Consolas, "Courier New", monospace'
+    el.style.fontFamily = 'Xenia, Monaco, Consolas, "Courier New", monospace'
     el.style.pageBreakInside = 'avoid'
   })
 
@@ -146,7 +146,7 @@ function applyPDFStyles(container: HTMLElement): void {
     el.style.borderRadius = '3px'
     el.style.padding = '2px 4px'
     el.style.fontSize = '0.9em'
-    el.style.fontFamily = 'Monaco, Consolas, "Courier New", monospace'
+    el.style.fontFamily = 'Xenia, Monaco, Consolas, "Courier New", monospace'
   })
 
   // Style tables

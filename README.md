@@ -62,6 +62,7 @@ A Next.js markdown editor with real-time preview, grammar checking, theme suppor
 - **Markdown Processing**: remark, micromark
 - **Code Highlighting**: Prism
 - **Type Safety**: Zod for schema validation
+- **Monospace Font**: [Xenia](https://github.com/Loretta1982/xenia) for code blocks and math formulas
 
 ## External Dependencies
 
@@ -84,12 +85,18 @@ npm install
 yarn install
 ```
 
-2. Copy `.env.example` to `.env.local`:
+2. Set up the Xenia monospace font (required for code and math):
+```bash
+npm run setup:fonts
+```
+This will automatically download and install the Xenia font family. For manual installation, see [FONT_SETUP.md](./FONT_SETUP.md).
+
+3. Copy `.env.example` to `.env.local`:
 ```bash
 cp .env.example .env.local
 ```
 
-3. Configure environment variables in `.env.local`:
+4. Configure environment variables in `.env.local`:
 ```
 # Required for basic functionality
 NEXT_PUBLIC_APP_URL=http://localhost:3000
@@ -112,7 +119,7 @@ NEXT_PUBLIC_HF_API_KEY=your_huggingface_api_key
 
 Note: Environment variables prefixed with `NEXT_PUBLIC_` will be included in the client-side JavaScript bundle. Only use this prefix for non-sensitive values or public API keys that are restricted by domain.
 
-4. Run the development server:
+5. Run the development server:
 ```bash
 npm run dev
 # or
@@ -121,7 +128,7 @@ yarn dev
 npx next dev
 ```
 
-5. Open [http://localhost:3000](http://localhost:3000) in your browser to see the application.
+6. Open [http://localhost:3000](http://localhost:3000) in your browser to see the application.
 
 ## Component Usage
 
