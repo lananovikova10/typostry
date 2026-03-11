@@ -24,6 +24,7 @@ import { markdownSanitizeSchema } from "@/lib/sanitize-schema"
 
 import { MarkdownInput, MarkdownInputHandle } from "./markdown-input"
 import { MarkdownPreview } from "./markdown-preview"
+import { OptimizedPreview } from "./optimized-preview"
 import { MarkdownSidebar } from "./markdown-sidebar"
 import { MarkdownToolbar } from "./markdown-toolbar"
 import { OutlineTrigger } from "./outline-trigger"
@@ -79,6 +80,19 @@ export function MarkdownEditor({
   const [textCompletionEnabled, setTextCompletionEnabled] = useState(true)
   const [textCompletionLanguage, setTextCompletionLanguage] = useState<'en' | 'de'>('en')
   const [textCompletionProfile, setTextCompletionProfile] = useState<'Always' | 'Moderate'>('Moderate')
+
+  const lineCount = useMemo(() => {
+    let count = 1
+    for (let i = 0; i < markdown.length; i++) {
+      if (markdown.charCodeAt(i) === 10) count++
+    }
+    return count
+  }, [markdown])
+
+  const useOptimizedPreview = useMemo(
+    () => lineCount >= 400 || markdown.length >= 15000,
+    [lineCount, markdown.length]
+  )
 
   const fileInputRef = useRef<HTMLInputElement>(null)
   const markdownInputRef = useRef<MarkdownInputHandle>(null)
@@ -917,14 +931,26 @@ export function MarkdownEditor({
             />
           )}
           {isPreviewMode && (
-            <MarkdownPreview
-              source={markdown}
-              className={cn(
-                "flex-1",
-                !isDistractionFree && "dark:border-gray-700 sm:border-l",
-                isDistractionFree && "prose prose-lg max-w-none p-6"
-              )}
-            />
+            useOptimizedPreview ? (
+              <OptimizedPreview
+                source={markdown}
+                debounceMs={350}
+                className={cn(
+                  "flex-1",
+                  !isDistractionFree && "dark:border-gray-700 sm:border-l",
+                  isDistractionFree && "prose prose-lg max-w-none p-6"
+                )}
+              />
+            ) : (
+              <MarkdownPreview
+                source={markdown}
+                className={cn(
+                  "flex-1",
+                  !isDistractionFree && "dark:border-gray-700 sm:border-l",
+                  isDistractionFree && "prose prose-lg max-w-none p-6"
+                )}
+              />
+            )
           )}
 
           {/* Reading Stats - hide in distraction-free mode */}

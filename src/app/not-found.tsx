@@ -4,10 +4,9 @@ import { Button } from "@/components/ui/button"
 
 export default function NotFound() {
   return (
-    <div className="flex min-h-screen flex-col items-center justify-center px-4">
-      <div className="flex flex-col items-center space-y-8 text-center">
-        {/* 404 Image */}
-        <div className="relative h-[400px] w-[400px] md:h-[500px] md:w-[500px]">
+    <div className="flex min-h-screen flex-col items-center justify-center px-6 py-12">
+      <div className="flex w-full max-w-2xl flex-col items-center space-y-6 text-center">
+        <div className="relative h-[240px] w-[240px] md:h-[320px] md:w-[320px]">
           <Image
             src="/404.png"
             alt="404 - Page Not Found"
@@ -17,25 +16,17 @@ export default function NotFound() {
           />
         </div>
 
-        {/* Text Content */}
-        <div className="space-y-4">
-          <h1 className="text-4xl font-bold tracking-tight text-foreground md:text-5xl">
-            PAGE NOT FOUND
+        <div className="space-y-3">
+          <h1 className="text-3xl font-semibold tracking-tight text-foreground md:text-4xl">
+            Page not found
           </h1>
-          <p className="text-lg text-muted-foreground md:text-xl">
-            Sorry, we couldn&apos;t find the page you were looking for.
-          </p>
-          <p className="text-sm text-muted-foreground md:text-base">
-            Perhaps you mistyped the URL, or the page has been moved.
+          <p className="text-base text-muted-foreground md:text-lg">
+            We couldn&apos;t find the page you&apos;re looking for.
           </p>
         </div>
 
-        {/* Home Button */}
         <Link href="/">
-          <Button
-            size="lg"
-            className="mt-4 bg-primary text-primary-foreground hover:bg-primary/90"
-          >
+          <Button size="lg" className="mt-2">
             Back to Home
           </Button>
         </Link>
