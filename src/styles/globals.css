@@ -520,6 +520,114 @@
     --markdown-sidebar-link: 220 100% 30%;
   }
 
+  .catppuccin-mocha {
+    --editor-gradient-start: 240 21% 15%;
+    --editor-gradient-end: 240 23% 9%;
+
+    /* Catppuccin Mocha palette:
+       Base:    #1e1e2e (240 23% 9%)   - deepest background
+       Mantle:  #181825 (240 21% 12%)  - slightly darker surface
+       Crust:   #11111b (240 23% 8%)   - darkest
+       Surface0:#313244 (237 16% 23%)  - raised surface
+       Surface1:#45475a (233 12% 31%)  - slightly lighter surface
+       Surface2:#585b70 (233 14% 40%)  - muted surface
+       Overlay0:#6c7086 (231 11% 48%)  - overlay
+       Overlay1:#7f849c (231 13% 56%)
+       Overlay2:#9399b2 (233 20% 64%)
+       Subtext0:#a6adc8 (228 24% 72%)
+       Subtext1:#bac2de (228 26% 82%)
+       Text:    #cdd6f4 (226 64% 88%)  - main text
+       Lavender:#b4befe (232 100% 85%)
+       Blue:    #89b4fa (217 92% 76%)
+       Sapphire:#74c7ec (199 76% 69%)
+       Sky:     #89dceb (189 71% 73%)
+       Teal:    #94e2d5 (170 57% 73%)
+       Green:   #a6e3a1 (115 54% 76%)
+       Yellow:  #f9e2af (23 67% 83%)
+       Peach:   #fab387 (23 56% 76%)
+       Maroon:  #eba0ac (343 54% 76%)
+       Red:     #f38ba8 (343 81% 75%)
+       Mauve:   #cba6f7 (267 83% 81%)  - primary accent
+       Pink:    #f5c2e7 (316 72% 86%)
+       Flamingo:#f2cdcd (0 59% 88%)
+       Rosewater:#f5e0dc (10 56% 91%)
+    */
+
+    --background: 240 23% 9%;
+    --foreground: 226 64% 88%;
+
+    --muted: 237 16% 23%;
+    --muted-foreground: 231 13% 56%;
+
+    --popover: 240 21% 12%;
+    --popover-foreground: 226 64% 88%;
+
+    --card: 240 21% 15%;
+    --card-foreground: 226 64% 88%;
+
+    --border: 237 16% 23%;
+    --input: 237 16% 23%;
+
+    /* Mauve as primary accent */
+    --primary: 267 83% 81%;
+    --primary-foreground: 240 23% 9%;
+
+    --secondary: 237 16% 23%;
+    --secondary-foreground: 226 64% 88%;
+
+    --accent: 237 16% 23%;
+    --accent-foreground: 267 83% 81%;
+
+    --destructive: 343 81% 75%;
+    --destructive-foreground: 240 23% 9%;
+
+    --success: 115 54% 76%;
+    --success-foreground: 240 23% 9%;
+
+    --warning-bg: 23 67% 83%;
+    --warning-text: 240 23% 9%;
+
+    --ring: 267 83% 81%;
+
+    --grammar-error-underline-error: #f38ba8;
+    --grammar-error-underline-warning: #fab387;
+    --grammar-error-underline-info: #89b4fa;
+
+    /* Text completion ghost text */
+    --completion-ghost-text: rgba(166, 173, 200, 0.4);
+
+    /* Custom Colors for Markdown Editor - Catppuccin Mocha */
+    --markdown-toolbar-bg: 240 21% 12%;
+    --markdown-toolbar-border: 237 16% 23%;
+    --markdown-toolbar-text: 226 64% 88%;
+    --markdown-toolbar-icon: 231 13% 56%;
+    --markdown-toolbar-icon-active: 267 83% 81%;
+    --markdown-toolbar-icon-bg: 237 16% 23%;
+    --markdown-toolbar-icon-bg-hover: 233 12% 31%;
+
+    --markdown-input-bg: 240 23% 9%;
+    --markdown-input-border: 237 16% 23%;
+    --markdown-input-text: 226 64% 88%;
+    --markdown-input-placeholder: 231 13% 56%;
+
+    --markdown-preview-bg: 240 23% 9%;
+    --markdown-preview-text: 226 64% 88%;
+    --markdown-preview-heading: 267 83% 81%;
+    --markdown-preview-link: 217 92% 76%;
+    --markdown-preview-code-bg: 237 16% 23%;
+    --markdown-preview-code-text: 115 54% 76%;
+    --markdown-preview-blockquote: 231 13% 56%;
+    --markdown-preview-hr: 237 16% 23%;
+    --markdown-preview-table-border: 237 16% 23%;
+
+    --markdown-sidebar-bg: 240 21% 12%;
+    --markdown-sidebar-text: 231 13% 56%;
+    --markdown-sidebar-heading: 267 83% 81%;
+    --markdown-sidebar-icon: 231 13% 56%;
+    --markdown-sidebar-border: 237 16% 23%;
+    --markdown-sidebar-link: 217 92% 76%;
+  }
+
   .acid {
     --editor-gradient-start: 280 90% 12%;
     --editor-gradient-end: 280 90% 12%;
@@ -648,54 +756,22 @@ textarea.bg-gradient-to-br::after {
   transition: background-color 0.2s ease;
 }
 
-/* Severity-based colors */
+/* Severity-based colors — use per-theme CSS variables so all themes are covered */
 .grammar-error-low {
-  text-decoration-color: rgba(
-    0,
-    212,
-    255,
-    0.9
-  ); /* Bright cyan for low severity */
+  text-decoration-color: var(--grammar-error-underline-info);
 }
 
 .grammar-error-medium {
-  text-decoration-color: rgba(
-    255,
-    140,
-    0,
-    0.9
-  ); /* Bright orange for medium severity */
+  text-decoration-color: var(--grammar-error-underline-warning);
 }
 
 .grammar-error-high {
-  text-decoration-color: rgba(
-    255,
-    0,
-    128,
-    0.9
-  ); /* Bright magenta for high severity */
+  text-decoration-color: var(--grammar-error-underline-error);
 }
 
 /* Hover effect for better discoverability */
 .grammar-error:hover {
-  background-color: rgba(255, 140, 0, 0.15); /* Bright highlight effect */
-}
-
-/* Ensure the grammar errors are visible in both light and dark modes */
-.dark .grammar-error-low {
-  text-decoration-color: rgba(51, 221, 255, 1);
-}
-
-.dark .grammar-error-medium {
-  text-decoration-color: rgba(255, 170, 51, 1);
-}
-
-.dark .grammar-error-high {
-  text-decoration-color: rgba(255, 102, 179, 1);
-}
-
-.dark .grammar-error:hover {
-  background-color: rgba(255, 170, 51, 0.15); /* Bright dark mode highlight */
+  background-color: rgba(255, 140, 0, 0.15);
 }
 
 /* Editor container and wrapper styling for glow effect */
@@ -734,20 +810,26 @@ textarea.bg-gradient-to-br::after {
 }
 
 /* Theme-specific glow colors */
-[data-theme="dark"] .editor-wrapper:hover .editor-container {
-  box-shadow: 
+.dark .editor-wrapper:hover .editor-container {
+  box-shadow:
     0 0 0 2px rgba(167, 139, 250, 0.4),
     0 0 25px rgba(167, 139, 250, 0.2);
 }
 
-[data-theme="light"] .editor-wrapper:hover .editor-container {
-  box-shadow: 
+.light .editor-wrapper:hover .editor-container {
+  box-shadow:
     0 0 0 2px rgba(139, 92, 246, 0.4),
     0 0 25px rgba(139, 92, 246, 0.2);
 }
 
-[data-theme="acid"] .editor-wrapper:hover .editor-container {
-  box-shadow: 
+.catppuccin-mocha .editor-wrapper:hover .editor-container {
+  box-shadow:
+    0 0 0 2px rgba(203, 166, 247, 0.4),
+    0 0 25px rgba(203, 166, 247, 0.2);
+}
+
+.acid .editor-wrapper:hover .editor-container {
+  box-shadow:
     0 0 0 3px rgba(204, 255, 0, 0.6),
     0 0 30px rgba(255, 0, 255, 0.4),
     0 0 50px rgba(0, 255, 255, 0.3);

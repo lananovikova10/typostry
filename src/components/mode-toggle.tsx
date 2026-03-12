@@ -14,7 +14,7 @@ import { Icons } from "@/components/icons"
 
 export function ModeToggle() {
   const { setTheme, mounted } = useThemeSafe()
-  const { isLight, isDark, isHighContrast, isAcid, currentTheme } = useIsTheme()
+  const { isLight, isDark, isHighContrast, isAcid, isCatppuccin, currentTheme } = useIsTheme()
 
   // Don't render anything until mounted to prevent hydration mismatch
   if (!mounted) {
@@ -27,10 +27,11 @@ export function ModeToggle() {
   }
 
   // Determine which icon to show based on theme combinations
-  const showSun = isLight && !isHighContrast && !isAcid
-  const showMoon = isDark && !isHighContrast && !isAcid
+  const showSun = isLight && !isHighContrast && !isAcid && !isCatppuccin
+  const showMoon = isDark && !isHighContrast && !isAcid && !isCatppuccin
   const showContrast = isHighContrast
   const showZap = isAcid
+  const showCoffee = isCatppuccin
 
   return (
     <DropdownMenu>
@@ -61,6 +62,11 @@ export function ModeToggle() {
             className={`absolute left-1/2 top-1/2 h-[1.2rem] w-[1.2rem] -translate-x-1/2 -translate-y-1/2 transition-all ${showZap ? "rotate-0 scale-100" : "rotate-90 scale-0"}`}
           />
 
+          {/* Coffee icon for Catppuccin Mocha theme */}
+          <Icons.coffee
+            className={`absolute left-1/2 top-1/2 h-[1.2rem] w-[1.2rem] -translate-x-1/2 -translate-y-1/2 transition-all ${showCoffee ? "rotate-0 scale-100" : "rotate-90 scale-0"}`}
+          />
+
           <span className="sr-only">Toggle theme</span>
         </Button>
       </DropdownMenuTrigger>
@@ -85,6 +91,9 @@ export function ModeToggle() {
         </DropdownMenuItem>
         <DropdownMenuItem onClick={() => setTheme("acid")}>
           Acid {isAcid && "✓"}
+        </DropdownMenuItem>
+        <DropdownMenuItem onClick={() => setTheme("catppuccin-mocha")}>
+          Catppuccin Mocha {isCatppuccin && "✓"}
         </DropdownMenuItem>
         <DropdownMenuItem onClick={() => setTheme("system")}>
           System {currentTheme === "system" && "✓"}

@@ -9,6 +9,7 @@ export type Theme =
   | "high-contrast-blue"
   | "high-contrast-amber"
   | "acid"
+  | "catppuccin-mocha"
 
 export const THEME_COOKIE_NAME = "typostry-theme"
 
@@ -44,7 +45,8 @@ export function isValidTheme(theme: string): theme is Theme {
     "high-contrast-dark",
     "high-contrast-blue",
     "high-contrast-amber",
-    "acid"
+    "acid",
+    "catppuccin-mocha"
   ].includes(theme)
 }
 
@@ -61,7 +63,7 @@ export function getThemeScript(serverTheme: Theme = "system") {
         var theme = storedTheme || '${serverTheme}';
 
         // Validate theme
-        var validThemes = ['light', 'dark', 'system', 'high-contrast-light', 'high-contrast-dark', 'high-contrast-blue', 'high-contrast-amber', 'acid'];
+        var validThemes = ['light', 'dark', 'system', 'high-contrast-light', 'high-contrast-dark', 'high-contrast-blue', 'high-contrast-amber', 'acid', 'catppuccin-mocha'];
         if (!validThemes.includes(theme)) {
           theme = 'system';
         }
