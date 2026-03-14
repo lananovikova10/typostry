@@ -6,11 +6,13 @@ export const env = createEnv({
   client: {
     NEXT_PUBLIC_APP_URL: z.string().min(1),
     NEXT_PUBLIC_GITLAB_REPO_URL: z.string().optional(),
-    NEXT_PUBLIC_GITLAB_TOKEN: z.string().optional(),
-    NEXT_PUBLIC_UNSPLASH_ACCESS_KEY: z.string().optional(),
   },
   // Server-side environment variables schema
   server: {
+    GRAZIE_TOKEN: z.string().optional(),
+    HF_API_KEY: z.string().optional(),
+    INTERNAL_API_ALLOWED_ORIGINS: z.string().optional(),
+    INTERNAL_API_KEY: z.string().optional(),
     UNSPLASH_ACCESS_KEY: z.string().optional(),
     UNSPLASH_SECRET_KEY: z.string().optional(),
   },
@@ -19,10 +21,11 @@ export const env = createEnv({
     // Client-side variables
     NEXT_PUBLIC_APP_URL: process.env.NEXT_PUBLIC_APP_URL,
     NEXT_PUBLIC_GITLAB_REPO_URL: process.env.NEXT_PUBLIC_GITLAB_REPO_URL,
-    NEXT_PUBLIC_GITLAB_TOKEN: process.env.NEXT_PUBLIC_GITLAB_TOKEN,
-    NEXT_PUBLIC_UNSPLASH_ACCESS_KEY:
-      process.env.NEXT_PUBLIC_UNSPLASH_ACCESS_KEY,
     // Server-side variables
+    GRAZIE_TOKEN: process.env.GRAZIE_TOKEN,
+    HF_API_KEY: process.env.HF_API_KEY,
+    INTERNAL_API_ALLOWED_ORIGINS: process.env.INTERNAL_API_ALLOWED_ORIGINS,
+    INTERNAL_API_KEY: process.env.INTERNAL_API_KEY,
     UNSPLASH_ACCESS_KEY: process.env.UNSPLASH_ACCESS_KEY,
     UNSPLASH_SECRET_KEY: process.env.UNSPLASH_SECRET_KEY,
   },

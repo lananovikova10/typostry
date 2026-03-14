@@ -6,7 +6,6 @@ import { useTheme } from "next-themes"
 import { replaceEmojis } from "@/lib/emoji"
 import { cn } from "@/lib/utils"
 import { useMarkdownWorker } from "@/hooks/useMarkdownWorker"
-import { useCodeExecution } from "@/hooks/useCodeExecution"
 import { useCodeBlocks } from "@/hooks/useCodeBlocks"
 
 const isBrowser = typeof window !== "undefined"
@@ -36,11 +35,7 @@ export function OptimizedPreview({
   const { html, isProcessing, error, processMarkdown } = useMarkdownWorker()
 
   // Use extracted hooks for code execution and processing
-  const { executeJavaScript } = useCodeExecution()
-  const { processCodeBlocks, processShikiBlocks } = useCodeBlocks({
-    previewRef,
-    executeJavaScript,
-  })
+  const { processCodeBlocks, processShikiBlocks } = useCodeBlocks(previewRef)
 
   // Process markdown with debouncing and worker
   useEffect(() => {

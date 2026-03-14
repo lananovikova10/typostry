@@ -27,14 +27,39 @@ export async function summarizeText(
   text: string,
   options?: SummarizationOptions
 ): Promise<string> {
-  const apiKey = process.env.NEXT_PUBLIC_HF_API_KEY || process.env.HF_API_KEY
+  if (!text || text.trim().length === 0) {
+    throw new Error("Text cannot be empty")
+  }
+
+  if (typeof window !== "undefined") {
+    const response = await fetch("/api/summarize", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      credentials: "same-origin",
+      cache: "no-store",
+      body: JSON.stringify({
+        text,
+        options,
+      }),
+    })
+
+    if (!response.ok) {
+      const errorText = await response.text()
+      throw new Error(
+        `Hugging Face API error (${response.status}): ${errorText || "Unknown error"}`
+      )
+    }
+
+    const data = (await response.json()) as { summary: string }
+    return data.summary
+  }
+
+  const apiKey = process.env.HF_API_KEY
 
   if (!apiKey) {
     throw new Error("HF_API_KEY is not configured")
-  }
-
-  if (!text || text.trim().length === 0) {
-    throw new Error("Text cannot be empty")
   }
 
   try {

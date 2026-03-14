@@ -101,23 +101,22 @@ cp .env.example .env.local
 # Required for basic functionality
 NEXT_PUBLIC_APP_URL=http://localhost:3000
 
-# Unsplash API credentials (optional but recommended for image features)
-# Server-side keys (not exposed in client bundles)
+# Optional: Unsplash API credentials for image features
 UNSPLASH_ACCESS_KEY=your_unsplash_access_key
 UNSPLASH_SECRET_KEY=your_unsplash_secret_key
-# Client-side key (will be exposed in browser)
-NEXT_PUBLIC_UNSPLASH_ACCESS_KEY=your_unsplash_access_key
 
-# Optional: GitLab API configuration for templates
+# Optional: GitLab templates repository
 NEXT_PUBLIC_GITLAB_REPO_URL=https://gitlab.com/your-repo-path
-NEXT_PUBLIC_GITLAB_TOKEN=your_gitlab_access_token
 
-# Optional: Hugging Face API key for AI summarization feature
-# Get your free token at: https://huggingface.co/settings/tokens
-NEXT_PUBLIC_HF_API_KEY=your_huggingface_api_key
+# Optional: Server-side AI credentials
+HF_API_KEY=your_huggingface_api_key
+GRAZIE_TOKEN=your_grazie_jwt_token
+
+# Optional: Extra trusted origins for API route protection
+INTERNAL_API_ALLOWED_ORIGINS=https://your-app.example.com
 ```
 
-Note: Environment variables prefixed with `NEXT_PUBLIC_` will be included in the client-side JavaScript bundle. Only use this prefix for non-sensitive values or public API keys that are restricted by domain.
+Note: Environment variables prefixed with `NEXT_PUBLIC_` will be included in the client-side JavaScript bundle. Do not place provider secrets in those variables.
 
 5. Run the development server:
 ```bash

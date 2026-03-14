@@ -22,12 +22,9 @@ const unsplashRateLimiter = new RateLimiter({
     "Too many Unsplash API requests. Please wait before requesting more images.",
 })
 
-// Get the API key from environment variables
-// Use the client-side key for browser environments, fallback to server-side
-const UNSPLASH_ACCESS_KEY =
-  typeof window !== "undefined"
-    ? env.NEXT_PUBLIC_UNSPLASH_ACCESS_KEY
-    : env.UNSPLASH_ACCESS_KEY || process.env.UNSPLASH_ACCESS_KEY
+function getUnsplashAccessKey(): string | undefined {
+  return env.UNSPLASH_ACCESS_KEY || process.env.UNSPLASH_ACCESS_KEY
+}
 
 /**
  * Fetches a random photo from Unsplash
@@ -37,9 +34,38 @@ const UNSPLASH_ACCESS_KEY =
 export async function getRandomPhoto(
   params?: UnsplashRandomPhotoParams
 ): Promise<UnsplashPhoto | UnsplashPhoto[]> {
-  if (!UNSPLASH_ACCESS_KEY) {
+  if (typeof window !== "undefined") {
+    const url = new URL("/api/unsplash/random", window.location.origin)
+
+    if (params) {
+      Object.entries(params).forEach(([key, value]) => {
+        if (value !== undefined) {
+          url.searchParams.append(key, value.toString())
+        }
+      })
+    }
+
+    const response = await fetch(url.toString(), {
+      method: "GET",
+      cache: "no-store",
+      credentials: "same-origin",
+    })
+
+    if (!response.ok) {
+      const errorText = await response.text()
+      throw new Error(
+        `Unsplash API error (${response.status}): ${errorText || "Unknown error"}`
+      )
+    }
+
+    return (await response.json()) as UnsplashRandomPhotoResponse
+  }
+
+  const unsplashAccessKey = getUnsplashAccessKey()
+
+  if (!unsplashAccessKey) {
     throw new Error(
-      "Unsplash API key is not configured. Please add UNSPLASH_ACCESS_KEY or NEXT_PUBLIC_UNSPLASH_ACCESS_KEY to your .env.local file."
+      "Unsplash API key is not configured. Please add UNSPLASH_ACCESS_KEY to your environment."
     )
   }
 
@@ -61,7 +87,7 @@ export async function getRandomPhoto(
       return await fetch(url.toString(), {
         method: "GET",
         headers: {
-          Authorization: `Client-ID ${UNSPLASH_ACCESS_KEY}`,
+          Authorization: `Client-ID ${unsplashAccessKey}`,
           "Accept-Version": "v1",
         },
       })

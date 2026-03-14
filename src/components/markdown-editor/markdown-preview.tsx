@@ -14,7 +14,6 @@ import rehypeStringify from "rehype-stringify"
 import { replaceEmojis } from "@/lib/emoji"
 import { markdownSanitizeSchema } from "@/lib/sanitize-schema"
 import { cn } from "@/lib/utils"
-import { useCodeExecution } from "@/hooks/useCodeExecution"
 import { useCodeBlocks } from "@/hooks/useCodeBlocks"
 import { useDebouncedPreview } from "@/hooks/useDebouncedPreview"
 
@@ -46,11 +45,7 @@ export const MarkdownPreview = React.memo(function MarkdownPreview({
   )
 
   // Use extracted hooks for code execution and processing
-  const { executeJavaScript } = useCodeExecution()
-  const { processCodeBlocks, processShikiBlocks } = useCodeBlocks({
-    previewRef,
-    executeJavaScript,
-  })
+  const { processCodeBlocks, processShikiBlocks } = useCodeBlocks(previewRef)
 
   useEffect(() => {
     const parseMarkdown = async () => {
