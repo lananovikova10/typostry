@@ -1,8 +1,8 @@
+@import "./outline-trigger.css";
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
-
-@import "./outline-trigger.css";
 
 /* Xenia Font Family */
 @font-face {
