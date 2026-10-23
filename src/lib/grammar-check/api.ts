@@ -53,7 +53,9 @@ class GrammarCheckManager {
 
   // Generate cache key for paragraph
   private getCacheKey(text: string, language: string): string {
-    return `${language}:${text.trim().substring(0, 100)}`
+    // Use the whole paragraph: a prefix would return stale errors for
+    // paragraphs that only differ after their first 100 characters
+    return `${language}:${text.trim()}`
   }
 
   // Split text into paragraphs for caching

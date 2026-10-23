@@ -3,15 +3,7 @@
  * Handles heavy markdown parsing operations off the main thread
  */
 
-import { unified } from "unified"
-import remarkParse from "remark-parse"
-import remarkGfm from "remark-gfm"
-import remarkMath from "remark-math"
-import remarkRehype from "remark-rehype"
-import rehypeSanitize from "rehype-sanitize"
-import rehypeKatex from "rehype-katex"
-import rehypeStringify from "rehype-stringify"
-import { markdownSanitizeSchema } from "../lib/sanitize-schema"
+import { renderMarkdown } from "../lib/markdown-pipeline"
 
 export interface MarkdownWorkerMessage {
   id: string
@@ -45,37 +37,12 @@ self.addEventListener("message", async (event: MessageEvent<MarkdownWorkerMessag
 
     try {
       // Process markdown content with math support and sanitization
-      const result = await unified()
-        .use(remarkParse)
-        .use(remarkGfm)
-        .use(remarkMath)
-        .use(remarkRehype)
-        .use(rehypeSanitize, markdownSanitizeSchema)
-        .use(rehypeKatex)
-        .use(rehypeStringify)
-        .process(content)
+      const htmlContent = await renderMarkdown(content)
 
       // Check if job was cancelled
       if (currentJobId !== id) {
         return
       }
-
-      let htmlContent = result.toString()
-
-      // Add IDs to headings for navigation
-      htmlContent = htmlContent.replace(
-        /<(h[1-6])>(.*?)<\/h[1-6]>/g,
-        (match, tag, content) => {
-          const id = content
-            .toLowerCase()
-            .replace(/<\/?[^>]+(>|$)/g, "") // Remove HTML tags
-            .replace(/[^\w\s-]/g, "") // Remove special chars
-            .replace(/\s+/g, "-") // Replace spaces with hyphens
-            .replace(/--+/g, "-") // Replace multiple hyphens
-
-          return `<${tag} id="${id}">${content}</${tag}>`
-        }
-      )
 
       // Send success response
       const response: MarkdownWorkerResponse = {

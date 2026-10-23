@@ -1,7 +1,6 @@
 "use client"
 
 import React, { useEffect, useRef } from "react"
-import { useTheme } from "next-themes"
 
 import { replaceEmojis } from "@/lib/emoji"
 import { cn } from "@/lib/utils"
@@ -31,7 +30,6 @@ export function OptimizedPreview({
   debounceMs = 300,
 }: OptimizedPreviewProps) {
   const previewRef = useRef<HTMLDivElement>(null)
-  const { theme, resolvedTheme } = useTheme()
   const { html, isProcessing, error, processMarkdown } = useMarkdownWorker()
 
   // Use extracted hooks for code execution and processing

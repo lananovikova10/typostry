@@ -254,7 +254,13 @@ export function applyBackspace(
   for (let i = 0; i < newCursors.length; i++) {
     const cursor = newCursors[i]
     const originalCursor = sortedCursors[sortedCursors.length - 1 - i]
-    const deletedLength = originalCursor.end - originalCursor.start || 1
+    // A selection deletes its length, a caret deletes one character (none at 0)
+    const deletedLength =
+      originalCursor.start !== originalCursor.end
+        ? originalCursor.end - originalCursor.start
+        : originalCursor.start > 0
+          ? 1
+          : 0
 
     adjustedCursors.push({
       ...cursor,
@@ -262,9 +268,8 @@ export function applyBackspace(
       end: cursor.end - offset,
     })
 
-    if (cursor.start < originalCursor.start) {
-      offset += deletedLength
-    }
+    // Every later cursor shifts left by what this cursor deleted
+    offset += deletedLength
   }
 
   return {
@@ -336,13 +341,6 @@ export function getCursorPositions(
       top: spanRect.top - mirrorRect.top,
       height: spanRect.height || 20,
     }
-
-    console.log(`Cursor at offset ${start}:`, {
-      before: before.substring(before.length - 20), // Last 20 chars
-      position,
-      spanRect: { left: spanRect.left, top: spanRect.top },
-      mirrorRect: { left: mirrorRect.left, top: mirrorRect.top },
-    })
 
     // Return relative positions (just like grammar errors)
     return position

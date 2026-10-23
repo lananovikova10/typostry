@@ -40,7 +40,7 @@ export function useMarkdownWorker() {
           // Ignore if this is not the current job
           if (id !== jobIdRef.current) return
 
-          if (type === "success" && resultHtml) {
+          if (type === "success" && resultHtml !== undefined) {
             setHtml(resultHtml)
             setError(null)
           } else if (type === "error") {

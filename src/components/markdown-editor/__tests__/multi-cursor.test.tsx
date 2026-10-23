@@ -2,6 +2,19 @@ import { render, screen, fireEvent, waitFor } from "@testing-library/react"
 import userEvent from "@testing-library/user-event"
 import { MarkdownInput } from "../markdown-input"
 
+// jsdom has no layout: computed line-height is "normal", which makes the
+// Alt+Click position maths resolve to NaN. Give the textarea a pixel line
+// height so click coordinates map to text offsets like in a browser
+// (24px padding, 20px lines, 8px chars).
+const getTextarea = () => {
+  const textarea = screen.getByRole("textbox") as HTMLTextAreaElement
+  textarea.style.lineHeight = "20px"
+  return textarea
+}
+
+const getCursors = (container: HTMLElement) =>
+  container.querySelectorAll('[data-testid^="multi-cursor-"]')
+
 describe("Multi-cursor functionality", () => {
   let onChange: jest.Mock
 
@@ -12,12 +25,12 @@ describe("Multi-cursor functionality", () => {
   describe("Alt+Click", () => {
     it("should add a cursor on Alt+Click", async () => {
       const { container } = render(
-        <MarkdownInput value="Line 1\nLine 2\nLine 3" onChange={onChange} />
+        <MarkdownInput value={"Line 1\nLine 2\nLine 3"} onChange={onChange} />
       )
 
-      const textarea = screen.getByRole("textbox") as HTMLTextAreaElement
+      const textarea = getTextarea()
 
-      // Simulate Alt+Click
+      // Simulate Alt+Click (line 2, end of line)
       fireEvent.click(textarea, {
         altKey: true,
         clientX: 100,
@@ -26,17 +39,16 @@ describe("Multi-cursor functionality", () => {
 
       // Check if multi-cursor is active
       await waitFor(() => {
-        const cursors = container.querySelectorAll('[data-testid^="multi-cursor-"]')
-        expect(cursors.length).toBeGreaterThan(0)
+        expect(getCursors(container)).toHaveLength(1)
       })
     })
 
     it("should add multiple cursors on multiple Alt+Clicks", async () => {
       const { container } = render(
-        <MarkdownInput value="Line 1\nLine 2\nLine 3" onChange={onChange} />
+        <MarkdownInput value={"Line 1\nLine 2\nLine 3"} onChange={onChange} />
       )
 
-      const textarea = screen.getByRole("textbox") as HTMLTextAreaElement
+      const textarea = getTextarea()
 
       // First Alt+Click
       fireEvent.click(textarea, {
@@ -45,17 +57,16 @@ describe("Multi-cursor functionality", () => {
         clientY: 50,
       })
 
-      // Second Alt+Click
+      // Second Alt+Click (line 3)
       fireEvent.click(textarea, {
         altKey: true,
         clientX: 100,
-        clientY: 100,
+        clientY: 70,
       })
 
-      // Check if multiple cursors are present
+      // Check that both secondary cursors are present
       await waitFor(() => {
-        const cursors = container.querySelectorAll('[data-testid^="multi-cursor-"]')
-        expect(cursors.length).toBeGreaterThan(1)
+        expect(getCursors(container)).toHaveLength(2)
       })
     })
   })
@@ -64,7 +75,7 @@ describe("Multi-cursor functionality", () => {
     it("should select word at cursor on Ctrl+D when nothing is selected", async () => {
       render(<MarkdownInput value="hello world hello" onChange={onChange} />)
 
-      const textarea = screen.getByRole("textbox") as HTMLTextAreaElement
+      const textarea = getTextarea()
 
       // Place cursor at 'h' in first 'hello'
       textarea.setSelectionRange(0, 0)
@@ -84,7 +95,7 @@ describe("Multi-cursor functionality", () => {
         <MarkdownInput value="hello world hello test hello" onChange={onChange} />
       )
 
-      const textarea = screen.getByRole("textbox") as HTMLTextAreaElement
+      const textarea = getTextarea()
 
       // Select first 'hello'
       textarea.setSelectionRange(0, 5)
@@ -103,9 +114,9 @@ describe("Multi-cursor functionality", () => {
 
   describe("Simultaneous typing", () => {
     it("should type at all cursor positions simultaneously", async () => {
-      render(<MarkdownInput value="Line 1\nLine 2\nLine 3" onChange={onChange} />)
+      render(<MarkdownInput value={"Line 1\nLine 2\nLine 3"} onChange={onChange} />)
 
-      const textarea = screen.getByRole("textbox") as HTMLTextAreaElement
+      const textarea = getTextarea()
 
       // Add cursor with Alt+Click
       fireEvent.click(textarea, {
@@ -117,18 +128,16 @@ describe("Multi-cursor functionality", () => {
       // Type a character
       fireEvent.keyDown(textarea, { key: "x" })
 
+      // Primary cursor at 0 plus the Alt+Click cursor at the end of line 2
       await waitFor(() => {
-        expect(onChange).toHaveBeenCalled()
-        // Check that text was modified
-        const lastCall = onChange.mock.calls[onChange.mock.calls.length - 1][0]
-        expect(lastCall).toContain("x")
+        expect(onChange).toHaveBeenLastCalledWith("xLine 1\nLine 2x\nLine 3")
       })
     })
 
     it("should handle backspace at all cursor positions", async () => {
-      render(<MarkdownInput value="abc\ndef\nghi" onChange={onChange} />)
+      render(<MarkdownInput value={"abc\ndef\nghi"} onChange={onChange} />)
 
-      const textarea = screen.getByRole("textbox") as HTMLTextAreaElement
+      const textarea = getTextarea()
 
       // Add cursor with Alt+Click
       fireEvent.click(textarea, {
@@ -137,18 +146,18 @@ describe("Multi-cursor functionality", () => {
         clientY: 50,
       })
 
-      // Press backspace
+      // Press backspace: the caret at 0 deletes nothing, the one after "def" deletes "f"
       fireEvent.keyDown(textarea, { key: "Backspace" })
 
       await waitFor(() => {
-        expect(onChange).toHaveBeenCalled()
+        expect(onChange).toHaveBeenLastCalledWith("abc\nde\nghi")
       })
     })
 
     it("should handle Enter key at all cursor positions", async () => {
-      render(<MarkdownInput value="Line 1\nLine 2" onChange={onChange} />)
+      render(<MarkdownInput value={"Line 1\nLine 2"} onChange={onChange} />)
 
-      const textarea = screen.getByRole("textbox") as HTMLTextAreaElement
+      const textarea = getTextarea()
 
       // Add cursor with Alt+Click
       fireEvent.click(textarea, {
@@ -160,11 +169,9 @@ describe("Multi-cursor functionality", () => {
       // Press Enter
       fireEvent.keyDown(textarea, { key: "Enter" })
 
+      // Newlines inserted at the primary cursor (0) and after "Lin" on line 2
       await waitFor(() => {
-        expect(onChange).toHaveBeenCalled()
-        const lastCall = onChange.mock.calls[onChange.mock.calls.length - 1][0]
-        // Should have added newlines
-        expect((lastCall.match(/\n/g) || []).length).toBeGreaterThan(2)
+        expect(onChange).toHaveBeenLastCalledWith("\nLine 1\nLin\ne 2")
       })
     })
   })
@@ -172,10 +179,10 @@ describe("Multi-cursor functionality", () => {
   describe("Escape key", () => {
     it("should exit multi-cursor mode on Escape", async () => {
       const { container } = render(
-        <MarkdownInput value="Line 1\nLine 2\nLine 3" onChange={onChange} />
+        <MarkdownInput value={"Line 1\nLine 2\nLine 3"} onChange={onChange} />
       )
 
-      const textarea = screen.getByRole("textbox") as HTMLTextAreaElement
+      const textarea = getTextarea()
 
       // Add cursor with Alt+Click
       fireEvent.click(textarea, {
@@ -186,8 +193,7 @@ describe("Multi-cursor functionality", () => {
 
       // Verify cursor was added
       await waitFor(() => {
-        const cursors = container.querySelectorAll('[data-testid^="multi-cursor-"]')
-        expect(cursors.length).toBeGreaterThan(0)
+        expect(getCursors(container)).toHaveLength(1)
       })
 
       // Press Escape
@@ -195,8 +201,7 @@ describe("Multi-cursor functionality", () => {
 
       // Cursors should be cleared
       await waitFor(() => {
-        const cursors = container.querySelectorAll('[data-testid^="multi-cursor-"]')
-        expect(cursors.length).toBe(0)
+        expect(getCursors(container)).toHaveLength(0)
       })
     })
   })
@@ -204,10 +209,10 @@ describe("Multi-cursor functionality", () => {
   describe("Visual indicators", () => {
     it("should render cursor indicators with correct styling", async () => {
       const { container } = render(
-        <MarkdownInput value="Line 1\nLine 2\nLine 3" onChange={onChange} />
+        <MarkdownInput value={"Line 1\nLine 2\nLine 3"} onChange={onChange} />
       )
 
-      const textarea = screen.getByRole("textbox") as HTMLTextAreaElement
+      const textarea = getTextarea()
 
       // Add cursor with Alt+Click
       fireEvent.click(textarea, {
@@ -229,7 +234,7 @@ describe("Multi-cursor functionality", () => {
     it("should handle empty text", () => {
       render(<MarkdownInput value="" onChange={onChange} />)
 
-      const textarea = screen.getByRole("textbox") as HTMLTextAreaElement
+      const textarea = getTextarea()
 
       // Try Alt+Click on empty text
       fireEvent.click(textarea, {
@@ -245,7 +250,7 @@ describe("Multi-cursor functionality", () => {
     it("should handle single character text", () => {
       render(<MarkdownInput value="a" onChange={onChange} />)
 
-      const textarea = screen.getByRole("textbox") as HTMLTextAreaElement
+      const textarea = getTextarea()
 
       // Place cursor at the character
       textarea.setSelectionRange(0, 0)
@@ -262,7 +267,7 @@ describe("Multi-cursor functionality", () => {
     it("should not interfere with regular typing when multi-cursor is not active", async () => {
       render(<MarkdownInput value="test" onChange={onChange} />)
 
-      const textarea = screen.getByRole("textbox") as HTMLTextAreaElement
+      const textarea = getTextarea()
       textarea.focus()
 
       // Type normally without Alt+Click

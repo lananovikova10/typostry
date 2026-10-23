@@ -32,13 +32,6 @@ export default async function RootLayout({ children }: RootLayoutProps) {
   return (
     <>
       <html lang="en" suppressHydrationWarning>
-        <head>
-          <script
-            dangerouslySetInnerHTML={{
-              __html: getThemeScript(serverTheme),
-            }}
-          />
-        </head>
         <body
           className={cn(
             "relative min-h-screen bg-background font-sans antialiased",
@@ -46,6 +39,15 @@ export default async function RootLayout({ children }: RootLayoutProps) {
           )}
           suppressHydrationWarning
         >
+          {/* Applies the stored theme before the page paints to avoid a
+              flash. It lives in <body> rather than <head> because tools that
+              inject into <head> (e.g. Cypress) cause a hydration mismatch
+              there, which makes React discard and rebuild the whole page. */}
+          <script
+            dangerouslySetInnerHTML={{
+              __html: getThemeScript(serverTheme),
+            }}
+          />
           <ThemeProvider
             attribute="class"
             defaultTheme="system"

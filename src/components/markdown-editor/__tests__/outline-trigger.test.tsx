@@ -1,24 +1,36 @@
-import { render, screen } from "@testing-library/react"
+import React from "react"
+import { act, render, screen } from "@testing-library/react"
 import userEvent from "@testing-library/user-event"
-import { act } from "react-dom/test-utils"
 
 import { OutlineTrigger } from "../outline-trigger"
 
 // Mock framer-motion to avoid test issues
+// (strip motion-only props so they are not forwarded to the DOM)
 jest.mock("framer-motion", () => ({
   motion: {
-    div: ({ children, ...props }) => <div {...props}>{children}</div>,
+    div: ({
+      children,
+      initial,
+      animate,
+      transition,
+      whileHover,
+      ...props
+    }: React.HTMLAttributes<HTMLDivElement> & Record<string, unknown>) => (
+      <div {...props}>{children}</div>
+    ),
   },
 }))
 
+type ChildrenProps = { children?: React.ReactNode }
+
 // Mock tooltip to avoid Portal issues in tests
 jest.mock("@/components/ui/tooltip", () => ({
-  Tooltip: ({ children }) => <>{children}</>,
-  TooltipTrigger: ({ children }) => <>{children}</>,
-  TooltipContent: ({ children }) => (
+  Tooltip: ({ children }: ChildrenProps) => <>{children}</>,
+  TooltipTrigger: ({ children }: ChildrenProps) => <>{children}</>,
+  TooltipContent: ({ children }: ChildrenProps) => (
     <div data-testid="tooltip-content">{children}</div>
   ),
-  TooltipProvider: ({ children }) => <>{children}</>,
+  TooltipProvider: ({ children }: ChildrenProps) => <>{children}</>,
 }))
 
 describe("OutlineTrigger", () => {
@@ -49,7 +61,8 @@ describe("OutlineTrigger", () => {
 
   it("calls onToggle when clicked", async () => {
     const mockToggle = jest.fn()
-    const user = userEvent.setup()
+    // Fake timers are active, so let userEvent advance them for its delays
+    const user = userEvent.setup({ advanceTimers: jest.advanceTimersByTime })
 
     render(<OutlineTrigger isCollapsed={true} onToggle={mockToggle} />)
 
@@ -61,7 +74,8 @@ describe("OutlineTrigger", () => {
 
   it("calls onToggle when pressing Enter key", async () => {
     const mockToggle = jest.fn()
-    const user = userEvent.setup()
+    // Fake timers are active, so let userEvent advance them for its delays
+    const user = userEvent.setup({ advanceTimers: jest.advanceTimersByTime })
 
     render(<OutlineTrigger isCollapsed={true} onToggle={mockToggle} />)
 
@@ -74,7 +88,8 @@ describe("OutlineTrigger", () => {
 
   it("calls onToggle when pressing Space key", async () => {
     const mockToggle = jest.fn()
-    const user = userEvent.setup()
+    // Fake timers are active, so let userEvent advance them for its delays
+    const user = userEvent.setup({ advanceTimers: jest.advanceTimersByTime })
 
     render(<OutlineTrigger isCollapsed={true} onToggle={mockToggle} />)
 
@@ -94,7 +109,7 @@ describe("OutlineTrigger", () => {
 
     // When collapsed, the open indicator should not be present
     expect(
-      screen.queryByTestId("outline-trigger").querySelector(".bg-primary")
+      screen.getByTestId("outline-trigger").querySelector(".bg-primary")
     ).not.toBeInTheDocument()
 
     // Rerender with isCollapsed=false

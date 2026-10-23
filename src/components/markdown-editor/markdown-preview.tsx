@@ -1,18 +1,9 @@
 "use client"
 
-import React, { useEffect, useMemo, useRef, useState } from "react"
-import { useTheme } from "next-themes"
-import { unified } from "unified"
-import remarkParse from "remark-parse"
-import remarkGfm from "remark-gfm"
-import remarkMath from "remark-math"
-import remarkRehype from "remark-rehype"
-import rehypeSanitize from "rehype-sanitize"
-import rehypeKatex from "rehype-katex"
-import rehypeStringify from "rehype-stringify"
+import React, { useEffect, useRef, useState } from "react"
 
 import { replaceEmojis } from "@/lib/emoji"
-import { markdownSanitizeSchema } from "@/lib/sanitize-schema"
+import { renderMarkdown } from "@/lib/markdown-pipeline"
 import { cn } from "@/lib/utils"
 import { useCodeBlocks } from "@/hooks/useCodeBlocks"
 import { useDebouncedPreview } from "@/hooks/useDebouncedPreview"
@@ -36,10 +27,9 @@ export const MarkdownPreview = React.memo(function MarkdownPreview({
 }: MarkdownPreviewProps) {
   const [html, setHtml] = useState("")
   const previewRef = useRef<HTMLDivElement>(null)
-  const { theme, resolvedTheme } = useTheme()
 
   // Intelligent debouncing with local echo
-  const { debouncedValue, isDebouncing, localEchoValue } = useDebouncedPreview(
+  const { debouncedValue } = useDebouncedPreview(
     source,
     { debounceMs, enableLocalEcho }
   )
@@ -48,48 +38,24 @@ export const MarkdownPreview = React.memo(function MarkdownPreview({
   const { processCodeBlocks, processShikiBlocks } = useCodeBlocks(previewRef)
 
   useEffect(() => {
+    // Ignore results from a parse that finished after a newer one started
+    let cancelled = false
+
     const parseMarkdown = async () => {
       try {
         // Replace emoji shortcodes with actual emoji characters
-        const processedSource = replaceEmojis(debouncedValue)
-
-        // Process markdown content with math support and sanitization
-        const result = await unified()
-          .use(remarkParse)
-          .use(remarkGfm)
-          .use(remarkMath)
-          .use(remarkRehype)
-          .use(rehypeSanitize, markdownSanitizeSchema)
-          .use(rehypeKatex)
-          .use(rehypeStringify)
-          .process(processedSource)
-
-        let htmlContent = result.toString()
-
-        // Add IDs to headings for navigation
-        // Look for heading tags <h1> through <h6>
-        htmlContent = htmlContent.replace(
-          /<(h[1-6])>(.*?)<\/h[1-6]>/g,
-          (match, tag, content) => {
-            const id = content
-              .toLowerCase()
-              .replace(/<\/?[^>]+(>|$)/g, "") // Remove HTML tags inside heading
-              .replace(/[^\w\s-]/g, "") // Remove special chars
-              .replace(/\s+/g, "-") // Replace spaces with hyphens
-              .replace(/--+/g, "-") // Replace multiple hyphens with single hyphen
-
-            return `<${tag} id="${id}">${content}</${tag}>`
-          }
-        )
-
-        setHtml(htmlContent)
+        const htmlContent = await renderMarkdown(replaceEmojis(debouncedValue))
+        if (!cancelled) setHtml(htmlContent)
       } catch (error) {
         console.error("Error parsing markdown:", error)
-        setHtml("<p>Error rendering markdown</p>")
+        if (!cancelled) setHtml("<p>Error rendering markdown</p>")
       }
     }
 
     parseMarkdown()
+    return () => {
+      cancelled = true
+    }
   }, [debouncedValue])
 
   // Process code blocks after the HTML has been rendered

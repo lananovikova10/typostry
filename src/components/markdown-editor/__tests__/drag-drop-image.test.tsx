@@ -2,173 +2,127 @@ import { fireEvent, render, screen, waitFor } from "@testing-library/react"
 
 import { MarkdownInput } from "../markdown-input"
 
+// The styled wrapper that receives the drag-over styling
+const getDropTarget = () => screen.getByTestId("markdown-input").parentElement!
+
+// The outer editor root (holds the drag handlers and is used for bounds checks)
+const getEditorRoot = () => getDropTarget().parentElement!
+
+const createDragEvent = (
+  type: string,
+  {
+    files = [],
+    types = ["Files"],
+    init = {},
+  }: { files?: File[]; types?: string[]; init?: MouseEventInit } = {}
+) => {
+  const event = new DragEvent(type, {
+    bubbles: true,
+    cancelable: true,
+    dataTransfer: new DataTransfer(),
+    ...init,
+  })
+  Object.defineProperty(event.dataTransfer, "files", { value: files })
+  Object.defineProperty(event.dataTransfer, "types", { value: types })
+  return event
+}
+
 describe("MarkdownInput - Drag and Drop Images", () => {
+  const originalFetch = global.fetch
+  let fetchMock: jest.Mock
+
+  beforeEach(() => {
+    let uploadCount = 0
+    fetchMock = jest.fn(async (_url: string, init?: RequestInit) => {
+      const file = (init?.body as FormData).get("file") as File
+      const index = uploadCount++
+      return {
+        ok: true,
+        json: async () => ({ url: `/uploads/${index}-${file.name}` }),
+      }
+    })
+    global.fetch = fetchMock as unknown as typeof fetch
+  })
+
+  afterEach(() => {
+    global.fetch = originalFetch
+  })
+
   it("should show visual feedback when dragging files over the editor", () => {
     const onChange = jest.fn()
     render(<MarkdownInput value="" onChange={onChange} />)
 
-    const container = screen.getByTestId("markdown-input").parentElement
-    expect(container).toBeDefined()
+    const dropTarget = getDropTarget()
+    expect(dropTarget.className).not.toContain("border-primary")
 
-    // Create a drag event with files
-    const dragEvent = new DragEvent("dragenter", {
-      bubbles: true,
-      cancelable: true,
-      dataTransfer: new DataTransfer(),
-    })
+    fireEvent(dropTarget, createDragEvent("dragenter"))
 
-    // Mock the dataTransfer types to include Files
-    Object.defineProperty(dragEvent.dataTransfer, "types", {
-      value: ["Files"],
-    })
-
-    fireEvent(container!, dragEvent)
-
-    // Check that the textarea has the drag-over styling
-    const textarea = screen.getByTestId("markdown-input")
-    expect(textarea.className).toContain("border-primary")
+    expect(dropTarget.className).toContain("border-primary")
+    expect(dropTarget.className).toContain("border-dashed")
   })
 
   it("should insert image markdown when dropping an image file", async () => {
     const onChange = jest.fn()
     render(<MarkdownInput value="# Test" onChange={onChange} />)
 
-    const container = screen.getByTestId("markdown-input").parentElement
-    expect(container).toBeDefined()
-
-    // Create a mock image file
     const file = new File(["image content"], "test-image.png", {
       type: "image/png",
     })
 
-    // Mock FileReader
-    const mockFileReader = {
-      readAsDataURL: jest.fn(function (this: FileReader) {
-        // Simulate successful read
-        setTimeout(() => {
-          // @ts-ignore
-          this.onload?.({
-            target: { result: "data:image/png;base64,mockbase64data" },
-          })
-        }, 0)
-      }),
-    }
+    fireEvent(getDropTarget(), createDragEvent("drop", { files: [file] }))
 
-    global.FileReader = jest.fn(() => mockFileReader) as any
-
-    // Create drop event
-    const dropEvent = new DragEvent("drop", {
-      bubbles: true,
-      cancelable: true,
-      dataTransfer: new DataTransfer(),
-    })
-
-    // Add the file to the dataTransfer
-    Object.defineProperty(dropEvent.dataTransfer, "files", {
-      value: [file],
-    })
-    Object.defineProperty(dropEvent.dataTransfer, "types", {
-      value: ["Files"],
-    })
-
-    fireEvent(container!, dropEvent)
-
-    // Wait for the async file reading to complete
     await waitFor(() => {
       expect(onChange).toHaveBeenCalled()
     })
 
-    // Check that the onChange was called with image markdown
+    expect(fetchMock).toHaveBeenCalledTimes(1)
+    expect(fetchMock).toHaveBeenCalledWith(
+      "/api/upload",
+      expect.objectContaining({ method: "POST" })
+    )
+
     const lastCall = onChange.mock.calls[onChange.mock.calls.length - 1][0]
-    expect(lastCall).toContain("![test-image](data:image/png;base64,mockbase64data)")
+    expect(lastCall).toContain("![test-image](/uploads/0-test-image.png)")
+    expect(lastCall).toContain("# Test")
   })
 
   it("should handle multiple image files dropped at once", async () => {
     const onChange = jest.fn()
     render(<MarkdownInput value="" onChange={onChange} />)
 
-    const container = screen.getByTestId("markdown-input").parentElement
-    expect(container).toBeDefined()
-
-    // Create multiple mock image files
     const file1 = new File(["image1"], "image1.jpg", { type: "image/jpeg" })
     const file2 = new File(["image2"], "image2.png", { type: "image/png" })
 
-    // Mock FileReader
-    let callCount = 0
-    const mockFileReader = {
-      readAsDataURL: jest.fn(function (this: FileReader) {
-        const index = callCount++
-        setTimeout(() => {
-          // @ts-ignore
-          this.onload?.({
-            target: { result: `data:image/test;base64,mockdata${index}` },
-          })
-        }, 0)
-      }),
-    }
+    fireEvent(
+      getDropTarget(),
+      createDragEvent("drop", { files: [file1, file2] })
+    )
 
-    global.FileReader = jest.fn(() => mockFileReader) as any
-
-    // Create drop event with multiple files
-    const dropEvent = new DragEvent("drop", {
-      bubbles: true,
-      cancelable: true,
-      dataTransfer: new DataTransfer(),
-    })
-
-    Object.defineProperty(dropEvent.dataTransfer, "files", {
-      value: [file1, file2],
-    })
-    Object.defineProperty(dropEvent.dataTransfer, "types", {
-      value: ["Files"],
-    })
-
-    fireEvent(container!, dropEvent)
-
-    // Wait for the async file reading to complete
     await waitFor(() => {
       expect(onChange).toHaveBeenCalled()
     })
 
-    // Check that the onChange was called with both images
+    expect(fetchMock).toHaveBeenCalledTimes(2)
+
     const lastCall = onChange.mock.calls[onChange.mock.calls.length - 1][0]
-    expect(lastCall).toContain("![image1]")
-    expect(lastCall).toContain("![image2]")
+    expect(lastCall).toContain("![image1](/uploads/0-image1.jpg)")
+    expect(lastCall).toContain("![image2](/uploads/1-image2.png)")
   })
 
   it("should ignore non-image files", async () => {
     const onChange = jest.fn()
     render(<MarkdownInput value="" onChange={onChange} />)
 
-    const container = screen.getByTestId("markdown-input").parentElement
-    expect(container).toBeDefined()
-
-    // Create a non-image file
     const file = new File(["text content"], "document.txt", {
       type: "text/plain",
     })
 
-    // Create drop event
-    const dropEvent = new DragEvent("drop", {
-      bubbles: true,
-      cancelable: true,
-      dataTransfer: new DataTransfer(),
-    })
-
-    Object.defineProperty(dropEvent.dataTransfer, "files", {
-      value: [file],
-    })
-    Object.defineProperty(dropEvent.dataTransfer, "types", {
-      value: ["Files"],
-    })
-
-    fireEvent(container!, dropEvent)
+    fireEvent(getDropTarget(), createDragEvent("drop", { files: [file] }))
 
     // Wait a bit to ensure no async operations were triggered
     await new Promise((resolve) => setTimeout(resolve, 100))
 
-    // onChange should not have been called since no images were dropped
+    expect(fetchMock).not.toHaveBeenCalled()
     expect(onChange).not.toHaveBeenCalled()
   })
 
@@ -176,43 +130,39 @@ describe("MarkdownInput - Drag and Drop Images", () => {
     const onChange = jest.fn()
     render(<MarkdownInput value="" onChange={onChange} />)
 
-    const container = screen.getByTestId("markdown-input").parentElement
-    expect(container).toBeDefined()
+    const dropTarget = getDropTarget()
 
-    // Start drag
-    const dragEnterEvent = new DragEvent("dragenter", {
-      bubbles: true,
-      cancelable: true,
-      dataTransfer: new DataTransfer(),
-    })
-    Object.defineProperty(dragEnterEvent.dataTransfer, "types", {
-      value: ["Files"],
-    })
-    fireEvent(container!, dragEnterEvent)
+    fireEvent(dropTarget, createDragEvent("dragenter"))
+    expect(dropTarget.className).toContain("border-primary")
 
-    const textarea = screen.getByTestId("markdown-input")
-    expect(textarea.className).toContain("border-primary")
+    // Give the editor root real bounds so the leave position can be checked
+    getEditorRoot().getBoundingClientRect = jest.fn(
+      () =>
+        ({
+          left: 0,
+          right: 100,
+          top: 0,
+          bottom: 100,
+          width: 100,
+          height: 100,
+          x: 0,
+          y: 0,
+          toJSON: () => ({}),
+        }) as DOMRect
+    )
 
-    // Mock getBoundingClientRect to simulate leaving the container
-    const mockGetBoundingClientRect = jest.fn(() => ({
-      left: 0,
-      right: 100,
-      top: 0,
-      bottom: 100,
-    }))
-    container!.getBoundingClientRect = mockGetBoundingClientRect
+    // Leaving to a point still inside the editor keeps the styling
+    fireEvent(
+      dropTarget,
+      createDragEvent("dragleave", { init: { clientX: 50, clientY: 50 } })
+    )
+    expect(dropTarget.className).toContain("border-primary")
 
-    // Drag leave with coordinates outside the container
-    const dragLeaveEvent = new DragEvent("dragleave", {
-      bubbles: true,
-      cancelable: true,
-      clientX: 200, // Outside the container
-      clientY: 200, // Outside the container
-      dataTransfer: new DataTransfer(),
-    })
-    fireEvent(container!, dragLeaveEvent)
-
-    // The drag-over styling should be removed
-    expect(textarea.className).not.toContain("border-primary")
+    // Leaving to a point outside the editor removes the styling
+    fireEvent(
+      dropTarget,
+      createDragEvent("dragleave", { init: { clientX: 200, clientY: 200 } })
+    )
+    expect(dropTarget.className).not.toContain("border-primary")
   })
 })

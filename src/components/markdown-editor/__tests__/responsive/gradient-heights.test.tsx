@@ -11,49 +11,20 @@ jest.mock("../../markdown-preview", () => ({
 }))
 
 describe("MarkdownEditor Gradient Heights", () => {
-  test("gradient overlays should maintain minimum 20px height", () => {
-    // Render the component
+  test("gradient background is applied to the textarea wrapper", () => {
     render(<MarkdownEditor initialValue="# Test Content" />)
 
-    // This test needs to inspect the CSS rules defined in globals.css
-    // We'll check for the pseudo-elements and their height
-
-    // Get all stylesheet rules
-    const styleSheets = Array.from(document.styleSheets)
-
-    // Find our gradient rules
-    let foundTopGradient = false
-    let foundBottomGradient = false
-
-    styleSheets.forEach((sheet) => {
-      try {
-        const rules = Array.from(sheet.cssRules || [])
-
-        rules.forEach((rule) => {
-          // Check for the pseudo-element rules
-          if (rule instanceof CSSStyleRule) {
-            const selector = rule.selectorText
-
-            if (selector?.includes("textarea.bg-gradient-to-br::before")) {
-              foundTopGradient = true
-              expect(rule.style.height).toBe("20px")
-            }
-
-            if (selector?.includes("textarea.bg-gradient-to-br::after")) {
-              foundBottomGradient = true
-              expect(rule.style.height).toBe("20px")
-            }
-          }
-        })
-      } catch (e) {
-        // Some stylesheets may not be accessible due to CORS
-        // Just continue to the next one
-      }
-    })
-
-    // If we can't test via CSS rules (which can be flaky in JSDOM),
-    // at least verify the class exists on the textarea
     const textarea = screen.getByTestId("markdown-input")
-    expect(textarea).toHaveClass("bg-gradient-to-br")
+    const wrapper = textarea.parentElement
+
+    // The gradient lives on the wrapper so the ghost-text overlay can share it;
+    // the textarea itself is transparent on top of it
+    expect(wrapper).toHaveClass(
+      "bg-gradient-to-br",
+      "from-[hsl(var(--editor-gradient-start))]",
+      "to-[hsl(var(--editor-gradient-end))]"
+    )
+    expect(textarea).toHaveClass("bg-transparent")
+    expect(textarea).not.toHaveClass("bg-gradient-to-br")
   })
 })

@@ -127,7 +127,8 @@ export function MarkdownAutocomplete({
     if (markdownMatch) {
       const trigger = markdownMatch[1]
       const query = markdownMatch[2].toLowerCase()
-      const start = cursorPosition - markdownMatch[2].length
+      // Replace the trigger too, so "#" + "## " gives "## ", not "### "
+      const start = cursorPosition - trigger.length - markdownMatch[2].length
       const end = cursorPosition
 
       // Filter markdown syntax items
@@ -180,7 +181,8 @@ export function MarkdownAutocomplete({
     if (!isVisible || !textarea) return
 
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (!isVisible) return
+      // Another popup on this textarea already handled the key
+      if (!isVisible || e.defaultPrevented) return
 
       switch (e.key) {
         case "ArrowDown":

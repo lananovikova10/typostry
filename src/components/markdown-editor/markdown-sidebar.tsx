@@ -1,14 +1,35 @@
 "use client"
 
-import React, { useEffect, useMemo, useState } from "react"
+import React, { useMemo, useState } from "react"
 import { ChevronDown, ChevronRight, Hash } from "lucide-react"
 
+import { extractHeadings, MarkdownHeading } from "@/lib/markdown-headings"
 import { cn } from "@/lib/utils"
 
-interface HeadingItem {
-  text: string
-  level: number
-  id: string
+interface HeadingNode extends MarkdownHeading {
+  index: number
+  children: HeadingNode[]
+}
+
+// Nests flat headings: each heading owns the following deeper headings
+function buildHeadingTree(headings: MarkdownHeading[]): HeadingNode[] {
+  const roots: HeadingNode[] = []
+  const stack: HeadingNode[] = []
+
+  headings.forEach((heading, index) => {
+    const node: HeadingNode = { ...heading, index, children: [] }
+    while (stack.length > 0 && stack[stack.length - 1].level >= node.level) {
+      stack.pop()
+    }
+    if (stack.length > 0) {
+      stack[stack.length - 1].children.push(node)
+    } else {
+      roots.push(node)
+    }
+    stack.push(node)
+  })
+
+  return roots
 }
 
 export interface MarkdownSidebarProps {
@@ -26,105 +47,50 @@ export const MarkdownSidebar = React.memo(function MarkdownSidebar({
   className,
   activeHeadingId,
 }: MarkdownSidebarProps) {
-  const [headings, setHeadings] = useState<HeadingItem[]>([])
-  const [expandedItems, setExpandedItems] = useState<Record<string, boolean>>(
-    {}
+  const headingTree = useMemo(
+    () => buildHeadingTree(extractHeadings(content)),
+    [content]
   )
+  // Keyed by heading id so expansion survives edits elsewhere in the document
+  const [collapsedIds, setCollapsedIds] = useState<Record<string, boolean>>({})
 
-  // Extract headings from the markdown content
-  useEffect(() => {
-    if (!content) {
-      setHeadings([])
-      return
-    }
-
-    // Regular expression to match Markdown headings
-    // It captures the heading level (number of #s) and the heading text
-    const headingRegex = /^(#{1,6})\s+(.+)$/gm
-    const extractedHeadings: HeadingItem[] = []
-    let match
-
-    while ((match = headingRegex.exec(content)) !== null) {
-      const level = match[1].length
-      const text = match[2].trim()
-      const id = text
-        .toLowerCase()
-        .replace(/[^\w\s-]/g, "") // Remove special chars
-        .replace(/\s+/g, "-") // Replace spaces with hyphens
-        .replace(/--+/g, "-") // Replace multiple hyphens with single hyphen
-
-      extractedHeadings.push({ text, level, id })
-    }
-
-    setHeadings(extractedHeadings)
-
-    // Initialize expanded state for all top-level items
-    const initialExpandedState: Record<string, boolean> = {}
-    extractedHeadings.forEach((heading, index) => {
-      if (heading.level === 1) {
-        initialExpandedState[index] = true
-      }
-    })
-    setExpandedItems(initialExpandedState)
-  }, [content])
-
-  // Toggle expansion of an item
-  const toggleExpand = (index: number, e: React.MouseEvent) => {
+  const toggleExpand = (id: string, e: React.MouseEvent) => {
     e.stopPropagation() // Prevent heading click
-    setExpandedItems({
-      ...expandedItems,
-      [index]: !expandedItems[index],
-    })
+    setCollapsedIds((prev) => ({ ...prev, [id]: !prev[id] }))
   }
 
-  // Check if a heading has children
-  const hasChildren = (index: number) => {
-    if (index >= headings.length - 1) return false
-    const currentLevel = headings[index].level
-    const nextLevel = headings[index + 1].level
-    return nextLevel > currentLevel
-  }
-
-  // Render the heading hierarchy recursively
-  const renderHeadings = (
-    startIndex: number,
-    parentLevel: number
-  ): JSX.Element[] => {
-    const result: JSX.Element[] = []
-
-    for (let i = startIndex; i < headings.length; i++) {
-      const heading = headings[i]
-
-      // Skip if this is not a direct child of parent (lower level or higher level)
-      if (heading.level <= parentLevel) {
-        break
-      }
-
-      // Skip if this is not an immediate child of parent
-      if (i > startIndex && heading.level > parentLevel + 1) {
-        continue
-      }
-
-      const isExpanded = expandedItems[i] === true
-      const hasChildHeadings = hasChildren(i)
-
+  const renderHeadings = (nodes: HeadingNode[]): JSX.Element[] =>
+    nodes.map((heading) => {
+      const hasChildHeadings = heading.children.length > 0
+      const isExpanded = !collapsedIds[heading.id]
       const isActive = activeHeadingId === heading.id
 
-      const headingItem = (
-        <div key={`${heading.id}-${i}`} className="mb-1">
+      return (
+        <div key={`${heading.id}-${heading.index}`} className="mb-1">
           <div
+            role="button"
+            tabIndex={0}
+            aria-current={isActive ? "location" : undefined}
             className={cn(
               "flex cursor-pointer items-center rounded-md px-2 py-1 text-sm hover:bg-secondary/50",
-              "transition-colors duration-200",
+              "transition-colors duration-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-ring",
               isActive && "bg-primary/10 font-medium text-primary"
             )}
             onClick={() => onHeadingClick(heading.id)}
+            onKeyDown={(e) => {
+              if (e.key === "Enter" || e.key === " ") {
+                e.preventDefault()
+                onHeadingClick(heading.id)
+              }
+            }}
           >
             <div className="mr-1 w-5 flex-shrink-0">
               {hasChildHeadings ? (
                 <button
-                  onClick={(e) => toggleExpand(i, e)}
+                  onClick={(e) => toggleExpand(heading.id, e)}
                   className="rounded-sm p-0.5 hover:bg-secondary/80 focus:outline-none"
+                  aria-label={isExpanded ? "Collapse section" : "Expand section"}
+                  aria-expanded={isExpanded}
                 >
                   {isExpanded ? (
                     <ChevronDown className="h-3.5 w-3.5" />
@@ -133,7 +99,7 @@ export const MarkdownSidebar = React.memo(function MarkdownSidebar({
                   )}
                 </button>
               ) : (
-                <Hash className="ml-0.5 h-3.5 w-3.5" />
+                <Hash className="ml-0.5 h-3.5 w-3.5" aria-hidden="true" />
               )}
             </div>
             <span
@@ -142,7 +108,6 @@ export const MarkdownSidebar = React.memo(function MarkdownSidebar({
                 heading.level === 1 && "font-semibold",
                 heading.level > 3 && "text-xs"
               )}
-              style={{ paddingLeft: `${(heading.level - 1) * 8}px` }}
             >
               {heading.text}
             </span>
@@ -150,16 +115,11 @@ export const MarkdownSidebar = React.memo(function MarkdownSidebar({
 
           {/* Render children if expanded */}
           {hasChildHeadings && isExpanded && (
-            <div className="pl-4">{renderHeadings(i + 1, heading.level)}</div>
+            <div className="pl-4">{renderHeadings(heading.children)}</div>
           )}
         </div>
       )
-
-      result.push(headingItem)
-    }
-
-    return result
-  }
+    })
 
   if (isCollapsed) {
     return null
@@ -176,12 +136,12 @@ export const MarkdownSidebar = React.memo(function MarkdownSidebar({
     >
       <h3 className="mb-2 px-2 text-sm font-semibold">Document Outline</h3>
       <div className="space-y-1">
-        {headings.length === 0 ? (
+        {headingTree.length === 0 ? (
           <p className="px-2 text-sm text-muted-foreground">
             No headings found
           </p>
         ) : (
-          renderHeadings(0, 0)
+          renderHeadings(headingTree)
         )}
       </div>
     </div>
