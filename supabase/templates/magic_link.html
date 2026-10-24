@@ -1,0 +1,7 @@
+<h2>Sign in to typostry</h2>
+<p>Follow this link to sign in:</p>
+<p>
+  <!-- RedirectTo is "<origin>/auth/confirm?next=<path>" (see src/app/login/login-form.tsx) -->
+  <a href="{{ .RedirectTo }}&token_hash={{ .TokenHash }}&type=email">Sign in</a>
+</p>
+<p>If you didn't request this email, you can ignore it.</p>
