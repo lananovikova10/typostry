@@ -5,6 +5,48 @@ const createJestConfig = nextJest({
   dir: './',
 })
 
+// ESM-only packages (the unified/remark/rehype ecosystem and friends) that must be transformed
+const esmPackages = [
+  'unified',
+  'bail',
+  'devlop',
+  'is-plain-obj',
+  'trough',
+  'vfile.*',
+  'unist-.*',
+  'mdast-.*',
+  'micromark.*',
+  'remark-.*',
+  'rehype-.*',
+  'hast-.*',
+  'hastscript',
+  'property-information',
+  'space-separated-tokens',
+  'comma-separated-tokens',
+  'html-void-elements',
+  'web-namespaces',
+  'zwitch',
+  'stringify-entities',
+  'character-entities.*',
+  'character-reference-invalid',
+  'decode-named-character-reference',
+  'is-alphabetical',
+  'is-alphanumerical',
+  'is-decimal',
+  'is-hexadecimal',
+  'ccount',
+  'escape-string-regexp',
+  'markdown-table',
+  'longest-streak',
+  'trim-lines',
+  'parse-entities',
+  'katex',
+  'shiki',
+  '@shikijs',
+  'frimousse',
+  '@t3-oss',
+]
+
 // Add any custom config to be passed to Jest
 const customJestConfig = {
   setupFilesAfterEnv: ['<rootDir>/jest.setup.js'],
@@ -13,11 +55,17 @@ const customJestConfig = {
     // Handle module aliases
     '^@/(.*)$': '<rootDir>/src/$1',
   },
-  // Transform ESM modules in node_modules
-  transformIgnorePatterns: [
-    '/node_modules/(?!(remark|unified|micromark|mdast-util-from-markdown|mdast-util-to-markdown|mdast-util-to-string|remark-gfm|remark-parse|remark-html)/)'
-  ],
+  testPathIgnorePatterns: ['/node_modules/', '<rootDir>/cypress/'],
 }
 
-// createJestConfig is exported this way to ensure that next/jest can load the Next.js config which is async
-module.exports = createJestConfig(customJestConfig)
+// next/jest always prepends its own '/node_modules/' ignore pattern, which would
+// stop the ESM packages above from being transformed, so replace it afterwards.
+// The optional .pnpm segment keeps this working with pnpm's nested layout.
+module.exports = async () => {
+  const config = await createJestConfig(customJestConfig)()
+  config.transformIgnorePatterns = [
+    `/node_modules/(?!(\\.pnpm|${esmPackages.join('|')})(@|/))`,
+    '^.+\\.module\\.(css|sass|scss)$',
+  ]
+  return config
+}

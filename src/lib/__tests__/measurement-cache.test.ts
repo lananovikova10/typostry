@@ -1,5 +1,9 @@
 import { MeasurementCache } from "../measurement-cache"
 
+// Signatures are derived from type + content length + structural features
+// (not the exact text), so test blocks need distinct lengths to be distinct
+const block = (n: number) => `<div>${"x".repeat(n + 1)}</div>`
+
 describe("MeasurementCache", () => {
   let cache: MeasurementCache
 
@@ -29,6 +33,13 @@ describe("MeasurementCache", () => {
       const sig2 = cache.generateSignature(content, "code")
 
       expect(sig1).not.toBe(sig2)
+    })
+
+    it("should share a signature for blocks with the same type, length and features", () => {
+      const sig1 = cache.generateSignature("<div>Test 1</div>", "text")
+      const sig2 = cache.generateSignature("<div>Test 2</div>", "text")
+
+      expect(sig1).toBe(sig2)
     })
 
     it("should generate different signatures for tables with different dimensions", () => {
@@ -99,26 +110,30 @@ describe("MeasurementCache", () => {
     it("should evict oldest entry when cache is full", () => {
       // Fill cache to max size (10 entries)
       for (let i = 0; i < 10; i++) {
-        const signature = cache.generateSignature(`<div>Test ${i}</div>`, "text")
+        const signature = cache.generateSignature(block(i), "text")
         cache.set(signature, 100 + i)
       }
 
-      const firstSignature = cache.generateSignature("<div>Test 0</div>", "text")
+      expect(cache.getStats().size).toBe(10)
+
+      const firstSignature = cache.generateSignature(block(0), "text")
       expect(cache.has(firstSignature)).toBe(true)
 
       // Add one more to trigger eviction
-      const newSignature = cache.generateSignature("<div>Test 10</div>", "text")
+      const newSignature = cache.generateSignature(block(10), "text")
       cache.set(newSignature, 200)
 
-      // First entry should be evicted
+      // First entry should be evicted, size stays at max
+      expect(cache.getStats().size).toBe(10)
       expect(cache.has(firstSignature)).toBe(false)
       expect(cache.has(newSignature)).toBe(true)
+      expect(cache.has(cache.generateSignature(block(1), "text"))).toBe(true)
     })
 
     it("should evict LRU entry", () => {
-      const sig1 = cache.generateSignature("<div>Test 1</div>", "text")
-      const sig2 = cache.generateSignature("<div>Test 2</div>", "text")
-      const sig3 = cache.generateSignature("<div>Test 3</div>", "text")
+      const sig1 = cache.generateSignature(block(1), "text")
+      const sig2 = cache.generateSignature(block(2), "text")
+      const sig3 = cache.generateSignature(block(3), "text")
 
       cache.set(sig1, 100)
       cache.set(sig2, 200)
@@ -140,8 +155,8 @@ describe("MeasurementCache", () => {
 
   describe("clear", () => {
     it("should remove all cached entries", () => {
-      const sig1 = cache.generateSignature("<div>Test 1</div>", "text")
-      const sig2 = cache.generateSignature("<div>Test 2</div>", "text")
+      const sig1 = cache.generateSignature(block(1), "text")
+      const sig2 = cache.generateSignature(block(2), "text")
 
       cache.set(sig1, 100)
       cache.set(sig2, 200)
@@ -174,8 +189,8 @@ describe("MeasurementCache", () => {
 
   describe("getStats", () => {
     it("should return cache statistics", () => {
-      const sig1 = cache.generateSignature("<div>Test 1</div>", "text")
-      const sig2 = cache.generateSignature("<div>Test 2</div>", "text")
+      const sig1 = cache.generateSignature(block(1), "text")
+      const sig2 = cache.generateSignature(block(2), "text")
 
       cache.set(sig1, 100)
       cache.set(sig2, 200)

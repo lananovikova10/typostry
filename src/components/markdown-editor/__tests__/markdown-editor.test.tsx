@@ -17,14 +17,15 @@ const setupFilePicker = (
   fileName = "test.md"
 ) => {
   const mockFile = new File([fileContent], fileName, { type: "text/markdown" })
+  const mockWritable = {
+    write: jest.fn().mockResolvedValue(undefined),
+    close: jest.fn().mockResolvedValue(undefined),
+  }
   const mockFileHandle = {
     kind: "file",
     name: fileName,
     getFile: jest.fn().mockResolvedValue(mockFile),
-    createWritable: jest.fn().mockResolvedValue({
-      write: jest.fn().mockResolvedValue(undefined),
-      close: jest.fn().mockResolvedValue(undefined),
-    }),
+    createWritable: jest.fn().mockResolvedValue(mockWritable),
   }
 
   // Mock the File System Access API
@@ -33,7 +34,7 @@ const setupFilePicker = (
     .mockResolvedValue([mockFileHandle])
   global.window.showSaveFilePicker = jest.fn().mockResolvedValue(mockFileHandle)
 
-  return { mockFile, mockFileHandle }
+  return { mockFile, mockFileHandle, mockWritable }
 }
 
 // Mock for window.confirm
@@ -114,28 +115,55 @@ describe("MarkdownEditor", () => {
   })
 
   test("saves a file using File System Access API", async () => {
-    const { mockFileHandle } = setupFilePicker("# Test Content", "test.md")
+    const { mockFileHandle, mockWritable } = setupFilePicker(
+      "# Opened Content",
+      "test.md"
+    )
     const handleChange = jest.fn()
+    const user = userEvent.setup()
 
     render(
       <MarkdownEditor initialValue="# Test Content" onChange={handleChange} />
     )
 
     // First, open a file to get the file handle
-    const openButton = screen.getByTestId("file-open")
-    fireEvent.click(openButton)
+    await user.click(screen.getByTestId("file-open"))
 
     await waitFor(() => {
-      expect(window.showOpenFilePicker).toHaveBeenCalled()
+      expect(screen.getByRole("textbox")).toHaveValue("# Opened Content")
     })
+    expect(window.showOpenFilePicker).toHaveBeenCalled()
 
-    // Then save the file
-    const saveButton = screen.getByTestId("file-save")
-    fireEvent.click(saveButton)
+    // With the File System Access API, Save is a dropdown (Save / Save As)
+    await user.click(screen.getByTestId("file-save"))
+    await user.click(await screen.findByRole("menuitem", { name: "Save" }))
+
+    // Saving writes straight to the opened handle: createWritable -> write -> close
+    await waitFor(() => {
+      expect(mockWritable.close).toHaveBeenCalled()
+    })
+    expect(mockFileHandle.createWritable).toHaveBeenCalledTimes(1)
+    expect(mockWritable.write).toHaveBeenCalledWith("# Opened Content")
+    expect(window.showSaveFilePicker).not.toHaveBeenCalled()
+  })
+
+  test("Save As asks for a new file and writes to it", async () => {
+    const { mockFileHandle, mockWritable } = setupFilePicker()
+    const user = userEvent.setup()
+
+    render(<MarkdownEditor initialValue="# Draft" />)
+
+    await user.click(screen.getByTestId("file-save"))
+    await user.click(await screen.findByRole("menuitem", { name: "Save As" }))
 
     await waitFor(() => {
-      expect(mockFileHandle.createWritable).toHaveBeenCalled()
+      expect(mockWritable.close).toHaveBeenCalled()
     })
+    expect(window.showSaveFilePicker).toHaveBeenCalledWith(
+      expect.objectContaining({ suggestedName: "untitled.md" })
+    )
+    expect(mockFileHandle.createWritable).toHaveBeenCalledTimes(1)
+    expect(mockWritable.write).toHaveBeenCalledWith("# Draft")
   })
 
   test("toggles between edit and preview mode", () => {
@@ -158,26 +186,28 @@ describe("MarkdownEditor", () => {
     expect(screen.getByRole("textbox")).toBeInTheDocument()
   })
 
-  test("shows reading stats in edit mode but not in preview mode", () => {
+  test("shows reading stats in edit and preview mode but not in distraction-free mode", () => {
     render(<MarkdownEditor initialValue="# Hello World" />)
 
-    // In edit mode, reading stats should be visible
-    expect(screen.getByRole("status")).toBeInTheDocument()
-    expect(screen.getByRole("status").textContent).toContain("Reading Time")
+    // Reading stats intentionally have no live-region role (to avoid
+    // announcing on every keystroke), so query them by their label text
+    expect(screen.getByText(/Reading Time/)).toHaveTextContent(
+      "Reading Time: 1 min read·Words: 3·Characters: 13"
+    )
 
-    // Switch to preview mode
+    // Reading stats stay visible in preview mode
     const previewButton = screen.getByTestId("toggle-preview")
     fireEvent.click(previewButton)
+    expect(screen.queryByRole("textbox")).not.toBeInTheDocument()
+    expect(screen.getByText(/Reading Time/)).toBeInTheDocument()
 
-    // In preview mode, reading stats should not be visible
-    expect(screen.queryByRole("status")).not.toBeInTheDocument()
-
-    // Switch back to edit mode
+    // Back to edit mode
     fireEvent.click(previewButton)
+    expect(screen.getByText(/Reading Time/)).toBeInTheDocument()
 
-    // Reading stats should be visible again
-    expect(screen.getByRole("status")).toBeInTheDocument()
-    expect(screen.getByRole("status").textContent).toContain("Reading Time")
+    // Distraction-free mode hides them
+    fireEvent.click(screen.getByTestId("distraction-distraction-free"))
+    expect(screen.queryByText(/Reading Time/)).not.toBeInTheDocument()
   })
 
   test("toggles sidebar with left-edge outline trigger", async () => {

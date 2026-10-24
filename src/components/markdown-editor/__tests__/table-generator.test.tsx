@@ -12,9 +12,16 @@ describe("TableGenerator", () => {
 
     expect(screen.getByTestId("toolbar-table")).toBeInTheDocument()
 
-    // Open tooltip
+    expect(screen.getByTestId("toolbar-table")).toHaveAttribute(
+      "aria-label",
+      "Insert table"
+    )
+
+    // Open tooltip (Radix shows it after its hover delay)
     await user.hover(screen.getByTestId("toolbar-table"))
-    expect(screen.getByText("Insert table")).toBeInTheDocument()
+    expect(await screen.findByRole("tooltip")).toHaveTextContent(
+      "Insert table"
+    )
   })
 
   it("opens the table grid popover when clicked", async () => {
@@ -56,7 +63,7 @@ describe("TableGenerator", () => {
 
     await user.click(screen.getByTestId("toolbar-table"))
 
-    // Click on a 2×3 table cell
+    // Click on a 2×3 table cell (2 data rows × 3 columns)
     await user.click(screen.getByLabelText("Select 2×3 table"))
 
     // Check that onInsertTable was called with the correct markdown
@@ -64,6 +71,7 @@ describe("TableGenerator", () => {
 
     const expectedTable = `| Header 1 | Header 2 | Header 3 |
 |----------|----------|----------|
+|          |          |          |
 |          |          |          |
 `
     expect(mockInsert).toHaveBeenCalledWith(expectedTable)

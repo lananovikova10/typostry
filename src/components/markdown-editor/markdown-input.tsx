@@ -220,6 +220,9 @@ export const MarkdownInput = forwardRef<
     if (!textarea) return
 
     const handleKeyDown = (e: KeyboardEvent) => {
+      // Another popup on this textarea already handled the key
+      if (e.defaultPrevented) return
+
       // Handle text completion keyboard shortcuts
       if (showSuggestions) {
         // Tab: Accept completion
@@ -250,12 +253,6 @@ export const MarkdownInput = forwardRef<
           return
         }
 
-        // Enter: Accept completion (alternative to Tab)
-        if (e.key === "Enter" && !e.shiftKey) {
-          e.preventDefault()
-          acceptCompletion()
-          return
-        }
       }
 
       // Ctrl/Cmd+D: Select next occurrence
@@ -588,7 +585,6 @@ export const MarkdownInput = forwardRef<
   const handleDragEnter = (e: React.DragEvent) => {
     e.preventDefault()
     e.stopPropagation()
-    console.log("Drag enter", e.dataTransfer.types)
     if (e.dataTransfer.types.includes("Files")) {
       setIsDragOver(true)
     }
@@ -597,7 +593,6 @@ export const MarkdownInput = forwardRef<
   const handleDragOver = (e: React.DragEvent) => {
     e.preventDefault()
     e.stopPropagation()
-    console.log("Drag over")
     if (e.dataTransfer.types.includes("Files")) {
       e.dataTransfer.dropEffect = "copy"
       setIsDragOver(true)
@@ -626,16 +621,12 @@ export const MarkdownInput = forwardRef<
     e.stopPropagation()
     setIsDragOver(false)
 
-    console.log("Drop event", e.dataTransfer.files)
     const files = Array.from(e.dataTransfer.files)
-    console.log("Files:", files)
     const imageFiles = files.filter((file) =>
       file.type.startsWith("image/")
     )
-    console.log("Image files:", imageFiles)
 
     if (imageFiles.length === 0) {
-      console.log("No image files found")
       return
     }
 
@@ -669,13 +660,15 @@ export const MarkdownInput = forwardRef<
       // Join multiple images with newlines
       const imagesText = imageMarkdowns.join("\n\n")
 
-      // Insert at cursor position
+      // Insert at cursor position, using the live value since the user
+      // may have kept typing while the upload was in progress
+      const currentValue = textarea.value
       const newValue =
-        value.substring(0, cursorPosition) +
+        currentValue.substring(0, cursorPosition) +
         "\n" +
         imagesText +
         "\n" +
-        value.substring(cursorPosition)
+        currentValue.substring(cursorPosition)
 
       onChange(newValue)
 
@@ -716,8 +709,6 @@ export const MarkdownInput = forwardRef<
       return null
     }
 
-    console.log('Rendering cursors at positions:', cursorPositions)
-
     return cursorPositions.map((pos, index) => (
       <div
         key={`cursor-${index}`}
@@ -738,8 +729,6 @@ export const MarkdownInput = forwardRef<
     if (!grammarCheckEnabled || !grammarErrors.length) {
       return null
     }
-
-    console.log("Rendering grammar errors:", grammarErrors.length)
 
     return grammarErrors.map((error, index) => {
       const { left, top, width, height } = getErrorPosition(

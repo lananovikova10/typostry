@@ -66,7 +66,8 @@ export async function summarizeText(
     // Calculate appropriate max_length based on input text length
     const inputWordCount = text.split(/\s+/).length
     const maxLength = Math.min(options?.maxLength || Math.floor(inputWordCount / 3), 130)
-    const minLength = Math.max(options?.minLength || 30, 20)
+    // Short inputs give a small maxLength; never let minLength exceed it
+    const minLength = Math.min(Math.max(options?.minLength || 30, 20), maxLength)
 
     const response = await fetch(HF_SUMMARIZATION_URL, {
       method: "POST",

@@ -1,5 +1,6 @@
 import React from "react"
 import { fireEvent, render, screen } from "@testing-library/react"
+import userEvent from "@testing-library/user-event"
 
 import { MarkdownEditor } from "../index"
 
@@ -48,12 +49,15 @@ describe("Text Insertion in MarkdownEditor", () => {
     expect(textarea).toHaveValue("**Bold text**")
   })
 
-  test("inserts heading 1 correctly", () => {
+  test("inserts heading 1 correctly", async () => {
+    const user = userEvent.setup()
     render(<MarkdownEditor />)
 
-    // Click on the H1 button in toolbar
-    const heading1Button = screen.getByTestId("toolbar-heading-1")
-    fireEvent.click(heading1Button)
+    // Headings live in a dropdown: open it and pick "Heading 1"
+    await user.click(screen.getByTestId("toolbar-headings"))
+    await user.click(
+      await screen.findByRole("menuitem", { name: "Heading 1" })
+    )
 
     // Verify that heading markdown is inserted
     const textarea = screen.getByRole("textbox")
@@ -63,7 +67,7 @@ describe("Text Insertion in MarkdownEditor", () => {
   test("inserts text with selection handling", () => {
     render(<MarkdownEditor initialValue="This is a test" />)
 
-    const textarea = screen.getByRole("textbox")
+    const textarea = screen.getByRole("textbox") as HTMLTextAreaElement
 
     // Simulate selecting text
     fireEvent.focus(textarea)

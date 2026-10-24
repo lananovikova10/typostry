@@ -25,8 +25,8 @@ describe("MarkdownToolbar", () => {
     // Check that all buttons are rendered
     expect(screen.getByTestId("toolbar-bold")).toBeInTheDocument()
     expect(screen.getByTestId("toolbar-italic")).toBeInTheDocument()
-    expect(screen.getByTestId("toolbar-heading-1")).toBeInTheDocument()
-    expect(screen.getByTestId("toolbar-heading-2")).toBeInTheDocument()
+    // Headings are grouped in a single dropdown trigger
+    expect(screen.getByTestId("toolbar-headings")).toBeInTheDocument()
     expect(screen.getByTestId("toolbar-link")).toBeInTheDocument()
     expect(screen.getByTestId("toolbar-image")).toBeInTheDocument()
     expect(screen.getByTestId("toolbar-bulleted-list")).toBeInTheDocument()
@@ -151,7 +151,8 @@ describe("MarkdownToolbar", () => {
     // Check that all formatting buttons are disabled
     expect(screen.getByTestId("toolbar-bold")).toBeDisabled()
     expect(screen.getByTestId("toolbar-italic")).toBeDisabled()
-    expect(screen.getByTestId("toolbar-heading-1")).toBeDisabled()
+    expect(screen.getByTestId("toolbar-headings")).toBeDisabled()
+    expect(screen.getByTestId("toolbar-table")).toBeDisabled()
 
     // Preview toggle button should still be enabled
     expect(screen.getByTestId("toggle-preview")).not.toBeDisabled()
@@ -162,7 +163,35 @@ describe("MarkdownToolbar", () => {
     expect(screen.getByTestId("file-open")).not.toBeDisabled()
   })
 
-  it("shows 'Edit' text when in preview mode", () => {
+  it("inserts the chosen heading level from the headings dropdown", async () => {
+    const mockInsert = jest.fn()
+    const user = userEvent.setup()
+
+    render(
+      <MarkdownToolbar
+        isPreviewMode={false}
+        onTogglePreview={jest.fn()}
+        onInsertAction={mockInsert}
+        onNewFile={jest.fn()}
+        onSaveFile={jest.fn()}
+        onOpenFile={jest.fn()}
+      />
+    )
+
+    await user.click(screen.getByTestId("toolbar-headings"))
+
+    const menuItems = await screen.findAllByRole("menuitem")
+    expect(menuItems.map((item) => item.textContent)).toEqual([
+      "Heading 1",
+      "Heading 2",
+      "Heading 3",
+    ])
+
+    await user.click(screen.getByRole("menuitem", { name: "Heading 2" }))
+    expect(mockInsert).toHaveBeenCalledWith("## Heading 2")
+  })
+
+  it("labels the toggle 'Edit mode' when in preview mode", () => {
     const mockToggle = jest.fn()
     const mockInsert = jest.fn()
     const mockNewFile = jest.fn()
@@ -180,10 +209,14 @@ describe("MarkdownToolbar", () => {
       />
     )
 
-    expect(screen.getByTestId("toggle-preview")).toHaveTextContent("Edit")
+    // The toggle is icon-only; its accessible name reflects the target mode
+    expect(screen.getByTestId("toggle-preview")).toHaveAttribute(
+      "aria-label",
+      "Edit mode"
+    )
   })
 
-  it("shows 'Preview' text when in edit mode", () => {
+  it("labels the toggle 'Preview mode' when in edit mode", () => {
     const mockToggle = jest.fn()
     const mockInsert = jest.fn()
     const mockNewFile = jest.fn()
@@ -201,6 +234,10 @@ describe("MarkdownToolbar", () => {
       />
     )
 
-    expect(screen.getByTestId("toggle-preview")).toHaveTextContent("Preview")
+    // The toggle is icon-only; its accessible name reflects the target mode
+    expect(screen.getByTestId("toggle-preview")).toHaveAttribute(
+      "aria-label",
+      "Preview mode"
+    )
   })
 })

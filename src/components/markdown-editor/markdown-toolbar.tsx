@@ -218,8 +218,6 @@ export function MarkdownToolbar({
 
   // Handle emoji selection from the emoji picker
   const handleEmojiSelect = (emoji: any) => {
-    console.log("Selected emoji:", emoji)
-
     // Insert the actual emoji character directly instead of creating shortcodes
     // This ensures compatibility regardless of whether the shortcode exists in our mapping
     onInsertAction(emoji.emoji || "😀")
@@ -275,62 +273,8 @@ export function MarkdownToolbar({
             const urlRegex = /^(https?:\/\/)?[\w.-]+\.[a-z]{2,}(\/\S*)?$/i
 
             if (urlRegex.test(clipboardText)) {
-              // Get the selected text from the textarea
-              const textarea = document.querySelector(
-                'textarea[data-testid="markdown-input"]'
-              ) as HTMLTextAreaElement
-              if (!textarea) {
-                onInsertAction("[Link](" + clipboardText + ")")
-                return
-              }
-
-              const selectedText = textarea.value.substring(
-                textarea.selectionStart,
-                textarea.selectionEnd
-              )
-
-              // If there's selected text, wrap it with the link format
-              if (selectedText) {
-                const beforeSelection = textarea.value.substring(
-                  0,
-                  textarea.selectionStart
-                )
-                const afterSelection = textarea.value.substring(
-                  textarea.selectionEnd
-                )
-                const newValue =
-                  beforeSelection +
-                  "[" +
-                  selectedText +
-                  "](" +
-                  clipboardText +
-                  ")" +
-                  afterSelection
-
-                // Update the textarea value
-                textarea.value = newValue
-
-                // Trigger the onChange event
-                const event = new Event("input", { bubbles: true })
-                textarea.dispatchEvent(event)
-
-                // Set cursor position after the inserted link
-                setTimeout(() => {
-                  const newCursorPosition =
-                    textarea.selectionStart +
-                    selectedText.length +
-                    clipboardText.length +
-                    4
-                  textarea.setSelectionRange(
-                    newCursorPosition,
-                    newCursorPosition
-                  )
-                  textarea.focus()
-                }, 0)
-              } else {
-                // No selection, just insert the link
-                onInsertAction("[Link](" + clipboardText + ")")
-              }
+              // Wraps the current selection, or inserts a placeholder link
+              onInsertAction("[Link text](" + clipboardText + ")")
             } else {
               // Not a URL, insert default link format
               onInsertAction("[Link text](https://example.com)")

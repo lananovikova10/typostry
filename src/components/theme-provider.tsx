@@ -5,18 +5,10 @@ import { ThemeProvider as NextThemesProvider } from "next-themes"
 import { type ThemeProviderProps } from "next-themes/dist/types"
 
 // Extended ThemeProvider to include high-contrast themes
+// Always render the provider: swapping a placeholder <div> for it after mount
+// would unmount and remount the whole app. Theme-dependent UI guards itself
+// with useThemeSafe, and the inline script in layout.tsx prevents a flash.
 export function ThemeProvider({ children, ...props }: ThemeProviderProps) {
-  const [mounted, setMounted] = React.useState(false)
-
-  React.useEffect(() => {
-    setMounted(true)
-  }, [])
-
-  // Prevent hydration mismatch by not rendering theme-dependent content on server
-  if (!mounted) {
-    return <div suppressHydrationWarning>{children}</div>
-  }
-
   return (
     <NextThemesProvider
       {...props}

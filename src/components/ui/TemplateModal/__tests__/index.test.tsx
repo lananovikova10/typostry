@@ -144,11 +144,12 @@ describe("TemplateModal", () => {
 
   it("fetches template content when a template is selected", async () => {
     // Mock successful API responses
-    ;(gitlabApi.fetchTemplateFiles as jest.Mock)
-      .mockResolvedValueOnce(mockTemplates)(
-        gitlabApi.fetchTemplateContent as jest.Mock
-      )
-      .mockResolvedValueOnce(mockTemplateContent)
+    ;(gitlabApi.fetchTemplateFiles as jest.Mock).mockResolvedValueOnce(
+      mockTemplates
+    )
+    ;(gitlabApi.fetchTemplateContent as jest.Mock).mockResolvedValueOnce(
+      mockTemplateContent
+    )
 
     render(<TemplateModal {...mockProps} />)
 
@@ -167,17 +168,20 @@ describe("TemplateModal", () => {
 
     // Verify preview is displayed
     await waitFor(() => {
-      expect(screen.getByText("# API Reference Template")).toBeInTheDocument()
+      expect(screen.getByTestId("template-preview")).toHaveTextContent(
+        "# API Reference Template Sample content here"
+      )
     })
   })
 
   it("inserts template content and closes modal when Insert Template is clicked", async () => {
     // Mock successful API responses
-    ;(gitlabApi.fetchTemplateFiles as jest.Mock)
-      .mockResolvedValueOnce(mockTemplates)(
-        gitlabApi.fetchTemplateContent as jest.Mock
-      )
-      .mockResolvedValueOnce(mockTemplateContent)
+    ;(gitlabApi.fetchTemplateFiles as jest.Mock).mockResolvedValueOnce(
+      mockTemplates
+    )
+    ;(gitlabApi.fetchTemplateContent as jest.Mock).mockResolvedValueOnce(
+      mockTemplateContent
+    )
 
     render(<TemplateModal {...mockProps} />)
 
@@ -191,7 +195,9 @@ describe("TemplateModal", () => {
 
     // Wait for content to load
     await waitFor(() => {
-      expect(screen.getByText("# API Reference Template")).toBeInTheDocument()
+      expect(screen.getByTestId("template-preview")).toHaveTextContent(
+        "# API Reference Template Sample content here"
+      )
     })
 
     // Click Insert Template button

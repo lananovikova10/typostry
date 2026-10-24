@@ -1,12 +1,19 @@
+import React from "react"
 import { render, screen } from "@testing-library/react"
 
 import { ModeToggle } from "../mode-toggle"
 import { ThemeProvider } from "../theme-provider"
 
-// Mock the useTheme hook from next-themes
+// Mock next-themes: ThemeProvider always renders NextThemesProvider, so the
+// mock must provide a pass-through provider alongside useTheme
 jest.mock("next-themes", () => ({
+  ThemeProvider: ({ children }: { children: React.ReactNode }) => (
+    <>{children}</>
+  ),
   useTheme: () => ({
     theme: "light",
+    resolvedTheme: "light",
+    themes: ["light", "dark", "system"],
     setTheme: jest.fn(),
   }),
 }))

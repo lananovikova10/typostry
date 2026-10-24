@@ -85,27 +85,34 @@ export const fetchTemplateFiles = async (): Promise<TemplateFile[]> => {
   }
 
   try {
-    // Use absolute GitLab API URL with pagination to get all files
-    const url =
-      "https://gitlab.com/api/v4/projects/tgdp%2Ftemplates/repository/tree?ref=v1.3.0&recursive=true&per_page=1000"
+    // GitLab caps per_page at 100, so follow the x-next-page header
+    const baseUrl =
+      "https://gitlab.com/api/v4/projects/tgdp%2Ftemplates/repository/tree?ref=v1.3.0&recursive=true&per_page=100"
+    const MAX_PAGES = 20
+    const validatedData: ReturnType<typeof gitLabTreeResponseSchema.parse> = []
+    let page: string | null = "1"
 
-    // Apply rate limiting
-    const response = await gitlabRateLimiter.execute(async () => {
-      return await fetch(url, {
-        headers: {
-          Accept: "application/json",
-          "Content-Type": "application/json",
-        },
+    for (let i = 0; page && i < MAX_PAGES; i++) {
+      const url: string = `${baseUrl}&page=${page}`
+
+      // Apply rate limiting
+      const response: Response = await gitlabRateLimiter.execute(async () => {
+        return await fetch(url, {
+          headers: {
+            Accept: "application/json",
+          },
+        })
       })
-    })
 
-    if (!response.ok) {
-      throw new Error(`Failed to fetch templates: ${response.statusText}`)
+      if (!response.ok) {
+        throw new Error(`Failed to fetch templates: ${response.statusText}`)
+      }
+      const rawData = await response.json()
+
+      // Validate response with Zod schema
+      validatedData.push(...gitLabTreeResponseSchema.parse(rawData))
+      page = response.headers?.get("x-next-page") || null
     }
-    const rawData = await response.json()
-
-    // Validate response with Zod schema
-    const validatedData = gitLabTreeResponseSchema.parse(rawData)
 
     // Filter for template files matching pattern: {folder}/template_{name}.md
     const templates: TemplateFile[] = validatedData

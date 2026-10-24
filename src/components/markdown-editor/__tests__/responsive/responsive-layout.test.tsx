@@ -40,15 +40,20 @@ describe("MarkdownEditor Responsive Layout", () => {
     }
   }
 
-  test("editor should have proper min-height on small screens", () => {
+  test("editor should keep a minimum height on small screens", () => {
     // Mock small screen (mobile)
     mockMatchMedia(false) // Not matching medium breakpoint
 
     const { inputElement } = setupTest()
 
-    // Check computed style has min-height set
-    const styles = window.getComputedStyle(inputElement)
-    expect(inputElement).toHaveClass("min-h-[200px]")
+    // The fixed min-height was replaced by an auto-growing textarea that
+    // always shows at least 3 rows
+    expect(inputElement).toHaveClass("h-auto")
+    expect(inputElement).toHaveAttribute("rows", "3")
+
+    // The input fills the available space in the column layout
+    const inputRoot = inputElement.parentElement?.parentElement
+    expect(inputRoot).toHaveClass("flex-1")
   })
 
   test("layout should be column (vertical) on small screens", () => {

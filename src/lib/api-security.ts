@@ -2,7 +2,12 @@ import { NextRequest, NextResponse } from "next/server"
 
 import { RateLimiter } from "@/lib/rate-limiter"
 
-const RATE_LIMITERS = new Map<string, RateLimiter>()
+// Note: this state is per server instance. On serverless hosting each
+// instance counts separately, so treat this as best-effort protection.
+const RATE_LIMITERS = new Map<string, { limiter: RateLimiter; maxRequests: number }>()
+const MAX_TRACKED_CLIENTS = 1000
+const PRUNE_INTERVAL_MS = 1000
+let lastPruneAt = 0
 const SAME_SITE_VALUES = new Set(["same-origin", "same-site"])
 const NO_STORE_HEADERS = {
   "Cache-Control": "no-store",
@@ -140,21 +145,48 @@ export function requireTrustedRequest(
   return rejectRequest("Forbidden", 403)
 }
 
+// Drops clients whose bucket has fully refilled, so the map stays bounded.
+// Throttled so a flood of new clients can't force a full scan per request.
+function pruneIdleLimiters() {
+  const now = Date.now()
+  if (now - lastPruneAt < PRUNE_INTERVAL_MS) return
+  lastPruneAt = now
+  RATE_LIMITERS.forEach((entry, key) => {
+    if (entry.limiter.getAvailableTokens() >= entry.maxRequests) {
+      RATE_LIMITERS.delete(key)
+    }
+  })
+}
+
 export function requireRateLimit(
   request: NextRequest,
   options: RateLimitOptions
 ): NextResponse<unknown> | null {
   const clientAddress = getClientAddress(request)
   const limiterKey = `${options.key}:${clientAddress}`
-  let limiter = RATE_LIMITERS.get(limiterKey)
+  let limiter = RATE_LIMITERS.get(limiterKey)?.limiter
 
   if (!limiter) {
+    if (RATE_LIMITERS.size >= MAX_TRACKED_CLIENTS) {
+      pruneIdleLimiters()
+    }
+    // Still full: every tracked client is active. Reject the new client
+    // rather than evicting someone's rate-limit state or growing the map.
+    if (RATE_LIMITERS.size >= MAX_TRACKED_CLIENTS) {
+      return rejectRequest(
+        options.errorMessage ?? "Too many requests",
+        429
+      )
+    }
     limiter = new RateLimiter({
       maxRequests: options.maxRequests,
       windowMs: options.windowMs,
       errorMessage: options.errorMessage,
     })
-    RATE_LIMITERS.set(limiterKey, limiter)
+    RATE_LIMITERS.set(limiterKey, {
+      limiter,
+      maxRequests: options.maxRequests,
+    })
   }
 
   if (limiter.tryRequest()) {

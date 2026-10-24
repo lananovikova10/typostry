@@ -1,18 +1,15 @@
 import React from "react"
 import { render, screen, waitFor } from "@testing-library/react"
 import userEvent from "@testing-library/user-event"
-import { beforeEach, describe, expect, it, vi } from "vitest"
 
-import { fetchTemplateContent } from "@/lib/gitlab"
+import { fetchTemplateContent, fetchTemplateFiles } from "@/lib/gitlab"
 
 import { TemplateSelector } from "../template-selector"
 
-// Mock fetch
-global.fetch = vi.fn()
-
-// Mock the fetchTemplateContent function
-vi.mock("@/lib/gitlab", () => ({
-  fetchTemplateContent: vi.fn(),
+// Mock the GitLab API functions used by the selector
+jest.mock("@/lib/gitlab", () => ({
+  fetchTemplateFiles: jest.fn(),
+  fetchTemplateContent: jest.fn(),
   formatTemplateName: (name: string) => {
     return name
       .replace("template_", "")
@@ -26,159 +23,142 @@ vi.mock("@/lib/gitlab", () => ({
   },
 }))
 
+const mockFetchTemplateFiles = fetchTemplateFiles as jest.MockedFunction<
+  typeof fetchTemplateFiles
+>
+const mockFetchTemplateContent = fetchTemplateContent as jest.MockedFunction<
+  typeof fetchTemplateContent
+>
+
 describe("TemplateSelector", () => {
   const mockProps = {
     isOpen: true,
-    onClose: vi.fn(),
-    onSelectTemplate: vi.fn(),
+    onClose: jest.fn(),
+    onSelectTemplate: jest.fn(),
   }
 
   const mockTemplates = [
     {
-      id: "1",
-      name: "template_api-reference.md",
-      type: "blob",
-      path: "api-reference/template_api-reference.md",
-    },
-    {
       id: "2",
       name: "template_how-to.md",
-      type: "blob",
+      type: "blob" as const,
       path: "how-to/template_how-to.md",
+    },
+    {
+      id: "1",
+      name: "template_api-reference.md",
+      type: "blob" as const,
+      path: "api-reference/template_api-reference.md",
     },
   ]
 
+  const mockContent = "# API Reference Template\n\nSample content here"
+
   beforeEach(() => {
-    vi.resetAllMocks()
+    jest.resetAllMocks()
   })
 
   it("displays loading state initially", async () => {
-    // Mock fetch to delay response
-    vi.mocked(fetch).mockImplementation(
-      () => new Promise((resolve) => setTimeout(resolve, 100))
-    )
+    // Keep the request pending so the loading state stays visible
+    mockFetchTemplateFiles.mockImplementation(() => new Promise(() => {}))
 
     render(<TemplateSelector {...mockProps} />)
 
-    // Assert loading indicator is shown
     expect(screen.getByText("Loading templates...")).toBeInTheDocument()
+    expect(mockFetchTemplateFiles).toHaveBeenCalledTimes(1)
   })
 
-  it("displays templates after successful fetch", async () => {
-    // Mock successful API response
-    vi.mocked(fetch).mockResolvedValueOnce({
-      ok: true,
-      json: () => Promise.resolve(mockTemplates),
-    } as Response)
+  it("displays templates sorted by name after successful fetch", async () => {
+    mockFetchTemplateFiles.mockResolvedValueOnce(mockTemplates)
 
     render(<TemplateSelector {...mockProps} />)
 
-    // Wait for templates to load
     await waitFor(() => {
       expect(screen.queryByText("Loading templates...")).not.toBeInTheDocument()
     })
 
-    // Assert templates are rendered
-    expect(screen.getByText("Api Reference")).toBeInTheDocument()
-    expect(screen.getByText("How To")).toBeInTheDocument()
+    const options = screen.getAllByRole("option")
+    expect(options).toHaveLength(2)
+    expect(options[0]).toHaveTextContent("Api Reference")
+    expect(options[1]).toHaveTextContent("How To")
   })
 
   it("displays error message when fetch fails", async () => {
-    // Mock failed API response
-    vi.mocked(fetch).mockResolvedValueOnce({
-      ok: false,
-      statusText: "Internal Server Error",
-      json: () => Promise.resolve({ error: "Failed to fetch templates" }),
-    } as Response)
+    mockFetchTemplateFiles.mockRejectedValueOnce(
+      new Error("Failed to fetch templates: Internal Server Error")
+    )
 
     render(<TemplateSelector {...mockProps} />)
 
-    // Wait for error to be displayed
     await waitFor(() => {
-      expect(screen.getByText("Failed to fetch templates")).toBeInTheDocument()
+      expect(
+        screen.getByText("Failed to fetch templates: Internal Server Error")
+      ).toBeInTheDocument()
     })
 
-    // Check if the "Try again" button is present
     expect(screen.getByText("Try again")).toBeInTheDocument()
   })
 
   it("displays empty state when no templates are available", async () => {
-    // Mock empty API response
-    vi.mocked(fetch).mockResolvedValueOnce({
-      ok: true,
-      json: () => Promise.resolve([]),
-    } as Response)
+    mockFetchTemplateFiles.mockResolvedValueOnce([])
 
     render(<TemplateSelector {...mockProps} />)
 
-    // Wait for empty state to be displayed
     await waitFor(() => {
       expect(screen.getByText("No templates available")).toBeInTheDocument()
     })
   })
 
   it("fetches template content when a template is selected", async () => {
-    // Mock successful API response for templates list
-    vi.mocked(fetch).mockResolvedValueOnce({
-      ok: true,
-      json: () => Promise.resolve(mockTemplates),
-    } as Response)
-
-    // Mock successful template content fetch
-    const mockContent = "# API Reference Template\n\nSample content here"
-    vi.mocked(fetchTemplateContent).mockResolvedValueOnce(mockContent)
+    mockFetchTemplateFiles.mockResolvedValueOnce(mockTemplates)
+    mockFetchTemplateContent.mockResolvedValueOnce(mockContent)
 
     render(<TemplateSelector {...mockProps} />)
 
-    // Wait for templates to load
     await waitFor(() => {
       expect(screen.getByText("Api Reference")).toBeInTheDocument()
     })
 
-    // Click on a template
     await userEvent.click(screen.getByText("Api Reference"))
 
-    // Verify that fetchTemplateContent was called with the correct path
-    expect(fetchTemplateContent).toHaveBeenCalledWith(
+    expect(mockFetchTemplateContent).toHaveBeenCalledWith(
       "api-reference/template_api-reference.md"
     )
 
-    // Verify preview is displayed
+    // Preview is rendered in a <pre>, so match on its full text content
     await waitFor(() => {
-      expect(screen.getByText("# API Reference Template")).toBeInTheDocument()
+      expect(
+        screen.getByText((_, element) => {
+          return (
+            element?.tagName === "PRE" &&
+            element.textContent === mockContent
+          )
+        })
+      ).toBeInTheDocument()
     })
   })
 
   it("closes the modal and calls onSelectTemplate when Insert Template button is clicked", async () => {
-    // Mock successful API response for templates list
-    vi.mocked(fetch).mockResolvedValueOnce({
-      ok: true,
-      json: () => Promise.resolve(mockTemplates),
-    } as Response)
-
-    // Mock successful template content fetch
-    const mockContent = "# API Reference Template\n\nSample content here"
-    vi.mocked(fetchTemplateContent).mockResolvedValueOnce(mockContent)
+    mockFetchTemplateFiles.mockResolvedValueOnce(mockTemplates)
+    mockFetchTemplateContent.mockResolvedValueOnce(mockContent)
 
     render(<TemplateSelector {...mockProps} />)
 
-    // Wait for templates to load
     await waitFor(() => {
       expect(screen.getByText("Api Reference")).toBeInTheDocument()
     })
 
-    // Click on a template
+    const insertButton = screen.getByRole("button", { name: "Insert Template" })
+    expect(insertButton).toBeDisabled()
+
     await userEvent.click(screen.getByText("Api Reference"))
 
-    // Wait for content to load
     await waitFor(() => {
-      expect(screen.getByText("# API Reference Template")).toBeInTheDocument()
+      expect(insertButton).toBeEnabled()
     })
 
-    // Click Insert Template button
-    await userEvent.click(screen.getByText("Insert Template"))
+    await userEvent.click(insertButton)
 
-    // Verify onSelectTemplate and onClose were called
     expect(mockProps.onSelectTemplate).toHaveBeenCalledWith(mockContent)
     expect(mockProps.onClose).toHaveBeenCalled()
   })

@@ -10,17 +10,9 @@ import {
   hasRecoverableContent,
   getTimeSinceLastSave,
 } from "@/lib/auto-save"
-import { exportToPDF } from "@/lib/pdf-export"
-import { unified } from "unified"
-import remarkParse from "remark-parse"
-import remarkGfm from "remark-gfm"
-import remarkMath from "remark-math"
-import remarkRehype from "remark-rehype"
-import rehypeSanitize from "rehype-sanitize"
-import rehypeKatex from "rehype-katex"
-import rehypeStringify from "rehype-stringify"
 import { replaceEmojis } from "@/lib/emoji"
-import { markdownSanitizeSchema } from "@/lib/sanitize-schema"
+import { extractHeadings } from "@/lib/markdown-headings"
+import { renderMarkdown } from "@/lib/markdown-pipeline"
 
 import { MarkdownInput, MarkdownInputHandle } from "./markdown-input"
 import { MarkdownPreview } from "./markdown-preview"
@@ -30,6 +22,14 @@ import { MarkdownToolbar } from "./markdown-toolbar"
 import { OutlineTrigger } from "./outline-trigger"
 import { ReadingStats } from "./reading-stats"
 import { DraggableTodoPopup } from "@/components/ui/draggable-todo-popup"
+
+const MAX_UNDO_HISTORY = 200
+
+async function writeToFileHandle(handle: FileSystemFileHandle, content: string) {
+  const writableStream = await handle.createWritable()
+  await writableStream.write(content)
+  await writableStream.close()
+}
 
 export interface MarkdownEditorProps {
   initialValue?: string
@@ -74,7 +74,6 @@ export function MarkdownEditor({
   // Undo history management
   const [undoStack, setUndoStack] = useState<string[]>([initialValue])
   const [redoStack, setRedoStack] = useState<string[]>([])
-  const [isUndoRedoOperation, setIsUndoRedoOperation] = useState(false)
 
   // Text completion settings
   const [textCompletionEnabled, setTextCompletionEnabled] = useState(true)
@@ -144,6 +143,33 @@ export function MarkdownEditor({
     }
   }, [markdown])
 
+  // Flush the pending localStorage save when the page is closed or hidden,
+  // so the last seconds of typing are not lost
+  const latestMarkdownRef = useRef(markdown)
+  latestMarkdownRef.current = markdown
+  useEffect(() => {
+    const flush = () => {
+      if (
+        localStorageAutoSaveRef.current &&
+        latestMarkdownRef.current.trim().length > 0
+      ) {
+        clearTimeout(localStorageAutoSaveRef.current)
+        localStorageAutoSaveRef.current = null
+        saveToLocalStorage(latestMarkdownRef.current)
+      }
+    }
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === "hidden") flush()
+    }
+
+    window.addEventListener("pagehide", flush)
+    document.addEventListener("visibilitychange", handleVisibilityChange)
+    return () => {
+      window.removeEventListener("pagehide", flush)
+      document.removeEventListener("visibilitychange", handleVisibilityChange)
+    }
+  }, [])
+
   // Auto-save effect that triggers when markdown content changes
   useEffect(() => {
     // Only auto-save if a file is open and auto-save is enabled
@@ -153,9 +179,17 @@ export function MarkdownEditor({
         clearTimeout(autoSaveTimeoutRef.current)
       }
 
-      // Set a new timeout to save after 1 second of inactivity
-      autoSaveTimeoutRef.current = setTimeout(() => {
-        handleSaveFile()
+      // Set a new timeout to save after 1 second of inactivity.
+      // This runs without a user gesture, so it must never open a file picker.
+      autoSaveTimeoutRef.current = setTimeout(async () => {
+        try {
+          await writeToFileHandle(fileHandle, markdown)
+          setIsFileSaved(true)
+          clearLocalStorage()
+        } catch (error) {
+          console.error("Auto-save failed:", error)
+          setAutoSaveEnabled(false)
+        }
       }, 1000)
     }
 
@@ -220,171 +254,183 @@ export function MarkdownEditor({
       }
     )
 
-    // Observe all headings in the preview
-    const headings = document.querySelectorAll(
-      '[data-testid="markdown-preview"] h1[id], [data-testid="markdown-preview"] h2[id], [data-testid="markdown-preview"] h3[id], [data-testid="markdown-preview"] h4[id], [data-testid="markdown-preview"] h5[id], [data-testid="markdown-preview"] h6[id]'
-    )
+    // Observe all headings in the preview. The preview HTML is rendered
+    // asynchronously, so re-collect headings whenever its DOM changes.
+    const observeHeadings = () => {
+      observer.disconnect()
+      editorRef.current
+        ?.querySelectorAll("h1[id], h2[id], h3[id], h4[id], h5[id], h6[id]")
+        .forEach((heading) => observer.observe(heading))
+    }
+    observeHeadings()
 
-    headings.forEach((heading) => observer.observe(heading))
+    const mutationObserver = new MutationObserver(observeHeadings)
+    if (editorRef.current) {
+      mutationObserver.observe(editorRef.current, { childList: true, subtree: true })
+    }
 
     return () => {
-      headings.forEach((heading) => observer.unobserve(heading))
+      observer.disconnect()
+      mutationObserver.disconnect()
     }
-  }, [isPreviewMode, markdown])
+  }, [isPreviewMode])
 
-  // Keyboard shortcuts handler
-  useEffect(() => {
-    const handleKeyDown = (event: KeyboardEvent) => {
-      const isCtrlOrCmd = event.ctrlKey || event.metaKey
+  // Keyboard shortcuts handler. It is re-created every render and read
+  // through a ref, so it always sees the current state and handlers.
+  const keyDownHandlerRef = useRef<(event: KeyboardEvent) => void>(() => {})
+  keyDownHandlerRef.current = (event: KeyboardEvent) => {
+    const isCtrlOrCmd = event.ctrlKey || event.metaKey
+    // With Shift held, letter keys report uppercase ("C", "Z")
+    const key = event.key.length === 1 ? event.key.toLowerCase() : event.key
 
-      // Global shortcut to focus textarea: 'i'
-      if (
-        event.key === "i" &&
-        !isCtrlOrCmd &&
-        !event.altKey &&
-        !event.shiftKey
-      ) {
-        // Only activate if not already in a text input
-        const activeElement = document.activeElement
-        const isInputActive =
-          activeElement instanceof HTMLInputElement ||
-          activeElement instanceof HTMLTextAreaElement
+    // Global shortcut to focus textarea: 'i'
+    if (
+      event.key === "i" &&
+      !isCtrlOrCmd &&
+      !event.altKey &&
+      !event.shiftKey
+    ) {
+      // Only activate if not already in a text input
+      const activeElement = document.activeElement
+      const isInputActive =
+        activeElement instanceof HTMLInputElement ||
+        activeElement instanceof HTMLTextAreaElement
 
-        if (!isInputActive && !isPreviewMode) {
+      if (!isInputActive && !isPreviewMode) {
+        event.preventDefault()
+        markdownInputRef.current?.focus()
+      }
+    }
+
+    // Toggle view mode: 'ESC'
+    // Skip if a popup, menu or suggestion list already handled this Escape
+    if (event.key === "Escape" && !event.defaultPrevented) {
+      event.preventDefault()
+      if (isFullScreen || isDistractionFree) {
+        // Exit all distraction-free modes first
+        setIsFullScreen(false)
+        setIsDistractionFree(false)
+      } else {
+        setIsPreviewMode(!isPreviewMode)
+      }
+    }
+
+    // F11 or CMD+SHIFT+F: Toggle full-screen distraction-free mode
+    if (event.key === "F11" || (isCtrlOrCmd && event.shiftKey && key === "f")) {
+      event.preventDefault()
+      setIsFullScreen(!isFullScreen)
+      setIsDistractionFree(!isFullScreen) // Enable distraction-free when going full-screen
+    }
+
+    // CMD+SHIFT+D: Toggle distraction-free mode
+    if (isCtrlOrCmd && event.shiftKey && key === "d") {
+      event.preventDefault()
+      setIsDistractionFree(!isDistractionFree)
+    }
+
+    // Only process these shortcuts if editor element has focus
+    const editorHasFocus =
+      editorRef.current?.contains(document.activeElement) || false
+    if (!editorHasFocus) return
+
+    if (isCtrlOrCmd) {
+      switch (key) {
+        case "s": // Format/Save: 'CTRL/CMD + S'
           event.preventDefault()
-          markdownInputRef.current?.focus()
-        }
-      }
+          handleSaveFile()
+          break
 
-      // Toggle view mode: 'ESC'
-      if (event.key === "Escape") {
-        event.preventDefault()
-        if (isFullScreen || isDistractionFree) {
-          // Exit all distraction-free modes first
-          setIsFullScreen(false)
-          setIsDistractionFree(false)
-        } else {
-          setIsPreviewMode(!isPreviewMode)
-        }
-      }
+        case "b": // Bold: 'CTRL/CMD + B'
+          event.preventDefault()
+          if (!isPreviewMode) {
+            handleInsertAction("**Bold text**")
+          }
+          break
 
-      // F11 or CMD+SHIFT+F: Toggle full-screen distraction-free mode
-      if (event.key === "F11" || (isCtrlOrCmd && event.shiftKey && event.key === "F")) {
-        event.preventDefault()
-        setIsFullScreen(!isFullScreen)
-        setIsDistractionFree(!isFullScreen) // Enable distraction-free when going full-screen
-      }
+        case "i": // Italic: 'CTRL/CMD + I'
+          event.preventDefault()
+          if (!isPreviewMode) {
+            handleInsertAction("*Italic text*")
+          }
+          break
 
-      // CMD+SHIFT+D: Toggle distraction-free mode
-      if (isCtrlOrCmd && event.shiftKey && event.key === "D") {
-        event.preventDefault()
-        setIsDistractionFree(!isDistractionFree)
-      }
+        case "k": // Link: 'CTRL/CMD + K'
+          event.preventDefault()
+          if (!isPreviewMode) {
+            handleInsertAction("[Link text](https://example.com)")
+          }
+          break
 
-      // Only process these shortcuts if editor element has focus
-      const editorHasFocus =
-        editorRef.current?.contains(document.activeElement) || false
-      if (!editorHasFocus) return
-
-      if (isCtrlOrCmd) {
-        switch (event.key) {
-          case "s": // Format/Save: 'CTRL/CMD + S'
-            event.preventDefault()
-            handleSaveFile()
-            break
-
-          case "b": // Bold: 'CTRL/CMD + B'
+        case "c": // Code block: 'CTRL/CMD + SHIFT + C'
+          if (event.shiftKey) {
             event.preventDefault()
             if (!isPreviewMode) {
-              handleInsertAction("**Bold text**")
+              handleInsertAction(
+                "\n```\nconst example = 'code block';\n```\n"
+              )
             }
-            break
+          }
+          break
 
-          case "i": // Italic: 'CTRL/CMD + I'
-            event.preventDefault()
-            if (!isPreviewMode) {
-              handleInsertAction("*Italic text*")
-            }
-            break
+        case "[": // Anchor: 'CTRL/CMD + ['
+          event.preventDefault()
+          if (!isPreviewMode) {
+            handleInsertAction("[Link text](https://example.com)")
+          }
+          break
 
-          case "k": // Link: 'CTRL/CMD + K'
-            event.preventDefault()
-            if (!isPreviewMode) {
-              handleInsertAction("[Link text](https://example.com)")
-            }
-            break
+        case "]": // Image: 'CTRL/CMD + ]'
+          event.preventDefault()
+          if (!isPreviewMode) {
+            handleInsertAction(
+              "![Image alt text](https://example.com/image.jpg)"
+            )
+          }
+          break
 
-          case "c": // Code block: 'CTRL/CMD + SHIFT + C'
+        case "\\": // Table: 'CTRL/CMD + \'
+          event.preventDefault()
+          if (!isPreviewMode) {
+            handleInsertAction(
+              "\n| Header 1 | Header 2 | Header 3 |\n| -------- | -------- | -------- |\n| Cell 1   | Cell 2   | Cell 3   |\n| Cell 4   | Cell 5   | Cell 6   |\n"
+            )
+          }
+          break
+
+        case "z": // Undo: 'CTRL/CMD + Z'
+          event.preventDefault()
+          if (!isPreviewMode) {
+            // Check if shift is pressed for redo
             if (event.shiftKey) {
-              event.preventDefault()
-              if (!isPreviewMode) {
-                handleInsertAction(
-                  "\n```\nconst example = 'code block';\n```\n"
-                )
-              }
-            }
-            break
-
-          case "[": // Anchor: 'CTRL/CMD + ['
-            event.preventDefault()
-            if (!isPreviewMode) {
-              handleInsertAction("[Link text](https://example.com)")
-            }
-            break
-
-          case "]": // Image: 'CTRL/CMD + ]'
-            event.preventDefault()
-            if (!isPreviewMode) {
-              handleInsertAction(
-                "![Image alt text](https://example.com/image.jpg)"
-              )
-            }
-            break
-
-          case "\\": // Table: 'CTRL/CMD + \'
-            event.preventDefault()
-            if (!isPreviewMode) {
-              handleInsertAction(
-                "\n| Header 1 | Header 2 | Header 3 |\n| -------- | -------- | -------- |\n| Cell 1   | Cell 2   | Cell 3   |\n| Cell 4   | Cell 5   | Cell 6   |\n"
-              )
-            }
-            break
-
-          case "z": // Undo: 'CTRL/CMD + Z'
-            event.preventDefault()
-            if (!isPreviewMode) {
-              // Check if shift is pressed for redo
-              if (event.shiftKey) {
-                handleRedo()
-              } else {
-                handleUndo()
-              }
-            }
-            break
-
-          case "y": // Redo: 'CTRL/CMD + Y' (alternative to CTRL/CMD + Shift + Z)
-            event.preventDefault()
-            if (!isPreviewMode) {
               handleRedo()
+            } else {
+              handleUndo()
             }
-            break
-        }
+          }
+          break
+
+        case "y": // Redo: 'CTRL/CMD + Y' (alternative to CTRL/CMD + Shift + Z)
+          event.preventDefault()
+          if (!isPreviewMode) {
+            handleRedo()
+          }
+          break
       }
     }
+  }
 
-    // Add event listener to window
+  useEffect(() => {
+    const handleKeyDown = (event: KeyboardEvent) =>
+      keyDownHandlerRef.current(event)
+
     window.addEventListener("keydown", handleKeyDown)
-
-    // Cleanup function
     return () => {
       window.removeEventListener("keydown", handleKeyDown)
     }
-  }, [isPreviewMode, markdown, undoStack, redoStack, isFullScreen, isDistractionFree]) // Re-register when relevant state changes
+  }, [])
 
   const handleUndo = useCallback(() => {
     if (undoStack.length <= 1) return // Keep at least the initial state
-
-    setIsUndoRedoOperation(true)
 
     // Move current state to redo stack
     const newUndoStack = [...undoStack]
@@ -398,16 +444,12 @@ export function MarkdownEditor({
     // Apply previous state
     setUndoStack(newUndoStack)
     setMarkdown(previousState || "")
+    setIsFileSaved(false)
     onChange?.(previousState || "")
-
-    // Clear undo/redo flag after state updates
-    setTimeout(() => setIsUndoRedoOperation(false), 0)
   }, [undoStack, redoStack, onChange])
 
   const handleRedo = useCallback(() => {
     if (redoStack.length === 0) return
-
-    setIsUndoRedoOperation(true)
 
     // Get state to restore from redo stack
     const newRedoStack = [...redoStack]
@@ -418,11 +460,9 @@ export function MarkdownEditor({
     if (stateToRestore) {
       setUndoStack([...undoStack, stateToRestore])
       setMarkdown(stateToRestore)
+      setIsFileSaved(false)
       onChange?.(stateToRestore)
     }
-
-    // Clear undo/redo flag after state updates
-    setTimeout(() => setIsUndoRedoOperation(false), 0)
   }, [redoStack, undoStack, onChange])
 
   const handleChange = useCallback((value: string) => {
@@ -430,13 +470,10 @@ export function MarkdownEditor({
     setIsFileSaved(false)
     onChange?.(value)
 
-    // Only add to undo stack if this is not an undo/redo operation
-    if (!isUndoRedoOperation) {
-      // Add new state to undo stack and clear redo stack
-      setUndoStack((prev) => [...prev, value])
-      setRedoStack([])
-    }
-  }, [onChange, isUndoRedoOperation])
+    // Add new state to undo stack (bounded) and clear redo stack
+    setUndoStack((prev) => [...prev, value].slice(-MAX_UNDO_HISTORY))
+    setRedoStack([])
+  }, [onChange])
 
   /**
    * Inserts text at the cursor position in the editor
@@ -457,10 +494,12 @@ export function MarkdownEditor({
     const scrollTop = textarea.scrollTop
     const scrollLeft = textarea.scrollLeft
 
-    const { selectionStart, selectionEnd } = textarea
-    const selectedText = markdown.substring(selectionStart, selectionEnd)
-    const beforeSelection = markdown.substring(0, selectionStart)
-    const afterSelection = markdown.substring(selectionEnd)
+    // Read the live textarea value: async callers (Unsplash, AI, uploads)
+    // may hold a closure from before the user kept typing
+    const { selectionStart, selectionEnd, value: currentValue } = textarea
+    const selectedText = currentValue.substring(selectionStart, selectionEnd)
+    const beforeSelection = currentValue.substring(0, selectionStart)
+    const afterSelection = currentValue.substring(selectionEnd)
 
     let newValue = ""
     let newCursorPosition = 0
@@ -477,9 +516,10 @@ export function MarkdownEditor({
         newValue = beforeSelection + insertedText + afterSelection
         newCursorPosition = selectionStart + 1 + selectedText.length + 1
       } else if (text.includes("[Link text]")) {
-        insertedText = `[${selectedText}](https://example.com)`
+        const url = text.match(/\]\(([^)]*)\)/)?.[1] || "https://example.com"
+        insertedText = `[${selectedText}](${url})`
         newValue = beforeSelection + insertedText + afterSelection
-        newCursorPosition = selectionStart + 1 + selectedText.length + 1
+        newCursorPosition = selectionStart + insertedText.length
       } else if (text.includes("![Image alt text]")) {
         insertedText = `![${selectedText}](https://example.com/image.jpg)`
         newValue = beforeSelection + insertedText + afterSelection
@@ -567,16 +607,14 @@ export function MarkdownEditor({
     clearLocalStorage()
 
     onChange?.("")
-  }, [onChange])
+  }, [isFileSaved, onChange])
 
   // Save to the currently open file using File System Access API
   const handleSaveFile = useCallback(async () => {
     // If we already have a file handle, use it to save directly
     if (isFileSystemAPISupported && fileHandle) {
       try {
-        const writableStream = await fileHandle.createWritable()
-        await writableStream.write(markdown)
-        await writableStream.close()
+        await writeToFileHandle(fileHandle, markdown)
         setIsFileSaved(true)
         // Clear localStorage after successful save
         clearLocalStorage()
@@ -608,9 +646,7 @@ export function MarkdownEditor({
         }
 
         const newFileHandle = await window.showSaveFilePicker(options)
-        const writableStream = await newFileHandle.createWritable()
-        await writableStream.write(markdown)
-        await writableStream.close()
+        await writeToFileHandle(newFileHandle, markdown)
 
         setFileHandle(newFileHandle)
         setCurrentFileName(newFileHandle.name)
@@ -649,45 +685,15 @@ export function MarkdownEditor({
   // Export to PDF functionality
   const handleExportToPDF = useCallback(async () => {
     try {
-      const renderHTML = async (markdown: string): Promise<string> => {
-        // Replace emoji shortcodes with actual emoji characters
-        const processedSource = replaceEmojis(markdown)
-
-        // Process markdown content with math support and sanitization
-        const result = await unified()
-          .use(remarkParse)
-          .use(remarkGfm)
-          .use(remarkMath)
-          .use(remarkRehype)
-          .use(rehypeSanitize, markdownSanitizeSchema)
-          .use(rehypeKatex)
-          .use(rehypeStringify)
-          .process(processedSource)
-
-        let htmlContent = result.toString()
-
-        // Add IDs to headings for navigation
-        htmlContent = htmlContent.replace(
-          /<(h[1-6])>(.*?)<\/h[1-6]>/g,
-          (match, tag, content) => {
-            const id = content
-              .toLowerCase()
-              .replace(/<\/?[^>]+(>|$)/g, "") // Remove HTML tags inside heading
-              .replace(/[^\w\s-]/g, "") // Remove special chars
-              .replace(/\s+/g, "-") // Replace spaces with hyphens
-              .replace(/--+/g, "-") // Replace multiple hyphens with single hyphen
-
-            return `<${tag} id="${id}">${content}</${tag}>`
-          }
-        )
-
-        return htmlContent
-      }
+      const renderHTML = (markdown: string): Promise<string> =>
+        renderMarkdown(replaceEmojis(markdown))
 
       const fileName = currentFileName
         ? currentFileName.replace(/\.md$/, ".pdf")
         : "document.pdf"
 
+      // jspdf and html2canvas are large, so load them only when exporting
+      const { exportToPDF } = await import("@/lib/pdf-export")
       await exportToPDF({
         fileName,
         markdown,
@@ -763,9 +769,8 @@ export function MarkdownEditor({
       setCurrentFileName(file.name)
       setFileHandle(null) // Reset file handle as we don't have one with this method
       setIsFileSaved(true)
-      // Can't enable full auto-save without a file handle, but we'll set this
-      // to show the user that auto-save is conceptually enabled
-      setAutoSaveEnabled(true)
+      // Without a file handle there is nothing to auto-save to
+      setAutoSaveEnabled(false)
       onChange?.(content)
     }
     reader.readAsText(file)
@@ -785,31 +790,25 @@ export function MarkdownEditor({
     if (element) {
       element.scrollIntoView({ behavior: "smooth" })
     } else if (markdownInputRef.current) {
-      // In edit mode, we need to find the heading position in the text
+      // In edit mode, find the heading line by the same id the outline uses
       const textarea = markdownInputRef.current.getTextarea()
-      if (!textarea) return
+      const heading = extractHeadings(markdown).find((h) => h.id === headingId)
+      if (!textarea || !heading) return
 
-      // Search for the heading in the markdown text
-      const headingText = headingId
-        .replace(/-/g, " ") // Convert hyphens back to spaces
-        .replace(/\b\w/g, (c) => c.toUpperCase()) // Capitalize first letter of each word
+      textarea.focus({ preventScroll: true })
+      textarea.setSelectionRange(heading.offset, heading.offset)
 
-      // Search for the heading pattern in markdown
-      const regex = new RegExp(`^(#+)\\s+${headingText}`, "mi")
-      const match = regex.exec(markdown)
-
-      if (match && textarea) {
-        const index = match.index
-        textarea.focus()
-        textarea.setSelectionRange(index, index)
-
-        // Calculate position to scroll
-        const lines = markdown.substring(0, index).split("\n")
-        const lineHeight = 20 // Approximate line height in pixels
-        const scrollPosition = lines.length * lineHeight
-
-        textarea.scrollTop = scrollPosition - 100 // Scroll a bit above the heading
-      }
+      // The textarea grows with its content, so scroll the page to the line
+      const styles = window.getComputedStyle(textarea)
+      const lineHeight =
+        parseFloat(styles.lineHeight) || parseFloat(styles.fontSize) * 1.5
+      const lineIndex = markdown.substring(0, heading.offset).split("\n").length - 1
+      const lineTop =
+        textarea.getBoundingClientRect().top +
+        parseFloat(styles.paddingTop) +
+        lineIndex * lineHeight -
+        textarea.scrollTop
+      window.scrollBy({ top: lineTop - 100, behavior: "smooth" })
     }
   }, [markdown])
 
@@ -907,7 +906,7 @@ export function MarkdownEditor({
           <OutlineTrigger
             isCollapsed={isSidebarCollapsed}
             onToggle={() => setIsSidebarCollapsed(!isSidebarCollapsed)}
-            className="editor-container:hover:opacity-60"
+            className="max-sm:hidden" // The sidebar is hidden on mobile
           />
         )}
 
