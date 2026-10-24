@@ -2,6 +2,10 @@ import { BackupData } from "./types"
 
 const BACKUP_PREFIX = "typostry_doc_backup:"
 
+// Set during an intentional sign-out so late writes (beforeunload, unmount)
+// can't leave document copies behind after they were cleared
+let backupsSuspended = false
+
 function backupKey(documentId: string): string {
   return `${BACKUP_PREFIX}${documentId}`
 }
@@ -26,6 +30,7 @@ export function writeDocumentBackup(
   content: string,
   baseVersion: number | null
 ): void {
+  if (backupsSuspended) return
   try {
     const data: BackupData = { content, baseVersion, savedAt: Date.now() }
     localStorage.setItem(backupKey(documentId), JSON.stringify(data))
@@ -58,4 +63,17 @@ export function listBackupDocumentIds(): string[] {
 /** Removes every cloud backup, e.g. on sign-out from a shared machine */
 export function clearAllDocumentBackups(): void {
   listBackupDocumentIds().forEach(clearDocumentBackup)
+}
+
+/**
+ * Stops all further backup writes for the rest of this page's lifetime and
+ * removes existing ones. Call right before signing out.
+ */
+export function suspendAndClearDocumentBackups(): void {
+  backupsSuspended = true
+  clearAllDocumentBackups()
+}
+
+export function areDocumentBackupsSuspended(): boolean {
+  return backupsSuspended
 }

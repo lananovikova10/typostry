@@ -6,8 +6,8 @@ import { usePathname } from "next/navigation"
 import { FileText, LogIn, LogOut } from "lucide-react"
 
 import {
-  clearAllDocumentBackups,
   listBackupDocumentIds,
+  suspendAndClearDocumentBackups,
 } from "@/lib/documents/backup"
 import { Button } from "@/components/ui/button"
 import {
@@ -55,8 +55,9 @@ export function UserMenu() {
     ) {
       return
     }
-    // This may be a shared machine: don't leave document copies behind
-    clearAllDocumentBackups()
+    // This may be a shared machine: don't leave document copies behind, and
+    // keep the editor's beforeunload/unmount handlers from writing new ones
+    suspendAndClearDocumentBackups()
     signOutFormRef.current?.requestSubmit()
   }
 

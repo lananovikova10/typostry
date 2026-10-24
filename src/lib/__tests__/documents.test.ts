@@ -2,9 +2,11 @@ import { WELCOME_MARKDOWN } from "@/config/welcome-document"
 import { saveToLocalStorage } from "@/lib/auto-save"
 import { safeNextPath } from "@/lib/auth/safe-next"
 import {
+  areDocumentBackupsSuspended,
   clearAllDocumentBackups,
   listBackupDocumentIds,
   readDocumentBackup,
+  suspendAndClearDocumentBackups,
   writeDocumentBackup,
 } from "@/lib/documents/backup"
 import {
@@ -22,6 +24,8 @@ describe("safeNextPath", () => {
 
   it.each([
     "//evil.com",
+    "/a/..//evil.example",
+    "/a/../\\evil.example",
     "/\\evil.com",
     "https://evil.com",
     "javascript:alert(1)",
@@ -175,5 +179,17 @@ describe("saveDocumentContent", () => {
       ok: false,
       reason: "offline",
     })
+  })
+})
+
+// Runs last: suspension lasts for the rest of the page (module) lifetime
+describe("suspendAndClearDocumentBackups", () => {
+  it("clears backups and ignores later writes (sign-out)", () => {
+    localStorage.clear()
+    writeDocumentBackup("a", "hello", 1)
+    suspendAndClearDocumentBackups()
+    writeDocumentBackup("a", "written by beforeunload", 1)
+    expect(listBackupDocumentIds()).toEqual([])
+    expect(areDocumentBackupsSuspended()).toBe(true)
   })
 })

@@ -22,8 +22,8 @@ import { getBrowserClient } from "@/lib/supabase/client"
 interface DocumentsContextValue {
   documents: DocumentSummary[]
   activeDocumentId: string | null
-  /** Creates a document and opens it */
-  create: (input: { title: string; content: string }) => Promise<void>
+  /** Creates a document and opens it. Resolves false if it couldn't be created */
+  create: (input: { title: string; content: string }) => Promise<boolean>
   rename: (id: string, title: string) => Promise<void>
   remove: (id: string) => Promise<void>
   /** Moves a document to the top after it was edited */
@@ -67,9 +67,11 @@ export function DocumentsProvider({
           ...current,
         ])
         router.push(`/d/${created.id}`)
+        return true
       } catch (error) {
         console.error("Failed to create document:", error)
         window.alert("Couldn't create the document. Please try again.")
+        return false
       }
     },
     [router]

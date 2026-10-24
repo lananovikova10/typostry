@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react"
 
+import { areDocumentBackupsSuspended } from "@/lib/documents/backup"
 import {
   DocumentSnapshot,
   DocumentStore,
@@ -38,9 +39,10 @@ export interface DocumentPersistence {
 /**
  * Debounced autosave for the editor, independent of where content is stored.
  * - one save in flight at a time, with a follow-up if content changed meanwhile
- * - backs up unsynced content locally (cloud store) for crash/offline recovery
+ * - backs up unsynced content locally (cloud store) for crash/offline recovery,
+ *   including while saving is paused by a conflict or deletion
  * - retries with backoff when offline/erroring, immediately when back online
- * - pauses on version conflicts and deleted documents
+ * - pauses server saves on version conflicts and deleted documents
  */
 export function useDocumentPersistence({
   store,
@@ -59,6 +61,7 @@ export function useDocumentPersistence({
   const inFlightRef = useRef<Promise<void> | null>(null)
   const pendingRef = useRef(false)
   const pausedRef = useRef(false)
+  const mountedRef = useRef(true)
   const firstDirtyAtRef = useRef<number | null>(null)
   const retryDelayRef = useRef(0)
   const saveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
@@ -77,8 +80,16 @@ export function useDocumentPersistence({
     }
   }
 
+  const backupLatest = useCallback(() => {
+    if (store.kind !== "cloud") return
+    if (contentRef.current === lastSavedContentRef.current) return
+    store.writeBackup(contentRef.current, versionRef.current)
+  }, [store])
+
   const scheduleRetry = useCallback(() => {
     clearTimer(retryTimerRef)
+    // A departed editor makes one final attempt on unmount, never retries
+    if (!mountedRef.current) return
     retryDelayRef.current = Math.min(
       MAX_RETRY_MS,
       Math.max(MIN_RETRY_MS, retryDelayRef.current * 2)
@@ -99,6 +110,7 @@ export function useDocumentPersistence({
     clearTimer(saveTimerRef)
     clearTimer(retryTimerRef)
     firstDirtyAtRef.current = null
+    pendingRef.current = false
 
     const snapshot = contentRef.current
     if (snapshot === lastSavedContentRef.current) {
@@ -111,11 +123,13 @@ export function useDocumentPersistence({
     }
 
     setStatus("saving")
+    let succeeded = false
 
     const savePromise = (async () => {
       const result = await store.save(snapshot, versionRef.current)
 
       if (result.ok) {
+        succeeded = true
         lastSavedContentRef.current = snapshot
         if (result.version !== null) versionRef.current = result.version
         retryDelayRef.current = 0
@@ -123,14 +137,16 @@ export function useDocumentPersistence({
         setStatus(contentRef.current === snapshot ? "saved" : "dirty")
       } else if (result.reason === "conflict") {
         pausedRef.current = true
+        backupLatest()
         setConflict(result.remote)
         setStatus("conflict")
       } else if (result.reason === "deleted") {
         pausedRef.current = true
+        backupLatest()
         setStatus("deleted")
       } else {
-        // Keep the content safe on this device until the server is reachable
-        store.writeBackup(snapshot, versionRef.current)
+        // Keep the newest content safe on this device until the server is reachable
+        backupLatest()
         setStatus(result.reason)
         scheduleRetry()
       }
@@ -143,33 +159,37 @@ export function useDocumentPersistence({
       inFlightRef.current = null
     }
 
-    if (pendingRef.current) {
-      pendingRef.current = false
-      if (contentRef.current !== lastSavedContentRef.current) {
-        await runSaveRef.current()
-      }
-    }
-  }, [enabled, store, scheduleRetry])
+    // Content changed while saving. Follow up if a save was requested
+    // meanwhile, or if nothing else will (e.g. an undo back to the old
+    // baseline didn't schedule a debounce)
+    const needsFollowUp =
+      succeeded &&
+      contentRef.current !== lastSavedContentRef.current &&
+      (pendingRef.current || saveTimerRef.current === null)
+    pendingRef.current = false
+    if (needsFollowUp) await runSaveRef.current()
+  }, [enabled, store, scheduleRetry, backupLatest])
 
   runSaveRef.current = runSave
 
   // Debounce saves (with a max wait) and back up on every change
   useEffect(() => {
-    if (!enabled || pausedRef.current) return
+    if (!enabled) return
     if (content === lastSavedContentRef.current) return
+
+    // Backups continue while saving is paused, so no edit is lost
+    if (store.kind === "cloud") {
+      clearTimer(backupTimerRef)
+      backupTimerRef.current = setTimeout(backupLatest, BACKUP_DELAY_MS)
+    }
+
+    if (pausedRef.current) return
 
     setStatus((current) =>
       current === "saving" || current === "offline" || current === "error"
         ? current
         : "dirty"
     )
-
-    if (store.kind === "cloud") {
-      clearTimer(backupTimerRef)
-      backupTimerRef.current = setTimeout(() => {
-        store.writeBackup(contentRef.current, versionRef.current)
-      }, BACKUP_DELAY_MS)
-    }
 
     if (firstDirtyAtRef.current === null) firstDirtyAtRef.current = Date.now()
     const elapsed = Date.now() - firstDirtyAtRef.current
@@ -180,9 +200,10 @@ export function useDocumentPersistence({
 
     clearTimer(saveTimerRef)
     saveTimerRef.current = setTimeout(() => {
+      saveTimerRef.current = null
       void runSaveRef.current()
     }, delay)
-  }, [content, enabled, store])
+  }, [content, enabled, store, backupLatest])
 
   // Retry as soon as the network is back; flush when the tab is hidden
   useEffect(() => {
@@ -196,13 +217,14 @@ export function useDocumentPersistence({
       if (document.visibilityState === "hidden") void runSaveRef.current()
     }
     const handleBeforeUnload = (event: BeforeUnloadEvent) => {
-      if (store.kind !== "cloud") return
+      // Intentional sign-out already cleared local copies
+      if (store.kind !== "cloud" || areDocumentBackupsSuspended()) return
       const hasUnsavedChanges =
         contentRef.current !== lastSavedContentRef.current ||
         inFlightRef.current !== null
       if (hasUnsavedChanges) {
         // Backup survives the reload even if the save does not
-        store.writeBackup(contentRef.current, versionRef.current)
+        backupLatest()
         event.preventDefault()
         event.returnValue = ""
       }
@@ -217,33 +239,45 @@ export function useDocumentPersistence({
       document.removeEventListener("visibilitychange", handleVisibilityChange)
       window.removeEventListener("beforeunload", handleBeforeUnload)
     }
-  }, [enabled, store])
+  }, [enabled, store, backupLatest])
 
-  // Save pending changes when the editor unmounts (e.g. switching documents)
+  // On unmount (e.g. switching documents): keep a local copy, then one final save
   useEffect(() => {
+    mountedRef.current = true
     return () => {
+      mountedRef.current = false
+      backupLatest()
       clearTimer(saveTimerRef)
       clearTimer(backupTimerRef)
       clearTimer(retryTimerRef)
       void runSaveRef.current()
     }
-  }, [])
+  }, [backupLatest])
 
   const flush = useCallback(() => runSaveRef.current(), [])
 
   const overwriteRemote = useCallback(async () => {
     if (!conflict) return
+    // Rebase on the remote copy so the save compares against what the server has
     versionRef.current = conflict.version
+    lastSavedContentRef.current = conflict.content
     pausedRef.current = false
     setConflict(null)
+    if (contentRef.current === conflict.content) {
+      store.clearBackup()
+      setStatus("saved")
+      return
+    }
+    setStatus("dirty")
     await runSaveRef.current()
-  }, [conflict])
+  }, [conflict, store])
 
   const acceptRemote = useCallback((): string | null => {
     if (!conflict) return null
     versionRef.current = conflict.version
     lastSavedContentRef.current = conflict.content
     pausedRef.current = false
+    clearTimer(backupTimerRef)
     store.clearBackup()
     setConflict(null)
     setStatus("saved")

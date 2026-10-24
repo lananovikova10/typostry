@@ -39,10 +39,15 @@ export function ImportDraftDialog() {
 
   const handleImport = async () => {
     setIsImporting(true)
-    rememberDraftDecision(user.id, draft)
-    await create({ title: deriveTitle(draft.content, "Imported draft"), content: draft.content })
-    clearLocalStorage()
+    const created = await create({
+      title: deriveTitle(draft.content, "Imported draft"),
+      content: draft.content,
+    })
     setIsImporting(false)
+    // On failure keep the draft and the dialog so the user can retry
+    if (!created) return
+    rememberDraftDecision(user.id, draft)
+    clearLocalStorage()
     setDraft(null)
   }
 
@@ -52,7 +57,7 @@ export function ImportDraftDialog() {
   }
 
   return (
-    <Dialog open onOpenChange={(open) => !open && handleKeepLocal()}>
+    <Dialog open onOpenChange={(open) => !open && !isImporting && handleKeepLocal()}>
       <DialogContent data-testid="import-draft-dialog">
         <DialogHeader>
           <DialogTitle>Save your draft to your account?</DialogTitle>

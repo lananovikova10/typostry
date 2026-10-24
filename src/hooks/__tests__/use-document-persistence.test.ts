@@ -229,4 +229,130 @@ describe("useDocumentPersistence", () => {
     })
     expect(store.save).toHaveBeenCalledWith("v2", 1)
   })
+
+  it("follows up when content reverts to the old baseline during a save", async () => {
+    let resolveFirst: (value: SaveResult) => void = () => {}
+    const store = createStore(
+      jest
+        .fn()
+        .mockImplementationOnce(
+          () => new Promise<SaveResult>((resolve) => (resolveFirst = resolve))
+        )
+        .mockImplementation(async () => ok(3))
+    )
+    const { result, rerender } = renderPersistence(store)
+
+    rerender({ content: "v2" })
+    act(() => {
+      void result.current.flush()
+    })
+    // Undo back to the originally saved text while v2 is in flight
+    rerender({ content: "v1" })
+
+    await act(async () => {
+      resolveFirst(ok(2))
+    })
+
+    expect(store.save).toHaveBeenCalledTimes(2)
+    expect(store.save).toHaveBeenLastCalledWith("v1", 2)
+  })
+
+  it("backs up the newest content, not the failed snapshot", async () => {
+    let resolveFirst: (value: SaveResult) => void = () => {}
+    const store = createStore(
+      jest
+        .fn()
+        .mockImplementationOnce(
+          () => new Promise<SaveResult>((resolve) => (resolveFirst = resolve))
+        )
+        .mockImplementation(async () => ok(2))
+    )
+    const { result, rerender } = renderPersistence(store)
+
+    rerender({ content: "v2" })
+    act(() => {
+      void result.current.flush()
+    })
+    rerender({ content: "v3" })
+
+    await act(async () => {
+      resolveFirst({ ok: false, reason: "offline" })
+    })
+    expect(store.writeBackup).toHaveBeenLastCalledWith("v3", 1)
+  })
+
+  it("keeps backing up while paused by a conflict", async () => {
+    const remote = {
+      id: "doc",
+      title: "Doc",
+      content: "theirs",
+      version: 7,
+      updatedAt: new Date().toISOString(),
+    }
+    const store = createStore(async () => ({ ok: false, reason: "conflict", remote }))
+    const { result, rerender, unmount } = renderPersistence(store)
+
+    rerender({ content: "mine" })
+    await act(async () => {
+      await result.current.flush()
+    })
+    store.writeBackup.mockClear()
+
+    rerender({ content: "mine, edited during conflict" })
+    await act(async () => {
+      jest.advanceTimersByTime(300)
+    })
+    expect(store.writeBackup).toHaveBeenCalledWith("mine, edited during conflict", 1)
+
+    rerender({ content: "edited right before leaving" })
+    unmount()
+    expect(store.writeBackup).toHaveBeenLastCalledWith("edited right before leaving", 1)
+    expect(store.save).toHaveBeenCalledTimes(1)
+  })
+
+  it("keep mine still saves when content was reverted to the original", async () => {
+    const remote = {
+      id: "doc",
+      title: "Doc",
+      content: "theirs",
+      version: 7,
+      updatedAt: new Date().toISOString(),
+    }
+    const store = createStore(
+      jest
+        .fn()
+        .mockResolvedValueOnce({ ok: false, reason: "conflict", remote })
+        .mockResolvedValue(ok(8))
+    )
+    const { result, rerender } = renderPersistence(store)
+
+    rerender({ content: "mine" })
+    await act(async () => {
+      await result.current.flush()
+    })
+    rerender({ content: "v1" })
+
+    await act(async () => {
+      await result.current.overwriteRemote()
+    })
+    expect(store.save).toHaveBeenLastCalledWith("v1", 7)
+    expect(result.current.status).toBe("saved")
+  })
+
+  it("does not keep retrying after unmount", async () => {
+    const store = createStore(async () => ({ ok: false, reason: "offline" }))
+    const { rerender, unmount } = renderPersistence(store)
+
+    rerender({ content: "v2" })
+    await act(async () => {
+      unmount()
+    })
+    const callsAfterUnmount = store.save.mock.calls.length
+    expect(callsAfterUnmount).toBe(1)
+
+    await act(async () => {
+      jest.advanceTimersByTime(120000)
+    })
+    expect(store.save).toHaveBeenCalledTimes(callsAfterUnmount)
+  })
 })

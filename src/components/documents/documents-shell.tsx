@@ -12,6 +12,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog"
 import { Icons } from "@/components/icons"
+import { UserMenu } from "@/components/auth/user-menu"
 import { DocumentsPanel } from "@/components/documents/documents-panel"
 import { ImportDraftDialog } from "@/components/documents/import-draft-dialog"
 
@@ -31,15 +32,19 @@ export function DocumentsShell({ children }: DocumentsShellProps) {
             <Icons.logo className="h-7 w-7 flex-shrink-0" />
             <span className="text-xl font-semibold">{siteConfig.name}</span>
           </Link>
-          <Button
-            variant="outline"
-            size="sm"
-            className="lg:hidden"
-            onClick={() => setIsPanelOpen(true)}
-          >
-            <PanelLeft className="mr-1.5 h-4 w-4" />
-            Documents
-          </Button>
+          <div className="flex items-center gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              className="lg:hidden"
+              onClick={() => setIsPanelOpen(true)}
+            >
+              <PanelLeft className="mr-1.5 h-4 w-4" />
+              Documents
+            </Button>
+            {/* Lives in the header so it's available even with no documents */}
+            <UserMenu />
+          </div>
         </header>
 
         <div className="grid gap-6 lg:grid-cols-[240px_minmax(0,1fr)]">

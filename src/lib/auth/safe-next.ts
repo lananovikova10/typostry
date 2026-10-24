@@ -16,7 +16,12 @@ export function safeNextPath(
   try {
     const url = new URL(raw, PLACEHOLDER_ORIGIN)
     if (url.origin !== PLACEHOLDER_ORIGIN) return fallback
-    return `${url.pathname}${url.search}${url.hash}`
+    const normalized = `${url.pathname}${url.search}${url.hash}`
+    // Dot segments can normalize into a protocol-relative URL ("/a/..//evil.com")
+    if (normalized.startsWith("//") || normalized.startsWith("/\\")) {
+      return fallback
+    }
+    return normalized
   } catch {
     return fallback
   }

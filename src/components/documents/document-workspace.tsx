@@ -6,7 +6,6 @@ import { createCloudStore } from "@/lib/documents/cloud-store"
 import { DEFAULT_DOCUMENT_TITLE, titleFromFileName } from "@/lib/documents/title"
 import { DocumentSnapshot } from "@/lib/documents/types"
 import { getBrowserClient } from "@/lib/supabase/client"
-import { UserMenu } from "@/components/auth/user-menu"
 import { useDocuments } from "@/components/documents/documents-provider"
 import { MarkdownEditor } from "@/components/markdown-editor"
 
@@ -66,7 +65,6 @@ export function DocumentWorkspace({ document }: DocumentWorkspaceProps) {
       onNewDocument={handleNewDocument}
       onImportFile={handleImportFile}
       onSaveCopy={handleSaveCopy}
-      toolbarEndSlot={<UserMenu />}
     />
   )
 }
