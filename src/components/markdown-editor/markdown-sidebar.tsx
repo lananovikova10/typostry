@@ -47,9 +47,10 @@ export const MarkdownSidebar = React.memo(function MarkdownSidebar({
   className,
   activeHeadingId,
 }: MarkdownSidebarProps) {
+  // Parsing runs on every edit, so skip it while the outline is hidden
   const headingTree = useMemo(
-    () => buildHeadingTree(extractHeadings(content)),
-    [content]
+    () => (isCollapsed ? [] : buildHeadingTree(extractHeadings(content))),
+    [content, isCollapsed]
   )
   // Keyed by heading id so expansion survives edits elsewhere in the document
   const [collapsedIds, setCollapsedIds] = useState<Record<string, boolean>>({})
@@ -78,6 +79,8 @@ export const MarkdownSidebar = React.memo(function MarkdownSidebar({
             )}
             onClick={() => onHeadingClick(heading.id)}
             onKeyDown={(e) => {
+              // Let the nested expand/collapse button handle its own keys
+              if (e.target !== e.currentTarget) return
               if (e.key === "Enter" || e.key === " ") {
                 e.preventDefault()
                 onHeadingClick(heading.id)

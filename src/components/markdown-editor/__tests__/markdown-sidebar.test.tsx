@@ -44,6 +44,16 @@ describe("MarkdownSidebar", () => {
     expect(screen.getByText("Child")).toBeInTheDocument()
   })
 
+  it("leaves keyboard presses on the expand button to the button", () => {
+    const onHeadingClick = jest.fn()
+    renderSidebar("# Parent\n\n## Child", onHeadingClick)
+
+    fireEvent.keyDown(screen.getByRole("button", { name: "Collapse section" }), {
+      key: "Enter",
+    })
+    expect(onHeadingClick).not.toHaveBeenCalled()
+  })
+
   it("navigates with the keyboard", () => {
     const onHeadingClick = jest.fn()
     renderSidebar("## What's new?", onHeadingClick)

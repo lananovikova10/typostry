@@ -1,10 +1,15 @@
+import { unified } from "unified"
+import remarkParse from "remark-parse"
+import remarkGfm from "remark-gfm"
+import remarkMath from "remark-math"
+
 import { replaceEmojis } from "./emoji"
 
 export interface MarkdownHeading {
   text: string
   level: number
   id: string
-  /** Character offset of the heading line in the source markdown */
+  /** Character offset of the heading in the source markdown */
   offset: number
 }
 
@@ -19,66 +24,84 @@ export function slugify(text: string): string {
     .replace(/[^\w\s-]/g, "") // Remove special chars
     .replace(/\s+/g, "-") // Replace spaces with hyphens
     .replace(/--+/g, "-") // Replace multiple hyphens with single hyphen
+    .replace(/^-+|-+$/g, "") // Trim hyphens left by stripped characters
 }
 
 /**
- * Returns a slug function that de-duplicates ids within one document
- * ("intro", "intro-1", "intro-2", ...).
+ * Returns a slug function that gives every heading in one document a unique
+ * id ("intro", "intro-1", "intro-2", ...). Generated suffixes are reserved
+ * too, so a heading literally named "Intro 1" can't collide with them.
  */
 export function createSlugger() {
-  const seen = new Map<string, number>()
+  const used = new Set<string>()
+  const nextSuffix = new Map<string, number>()
   return (text: string): string => {
     const base = slugify(text)
-    const count = seen.get(base) ?? 0
-    seen.set(base, count + 1)
-    return count === 0 ? base : `${base}-${count}`
+    let id = base
+    let suffix = nextSuffix.get(base) ?? 0
+    while (used.has(id)) {
+      suffix += 1
+      id = `${base}-${suffix}`
+    }
+    nextSuffix.set(base, suffix)
+    used.add(id)
+    return id
+  }
+}
+
+// Minimal mdast shape, enough to walk the tree without extra type packages
+interface MdastNode {
+  type: string
+  depth?: number
+  value?: string
+  children?: MdastNode[]
+  position?: { start: { offset?: number } }
+}
+
+// Same parse options as the renderer (see markdown-pipeline.ts), so headings
+// are found under the same rules: Setext headings, fences, math blocks, etc.
+const parser = unified().use(remarkParse).use(remarkGfm).use(remarkMath)
+
+// Mirrors the rendered heading's text content: images and raw HTML render no
+// text, while code and math keep their source text
+function plainText(node: MdastNode): string {
+  switch (node.type) {
+    case "text":
+    case "inlineCode":
+    case "inlineMath":
+      return node.value ?? ""
+    case "image":
+    case "imageReference":
+    case "html":
+      return ""
+    default:
+      return (node.children ?? []).map(plainText).join("")
   }
 }
 
 /**
- * Approximates the rendered text of an inline markdown heading so that its
- * slug matches the one produced from the rendered HTML.
- */
-function headingPlainText(text: string): string {
-  return replaceEmojis(text)
-    .replace(/\s+#+\s*$/, "") // Closing ATX hashes: "## Title ##"
-    .replace(/!?\[([^\]]*)\]\([^)]*\)/g, "$1") // Links and images
-    .replace(/(\*{1,3}|_{1,3})(\S(?:.*?\S)?)\1/g, "$2") // Emphasis
-    .replace(/`([^`]*)`/g, "$1") // Inline code
-}
-
-/**
- * Extracts ATX headings from markdown, skipping fenced code blocks.
+ * Extracts headings from markdown in document order, with the same ids the
+ * preview renderer assigns.
  */
 export function extractHeadings(markdown: string): MarkdownHeading[] {
   const headings: MarkdownHeading[] = []
   const slug = createSlugger()
-  let fence: string | null = null
-  let offset = 0
 
-  for (const line of markdown.split("\n")) {
-    const fenceMatch = line.match(/^\s{0,3}(`{3,}|~{3,})/)
-    if (fenceMatch) {
-      const marker = fenceMatch[1]
-      if (fence === null) {
-        fence = marker
-      } else if (marker[0] === fence[0] && marker.length >= fence.length) {
-        fence = null
-      }
-    } else if (fence === null) {
-      const match = line.match(/^ {0,3}(#{1,6})\s+(.+?)\s*$/)
-      if (match) {
-        const text = match[2].replace(/\s+#+$/, "")
-        headings.push({
-          text,
-          level: match[1].length,
-          id: slug(headingPlainText(text)),
-          offset,
-        })
-      }
+  const visit = (node: MdastNode) => {
+    if (node.type === "heading") {
+      // The preview replaces emoji shortcodes before rendering
+      const text = replaceEmojis(plainText(node)).trim()
+      headings.push({
+        text,
+        level: node.depth ?? 1,
+        id: slug(text),
+        offset: node.position?.start.offset ?? 0,
+      })
+      return
     }
-    offset += line.length + 1
+    node.children?.forEach(visit)
   }
+  visit(parser.parse(markdown) as MdastNode)
 
   return headings
 }
