@@ -7,6 +7,9 @@ import { siteConfig } from "@/config/site"
 import { fontSans } from "@/lib/fonts"
 import { cn } from "@/lib/utils"
 import { getServerSideTheme, getThemeScript } from "@/lib/theme-utils"
+import { isCloudEnabled } from "@/lib/supabase/config"
+import { getSessionUser } from "@/lib/supabase/server"
+import { AuthProvider } from "@/components/auth/auth-provider"
 import { DotPattern } from "@/components/ui/dot-pattern"
 import { ThemeProvider } from "@/components/theme-provider"
 import { Footer } from "@/components/footer"
@@ -28,6 +31,7 @@ interface RootLayoutProps {
 
 export default async function RootLayout({ children }: RootLayoutProps) {
   const serverTheme = await getServerSideTheme()
+  const user = await getSessionUser()
 
   return (
     <>
@@ -68,10 +72,12 @@ export default async function RootLayout({ children }: RootLayoutProps) {
               cr={1}
               suppressHydrationWarning
             />
-            <div className="relative flex min-h-screen flex-col">
-              <div className="flex-1">{children}</div>
-              <Footer />
-            </div>
+            <AuthProvider user={user} isCloudEnabled={isCloudEnabled}>
+              <div className="relative flex min-h-screen flex-col">
+                <div className="flex-1">{children}</div>
+                <Footer />
+              </div>
+            </AuthProvider>
           </ThemeProvider>
         </body>
       </html>
