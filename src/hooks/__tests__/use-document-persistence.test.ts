@@ -355,4 +355,15 @@ describe("useDocumentPersistence", () => {
     })
     expect(store.save).toHaveBeenCalledTimes(callsAfterUnmount)
   })
+
+  it("flushes immediately when the page is hidden or closed", async () => {
+    const store = createStore(async () => ok(2))
+    const { rerender } = renderPersistence(store)
+
+    rerender({ content: "typed just before closing" })
+    await act(async () => {
+      window.dispatchEvent(new Event("pagehide"))
+    })
+    expect(store.save).toHaveBeenCalledWith("typed just before closing", 1)
+  })
 })

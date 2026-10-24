@@ -1,6 +1,10 @@
 // Import testing-library jest-dom matchers
 import '@testing-library/jest-dom'
 
+// src/env.mjs requires NEXT_PUBLIC_APP_URL. Jest never loads .env.local, and
+// .env is no longer committed, so provide a default for a clean checkout.
+process.env.NEXT_PUBLIC_APP_URL ??= 'http://localhost:3000'
+
 // Mock matchMedia for component tests
 Object.defineProperty(window, 'matchMedia', {
   writable: true,

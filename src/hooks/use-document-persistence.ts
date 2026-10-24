@@ -205,7 +205,8 @@ export function useDocumentPersistence({
     }, delay)
   }, [content, enabled, store, backupLatest])
 
-  // Retry as soon as the network is back; flush when the tab is hidden
+  // Retry as soon as the network is back; flush when the tab is hidden or the
+  // page is closed, so the last seconds of typing are not lost
   useEffect(() => {
     if (!enabled) return
 
@@ -230,13 +231,17 @@ export function useDocumentPersistence({
       }
     }
 
+    const handlePageHide = () => void runSaveRef.current()
+
     window.addEventListener("online", handleOnline)
     document.addEventListener("visibilitychange", handleVisibilityChange)
+    window.addEventListener("pagehide", handlePageHide)
     window.addEventListener("beforeunload", handleBeforeUnload)
 
     return () => {
       window.removeEventListener("online", handleOnline)
       document.removeEventListener("visibilitychange", handleVisibilityChange)
+      window.removeEventListener("pagehide", handlePageHide)
       window.removeEventListener("beforeunload", handleBeforeUnload)
     }
   }, [enabled, store, backupLatest])
