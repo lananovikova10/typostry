@@ -3,13 +3,10 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react"
 
 import { cn } from "@/lib/utils"
-import {
-  saveToLocalStorage,
-  loadFromLocalStorage,
-  clearLocalStorage,
-  hasRecoverableContent,
-  getTimeSinceLastSave,
-} from "@/lib/auto-save"
+import { clearLocalStorage, getTimeSinceLastSave } from "@/lib/auto-save"
+import { createLocalStore } from "@/lib/documents/local-store"
+import { DocumentStore } from "@/lib/documents/types"
+import { useDocumentPersistence } from "@/hooks/use-document-persistence"
 import { replaceEmojis } from "@/lib/emoji"
 import { extractHeadings } from "@/lib/markdown-headings"
 import { renderMarkdown } from "@/lib/markdown-pipeline"
@@ -22,6 +19,14 @@ import { MarkdownToolbar } from "./markdown-toolbar"
 import { OutlineTrigger } from "./outline-trigger"
 import { ReadingStats } from "./reading-stats"
 import { DraggableTodoPopup } from "@/components/ui/draggable-todo-popup"
+import { ConflictDialog } from "@/components/documents/conflict-dialog"
+
+export interface CloudDocumentInfo {
+  id: string
+  title: string
+  /** Server version of initialValue */
+  version: number
+}
 
 const MAX_UNDO_HISTORY = 200
 
@@ -36,6 +41,18 @@ export interface MarkdownEditorProps {
   className?: string
   onChange?: (value: string) => void
   sidebarEnabled?: boolean
+  /** Present when editing a signed-in user's cloud document */
+  cloudDocument?: CloudDocumentInfo
+  /** Where content is autosaved; defaults to the guest localStorage draft */
+  store?: DocumentStore
+  /** Rendered at the end of the toolbar (e.g. the account menu) */
+  toolbarEndSlot?: React.ReactNode
+  /** Cloud mode: "New" creates a new document */
+  onNewDocument?: () => void
+  /** Cloud mode: "Open" imports a file as a new document */
+  onImportFile?: (content: string, fileName: string) => void
+  /** Cloud mode: conflict resolution "Save mine as copy". Resolves true once saved */
+  onSaveCopy?: (content: string) => Promise<boolean>
 }
 
 export function MarkdownEditor({
@@ -43,8 +60,24 @@ export function MarkdownEditor({
   className,
   onChange,
   sidebarEnabled = true,
+  cloudDocument,
+  store: providedStore,
+  toolbarEndSlot,
+  onNewDocument,
+  onImportFile,
+  onSaveCopy,
 }: MarkdownEditorProps) {
   const [markdown, setMarkdown] = useState(initialValue)
+  const fallbackStore = useMemo(() => createLocalStore(), [])
+  const store = providedStore ?? fallbackStore
+  const isCloud = store.kind === "cloud"
+  const persistence = useDocumentPersistence({
+    store,
+    content: markdown,
+    initialContent: initialValue,
+    initialVersion: cloudDocument?.version ?? null,
+  })
+  const [isConflictDialogOpen, setIsConflictDialogOpen] = useState(false)
   const [isPreviewMode, setIsPreviewMode] = useState(false)
   const [currentFileName, setCurrentFileName] = useState<string | null>(null)
   const [fileHandle, setFileHandle] = useState<FileSystemFileHandle | null>(
@@ -97,7 +130,6 @@ export function MarkdownEditor({
   const markdownInputRef = useRef<MarkdownInputHandle>(null)
   const editorRef = useRef<HTMLDivElement>(null)
   const autoSaveTimeoutRef = useRef<NodeJS.Timeout | null>(null)
-  const localStorageAutoSaveRef = useRef<NodeJS.Timeout | null>(null)
 
   // Check if File System Access API is supported
   useEffect(() => {
@@ -106,69 +138,24 @@ export function MarkdownEditor({
     )
   }, [])
 
-  // Check for recoverable content on mount (client-side only)
+  // Check for recoverable content on mount (client-side only).
+  // Autosave itself (debounce, flush on hide/close) is handled by
+  // useDocumentPersistence.
   useEffect(() => {
     if (typeof window === "undefined") return
 
-    if (hasRecoverableContent()) {
-      const data = loadFromLocalStorage()
-      if (data && data.content !== initialValue) {
-        setRecoveredContent(data.content)
-        setRecoveryTimestamp(data.timestamp)
-        setShowRecoveryBanner(true)
-      }
+    const backup = store.readBackup()
+    if (backup && backup.content !== initialValue) {
+      setRecoveredContent(backup.content)
+      setRecoveryTimestamp(backup.savedAt)
+      setShowRecoveryBanner(true)
     }
-  }, [initialValue])
+  }, [initialValue, store])
 
-  // Auto-save to localStorage
+  // Surface version conflicts as soon as they happen
   useEffect(() => {
-    if (typeof window === "undefined") return
-
-    // Clear any existing timeout
-    if (localStorageAutoSaveRef.current) {
-      clearTimeout(localStorageAutoSaveRef.current)
-    }
-
-    // Debounce the save to localStorage (save after 2 seconds of inactivity)
-    localStorageAutoSaveRef.current = setTimeout(() => {
-      if (markdown.trim().length > 0) {
-        saveToLocalStorage(markdown)
-      }
-    }, 2000)
-
-    return () => {
-      if (localStorageAutoSaveRef.current) {
-        clearTimeout(localStorageAutoSaveRef.current)
-      }
-    }
-  }, [markdown])
-
-  // Flush the pending localStorage save when the page is closed or hidden,
-  // so the last seconds of typing are not lost
-  const latestMarkdownRef = useRef(markdown)
-  latestMarkdownRef.current = markdown
-  useEffect(() => {
-    const flush = () => {
-      if (
-        localStorageAutoSaveRef.current &&
-        latestMarkdownRef.current.trim().length > 0
-      ) {
-        clearTimeout(localStorageAutoSaveRef.current)
-        localStorageAutoSaveRef.current = null
-        saveToLocalStorage(latestMarkdownRef.current)
-      }
-    }
-    const handleVisibilityChange = () => {
-      if (document.visibilityState === "hidden") flush()
-    }
-
-    window.addEventListener("pagehide", flush)
-    document.addEventListener("visibilitychange", handleVisibilityChange)
-    return () => {
-      window.removeEventListener("pagehide", flush)
-      document.removeEventListener("visibilitychange", handleVisibilityChange)
-    }
-  }, [])
+    if (persistence.conflict) setIsConflictDialogOpen(true)
+  }, [persistence.conflict])
 
   // Auto-save effect that triggers when markdown content changes
   useEffect(() => {
@@ -337,7 +324,11 @@ export function MarkdownEditor({
       switch (key) {
         case "s": // Format/Save: 'CTRL/CMD + S'
           event.preventDefault()
-          handleSaveFile()
+          if (isCloud) {
+            void persistence.flush()
+          } else {
+            handleSaveFile()
+          }
           break
 
         case "b": // Bold: 'CTRL/CMD + B'
@@ -567,7 +558,8 @@ export function MarkdownEditor({
   }
 
   const handleRecoverContent = useCallback(() => {
-    if (recoveredContent) {
+    // An empty cloud backup (all text deleted offline) is valid too
+    if (recoveredContent !== null) {
       setMarkdown(recoveredContent)
       setUndoStack([recoveredContent])
       setRedoStack([])
@@ -579,8 +571,8 @@ export function MarkdownEditor({
 
   const handleDismissRecovery = useCallback(() => {
     setShowRecoveryBanner(false)
-    clearLocalStorage()
-  }, [])
+    store.clearBackup()
+  }, [store])
 
   const handleNewFile = useCallback(async () => {
     if (
@@ -609,25 +601,26 @@ export function MarkdownEditor({
     onChange?.("")
   }, [isFileSaved, onChange])
 
-  // Save to the currently open file using File System Access API
-  const handleSaveFile = useCallback(async () => {
-    // If we already have a file handle, use it to save directly
-    if (isFileSystemAPISupported && fileHandle) {
-      try {
-        await writeToFileHandle(fileHandle, markdown)
-        setIsFileSaved(true)
-        // Clear localStorage after successful save
-        clearLocalStorage()
-        return
-      } catch (error) {
-        console.error("Error saving file:", error)
-        // Fall back to save as if there's an error
-      }
-    }
+  const downloadFileName = isCloud
+    ? `${cloudDocument?.title ?? "untitled"}.md`
+    : currentFileName || "untitled.md"
 
-    // If no file handle or not supported, use Save As functionality
-    await handleSaveFileAs()
-  }, [isFileSystemAPISupported, fileHandle, markdown])
+  // Fallback method for browsers that don't support File System Access API
+  // (and "Download .md" for cloud documents)
+  const fallbackSaveFile = useCallback(() => {
+    const blob = new Blob([markdown], { type: "text/markdown" })
+    const url = URL.createObjectURL(blob)
+    const link = document.createElement("a")
+
+    link.href = url
+    link.download = downloadFileName
+    document.body.appendChild(link)
+    link.click()
+
+    // Clean up
+    document.body.removeChild(link)
+    URL.revokeObjectURL(url)
+  }, [markdown, downloadFileName])
 
   // Save As functionality using File System Access API
   const handleSaveFileAs = useCallback(async () => {
@@ -664,23 +657,27 @@ export function MarkdownEditor({
     } else {
       fallbackSaveFile()
     }
-  }, [isFileSystemAPISupported, currentFileName, markdown])
+  }, [isFileSystemAPISupported, currentFileName, markdown, fallbackSaveFile])
 
-  // Fallback method for browsers that don't support File System Access API
-  const fallbackSaveFile = useCallback(() => {
-    const blob = new Blob([markdown], { type: "text/markdown" })
-    const url = URL.createObjectURL(blob)
-    const link = document.createElement("a")
+  // Save to the currently open file using File System Access API
+  const handleSaveFile = useCallback(async () => {
+    // If we already have a file handle, use it to save directly
+    if (isFileSystemAPISupported && fileHandle) {
+      try {
+        await writeToFileHandle(fileHandle, markdown)
+        setIsFileSaved(true)
+        // Clear localStorage after successful save
+        clearLocalStorage()
+        return
+      } catch (error) {
+        console.error("Error saving file:", error)
+        // Fall back to save as if there's an error
+      }
+    }
 
-    link.href = url
-    link.download = currentFileName || "untitled.md"
-    document.body.appendChild(link)
-    link.click()
-
-    // Clean up
-    document.body.removeChild(link)
-    URL.revokeObjectURL(url)
-  }, [markdown, currentFileName])
+    // If no file handle or not supported, use Save As functionality
+    await handleSaveFileAs()
+  }, [isFileSystemAPISupported, fileHandle, markdown, handleSaveFileAs])
 
   // Export to PDF functionality
   const handleExportToPDF = useCallback(async () => {
@@ -688,9 +685,11 @@ export function MarkdownEditor({
       const renderHTML = (markdown: string): Promise<string> =>
         renderMarkdown(replaceEmojis(markdown))
 
-      const fileName = currentFileName
-        ? currentFileName.replace(/\.md$/, ".pdf")
-        : "document.pdf"
+      const fileName = isCloud
+        ? downloadFileName.replace(/\.md$/, ".pdf")
+        : currentFileName
+          ? currentFileName.replace(/\.md$/, ".pdf")
+          : "document.pdf"
 
       // jspdf and html2canvas are large, so load them only when exporting
       const { exportToPDF } = await import("@/lib/pdf-export")
@@ -703,10 +702,11 @@ export function MarkdownEditor({
       console.error("Error exporting to PDF:", error)
       alert("Failed to export PDF. Please try again.")
     }
-  }, [markdown, currentFileName])
+  }, [markdown, currentFileName, isCloud, downloadFileName])
 
   const handleOpenFile = useCallback(async () => {
-    if (isFileSystemAPISupported) {
+    // Cloud mode imports the file as a new document via the file input
+    if (isFileSystemAPISupported && !isCloud) {
       try {
         const options = {
           types: [
@@ -751,7 +751,7 @@ export function MarkdownEditor({
         fileInputRef.current.click()
       }
     }
-  }, [isFileSystemAPISupported, onChange])
+  }, [isFileSystemAPISupported, isCloud, onChange])
 
   const handleFileSelect = useCallback((event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0]
@@ -760,6 +760,11 @@ export function MarkdownEditor({
     const reader = new FileReader()
     reader.onload = (e) => {
       const content = e.target?.result as string
+
+      if (isCloud) {
+        onImportFile?.(content, file.name)
+        return
+      }
 
       // Update content with reset undo/redo stacks
       setMarkdown(content)
@@ -779,7 +784,30 @@ export function MarkdownEditor({
     if (fileInputRef.current) {
       fileInputRef.current.value = ""
     }
-  }, [onChange])
+  }, [onChange, isCloud, onImportFile])
+
+  const handleKeepMine = useCallback(() => {
+    setIsConflictDialogOpen(false)
+    void persistence.overwriteRemote()
+  }, [persistence])
+
+  const handleLoadLatest = useCallback(() => {
+    setIsConflictDialogOpen(false)
+    const remoteContent = persistence.acceptRemote()
+    // Goes through handleChange so the local version stays on the undo stack
+    if (remoteContent !== null) handleChange(remoteContent)
+  }, [persistence, handleChange])
+
+  const handleSaveCopy = useCallback(async () => {
+    if (!onSaveCopy) return
+    setIsConflictDialogOpen(false)
+    if (await onSaveCopy(markdown)) {
+      store.clearBackup()
+    } else {
+      // Copy failed: keep the backup and let the user choose again
+      setIsConflictDialogOpen(true)
+    }
+  }, [onSaveCopy, markdown, store])
 
   // Navigate to a heading in the document
   const handleHeadingClick = useCallback((headingId: string) => {
@@ -819,17 +847,21 @@ export function MarkdownEditor({
       className
     )}>
       {/* Recovery Banner - hide in distraction-free modes */}
-      {showRecoveryBanner && recoveredContent && recoveryTimestamp && !isDistractionFree && (
+      {showRecoveryBanner && recoveredContent !== null && recoveryTimestamp !== null && !isDistractionFree && (
         <div className="mb-4 rounded-md border border-amber-500 bg-amber-50 p-4 dark:bg-amber-950">
           <div className="flex items-start justify-between gap-4">
             <div className="flex-1">
               <h3 className="mb-1 font-semibold text-amber-900 dark:text-amber-100">
-                Recover unsaved content?
+                {isCloud ? "Restore unsynced changes?" : "Recover unsaved content?"}
               </h3>
               <p className="text-sm text-amber-800 dark:text-amber-200">
-                We found unsaved content from{" "}
-                {getTimeSinceLastSave(recoveryTimestamp)}. Would you like to
-                recover it?
+                {isCloud
+                  ? "Changes from "
+                  : "We found unsaved content from "}
+                {getTimeSinceLastSave(recoveryTimestamp)}
+                {isCloud
+                  ? " were kept on this device but never reached the server. Restoring them replaces the saved version."
+                  : ". Would you like to recover it?"}
               </p>
             </div>
             <div className="flex gap-2">
@@ -864,9 +896,9 @@ export function MarkdownEditor({
         isPreviewMode={isPreviewMode}
         onTogglePreview={() => setIsPreviewMode(!isPreviewMode)}
         onInsertAction={handleInsertAction}
-        onNewFile={handleNewFile}
-        onSaveFile={handleSaveFile}
-        onSaveFileAs={handleSaveFileAs}
+        onNewFile={isCloud ? onNewDocument ?? handleNewFile : handleNewFile}
+        onSaveFile={isCloud ? () => void persistence.flush() : handleSaveFile}
+        onSaveFileAs={isCloud ? fallbackSaveFile : handleSaveFileAs}
         onOpenFile={handleOpenFile}
         onExportToPDF={handleExportToPDF}
         isFileSystemAPISupported={isFileSystemAPISupported}
@@ -887,6 +919,13 @@ export function MarkdownEditor({
         onToggleTextCompletion={() => setTextCompletionEnabled(!textCompletionEnabled)}
         onChangeTextCompletionLanguage={setTextCompletionLanguage}
         onChangeTextCompletionProfile={setTextCompletionProfile}
+        // Cloud document props
+        storageKind={store.kind}
+        documentTitle={cloudDocument?.title}
+        saveStatus={persistence.status}
+        lastSavedAt={persistence.lastSavedAt}
+        onResolveConflict={() => setIsConflictDialogOpen(true)}
+        toolbarEndSlot={toolbarEndSlot}
       />
 
       <div className="relative flex flex-1 flex-col sm:flex-row">
@@ -969,6 +1008,18 @@ export function MarkdownEditor({
         data-testid="file-input"
       />
     </div>
+
+      {persistence.conflict && (
+        <ConflictDialog
+          open={isConflictDialogOpen}
+          onOpenChange={setIsConflictDialogOpen}
+          localContent={markdown}
+          remote={persistence.conflict}
+          onKeepMine={handleKeepMine}
+          onLoadLatest={handleLoadLatest}
+          onSaveCopy={onSaveCopy ? handleSaveCopy : undefined}
+        />
+      )}
 
       {/* Todo Popup */}
       <DraggableTodoPopup isOpen={isTodoOpen} onClose={() => setIsTodoOpen(false)} />

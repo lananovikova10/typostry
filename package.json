@@ -2,6 +2,9 @@
   "name": "next-entree",
   "version": "0.1.0",
   "private": true,
+  "engines": {
+    "node": ">=22"
+  },
   "scripts": {
     "dev": "next dev",
     "build": "next build",
@@ -23,6 +26,8 @@
     "@radix-ui/react-slot": "^1.2.3",
     "@radix-ui/react-tooltip": "^1.1.8",
     "@radix-ui/react-visually-hidden": "^1.2.3",
+    "@supabase/ssr": "^0.12.7",
+    "@supabase/supabase-js": "^2.118.0",
     "@t3-oss/env-nextjs": "^0.9.2",
     "@tailwindcss/typography": "^0.5.10",
     "@types/react-window": "^1.8.8",

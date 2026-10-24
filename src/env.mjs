@@ -6,6 +6,9 @@ export const env = createEnv({
   client: {
     NEXT_PUBLIC_APP_URL: z.string().min(1),
     NEXT_PUBLIC_GITLAB_REPO_URL: z.string().optional(),
+    // Supabase (auth + cloud documents). When unset the app runs guest-only.
+    NEXT_PUBLIC_SUPABASE_URL: z.string().url().optional(),
+    NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: z.string().min(1).optional(),
   },
   // Server-side environment variables schema
   server: {
@@ -21,6 +24,9 @@ export const env = createEnv({
     // Client-side variables
     NEXT_PUBLIC_APP_URL: process.env.NEXT_PUBLIC_APP_URL,
     NEXT_PUBLIC_GITLAB_REPO_URL: process.env.NEXT_PUBLIC_GITLAB_REPO_URL,
+    NEXT_PUBLIC_SUPABASE_URL: process.env.NEXT_PUBLIC_SUPABASE_URL,
+    NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY:
+      process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY,
     // Server-side variables
     GRAZIE_TOKEN: process.env.GRAZIE_TOKEN,
     HF_API_KEY: process.env.HF_API_KEY,

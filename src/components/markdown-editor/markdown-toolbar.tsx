@@ -38,6 +38,7 @@ import {
   Sparkles,
 } from "lucide-react"
 
+import { SaveStatus, StorageKind } from "@/lib/documents/types"
 import { cn } from "@/lib/utils"
 import { getRandomPhotoAsMarkdown } from "@/lib/unsplash"
 import { summarizeText } from "@/lib/huggingface"
@@ -68,6 +69,7 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip"
+import { SaveStatusIndicator } from "@/components/documents/save-status-indicator"
 import { TableGenerator } from "@/components/markdown-editor/table-generator"
 import { ModeToggle } from "@/components/mode-toggle"
 
@@ -98,6 +100,14 @@ export interface MarkdownToolbarProps {
   onToggleTextCompletion?: () => void
   onChangeTextCompletionLanguage?: (language: 'en' | 'de') => void
   onChangeTextCompletionProfile?: (profile: 'Always' | 'Moderate') => void
+  // Cloud document props
+  storageKind?: StorageKind
+  documentTitle?: string | null
+  saveStatus?: SaveStatus
+  lastSavedAt?: number | null
+  onResolveConflict?: () => void
+  /** Rendered after the theme toggle (e.g. the account menu) */
+  toolbarEndSlot?: React.ReactNode
 }
 
 export function MarkdownToolbar({
@@ -127,7 +137,14 @@ export function MarkdownToolbar({
   onToggleTextCompletion,
   onChangeTextCompletionLanguage,
   onChangeTextCompletionProfile,
+  storageKind = "local",
+  documentTitle = null,
+  saveStatus = "idle",
+  lastSavedAt = null,
+  onResolveConflict,
+  toolbarEndSlot,
 }: MarkdownToolbarProps) {
+  const isCloud = storageKind === "cloud"
   const [isEmojiPickerOpen, setIsEmojiPickerOpen] = React.useState(false)
   const [isTemplateSelectorOpen, setIsTemplateSelectorOpen] =
     React.useState(false)
@@ -405,36 +422,40 @@ export function MarkdownToolbar({
       name: "New",
       icon: <FileText className="h-4 w-4" />,
       action: onNewFile,
-      ariaLabel: "Create a new file",
-      tooltip: "New File",
+      ariaLabel: isCloud ? "Create a new document" : "Create a new file",
+      tooltip: isCloud ? "New Document" : "New File",
     },
     {
       name: "Open",
       icon: <FolderOpen className="h-4 w-4" />,
       action: onOpenFile,
-      ariaLabel: "Open an existing file",
-      tooltip: isFileSystemAPISupported
-        ? "Open a file from your local file system"
-        : "Open a file",
+      ariaLabel: isCloud ? "Import a markdown file" : "Open an existing file",
+      tooltip: isCloud
+        ? "Import a markdown file as a new document"
+        : isFileSystemAPISupported
+          ? "Open a file from your local file system"
+          : "Open a file",
     },
     {
       name: "Save",
       icon: <Save className="h-4 w-4" />,
       action: onSaveFile,
-      ariaLabel: "Save current file",
-      tooltip:
-        isFileSystemAPISupported && currentFileName
+      ariaLabel: isCloud ? "Save document now" : "Save current file",
+      tooltip: isCloud
+        ? "Save now (documents also save automatically)"
+        : isFileSystemAPISupported && currentFileName
           ? `Save to ${currentFileName}${!isFileSaved ? " *" : ""}`
           : "Save file",
-      isDropdown: isFileSystemAPISupported && onSaveFileAs, // Show dropdown when Save As is available
-      dropdownOptions: isFileSystemAPISupported && onSaveFileAs ? [
+      // Show dropdown when Save As (local) or Download (cloud) is available
+      isDropdown: (isCloud || isFileSystemAPISupported) && onSaveFileAs,
+      dropdownOptions: (isCloud || isFileSystemAPISupported) && onSaveFileAs ? [
         {
           label: "Save",
           action: onSaveFile,
           icon: <Save className="h-3 w-3 mr-2" />,
         },
         {
-          label: "Save As",
+          label: isCloud ? "Download .md" : "Save As",
           action: onSaveFileAs,
           icon: <SaveAll className="h-3 w-3 mr-2" />,
         },
@@ -787,10 +808,34 @@ export function MarkdownToolbar({
             )}
 
             <ModeToggle />
+            {toolbarEndSlot}
           </div>
 
+          {/* Document title and save status - cloud documents only */}
+          {isCloud && !isDistractionFree && (
+            <>
+              <Separator orientation="vertical" className="mx-1 h-8 flex-shrink-0" />
+              <div className="flex min-w-0 items-center gap-1 px-1">
+                {documentTitle && (
+                  <span
+                    className="hidden max-w-[16rem] truncate text-sm font-medium lg:inline"
+                    title={documentTitle}
+                    data-testid="document-title"
+                  >
+                    {documentTitle}
+                  </span>
+                )}
+                <SaveStatusIndicator
+                  status={saveStatus}
+                  lastSavedAt={lastSavedAt}
+                  onResolveConflict={onResolveConflict}
+                />
+              </div>
+            </>
+          )}
+
           {/* Filename display - only on wide screens in normal mode */}
-          {currentFileName && !isDistractionFree && (
+          {!isCloud && currentFileName && !isDistractionFree && (
             <>
               <Separator orientation="vertical" className="mx-1 h-8 flex-shrink-0" />
               <div className="hidden lg:flex items-center text-sm font-medium px-2">

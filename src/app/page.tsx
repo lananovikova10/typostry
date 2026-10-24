@@ -1,9 +1,39 @@
+import { redirect } from "next/navigation"
+
 import { siteConfig } from "@/config/site"
+import { WELCOME_MARKDOWN } from "@/config/welcome-document"
+import { getLatestDocumentId } from "@/lib/documents/repository"
+import {
+  createServerSupabaseClient,
+  getSessionUser,
+} from "@/lib/supabase/server"
 import { SparklesText } from "@/components/ui/sparkles-text"
+import { UserMenu } from "@/components/auth/user-menu"
+import { DocumentsProvider } from "@/components/documents/documents-provider"
+import { DocumentsShell } from "@/components/documents/documents-shell"
+import { EmptyDocuments } from "@/components/documents/empty-documents"
 import { Icons } from "@/components/icons"
 import { MarkdownEditor } from "@/components/markdown-editor"
 
-export default function Home() {
+export default async function Home() {
+  const user = await getSessionUser()
+
+  // Signed-in users land on their most recently edited document
+  if (user) {
+    const supabase = await createServerSupabaseClient()
+    const latestDocumentId = await getLatestDocumentId(supabase)
+    if (latestDocumentId) redirect(`/d/${latestDocumentId}`)
+
+    return (
+      <DocumentsProvider initialDocuments={[]}>
+        <DocumentsShell>
+          <EmptyDocuments />
+        </DocumentsShell>
+      </DocumentsProvider>
+    )
+  }
+
+  // Guests: unchanged local-only editor
   return (
     <main className="container py-10">
       <div className="mx-auto max-w-4xl">
@@ -23,42 +53,8 @@ export default function Home() {
         </div>
 
         <MarkdownEditor
-          initialValue={`# Hello World
-
-This is a markdown editor. Try editing this text or use the toolbar to add markdown elements.
-
-## Features
-
-- **Bold text**
-- *Italic text*
-- [Links](https://example.com)
-- Images
-- Code blocks
-- Executable JavaScript code blocks (click the run button in preview mode)
-
-\`\`\`js
-// Click the play button in preview mode to run this code
-console.log('Hello, world!');
-alert('JavaScript execution works!');
-\`\`\`
-
-\`\`\`js
-// Try another example with DOM manipulation
-const div = document.createElement('div');
-div.textContent = 'This element was created dynamically!';
-div.style.padding = '10px';
-div.style.backgroundColor = '#f0f0f0';
-div.style.border = '1px solid #ddd';
-div.style.borderRadius = '4px';
-div.style.marginTop = '10px';
-
-// Append to the preview container
-document.querySelector('[data-testid="markdown-preview"]').appendChild(div);
-\`\`\`
-
-> Blockquotes are also supported
-
-Enjoy writing markdown!`}
+          initialValue={WELCOME_MARKDOWN}
+          toolbarEndSlot={<UserMenu />}
         />
       </div>
     </main>
